@@ -4,7 +4,6 @@
 
 Build this project incrementally using a context-driven and spec-driven workflow. The context files define what to build, how to build it, and the current state of progress. AI coding tools must implement against these specs and must not invent large product behavior from scratch.
 
-
 ## Scoping Rules
 
 - Work on one feature unit at a time.

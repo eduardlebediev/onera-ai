@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-- Feature Spec 02: App shell layout (top nav, role switcher, page shell)
+- Feature Spec 03: TBD
 
 ## Completed
 
@@ -21,13 +21,22 @@ Update this file after every meaningful implementation change.
   - `src/app/page.tsx` replaced with component gallery (buttons, badges, inputs, cards, color tokens)
   - `npm run lint` and `npm run build` pass cleanly
 
+- **Feature Spec 02: Add Prettier, ESLint and Husky**
+  - Added `prettier`, `eslint-config-prettier`, `husky`, `lint-staged` as devDependencies
+  - `.prettierrc` configured with project rules (no semi, double quotes, 100 print width, es5 trailing comma)
+  - `.prettierignore` added
+  - `eslint.config.mjs` extended with `eslint-config-prettier` to disable conflicting rules
+  - `package.json` scripts: `format`, `format:check`, `typecheck` added; `prepare` set to `husky`
+  - `lint-staged` config added to `package.json`
+  - Husky pre-commit hook runs `lint-staged`
+  - Ran `prettier --write .` to format entire codebase to new rules
+  - `npm run lint`, `npm run typecheck`, `npm run format:check` all pass
+
 ## In Progress
 
 - None.
 
 ## Next Up
-
-
 
 ## Open Questions
 

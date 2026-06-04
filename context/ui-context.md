@@ -4,39 +4,38 @@ Light theme with dark navbar. The application uses a light gray page background 
 
 ## Colors
 
-| Role | CSS Variable | Value |
-|------|-------------|-------|
-| Page background | `--background` | `#E8E9EB` |
-| Surface / Card | `--card` | `#F0F1F3` |
-| Primary text | `--foreground` | `#0F172A` |
-| Muted text | `--muted-foreground` | `#64748B` |
-| Primary accent | `--primary` | `#eb5f24` |
-| Accent background | *derived* | `#FFF2EC` |
-| Border | `--border` | `#E2E8F0` |
-| Error | `--destructive` | `#EF4444` |
-| Success | *via badge* | `#10B981` |
-| Warning | *via badge* | `#F59E0B` |
+| Role              | CSS Variable         | Value     |
+| ----------------- | -------------------- | --------- |
+| Page background   | `--background`       | `#E8E9EB` |
+| Surface / Card    | `--card`             | `#F0F1F3` |
+| Primary text      | `--foreground`       | `#0F172A` |
+| Muted text        | `--muted-foreground` | `#64748B` |
+| Primary accent    | `--primary`          | `#eb5f24` |
+| Accent background | _derived_            | `#FFF2EC` |
+| Border            | `--border`           | `#E2E8F0` |
+| Error             | `--destructive`      | `#EF4444` |
+| Success           | _via badge_          | `#10B981` |
+| Warning           | _via badge_          | `#F59E0B` |
 
 **Navbar:** `#050505` (near-black) with white text. Active nav link has orange underline indicator (`bg-[#eb5f24]`, 3px tall).
 
 ## Typography
 
-| Role | Font | Variable |
-|------|------|----------|
-| UI text | **Geist Sans** (Google Fonts) | `--font-sans` |
-| Code / mono | *Not defined* | — |
-
+| Role        | Font                          | Variable      |
+| ----------- | ----------------------------- | ------------- |
+| UI text     | **Geist Sans** (Google Fonts) | `--font-sans` |
+| Code / mono | _Not defined_                 | —             |
 
 ## Border Radius
 
-| Context | Class | Value |
-|---------|-------|-------|
-| Inline / small UI | `rounded-md` | 8px |
-| Cards / panels | `rounded-xl` | 12px |
-| Buttons / pills | `rounded-full` | 9999px |
-| Badges / pills | `rounded-md` | 8px |
-| Layout shell | `rounded-t-[24px]` | 24px |
-| Base token | `--radius` | 0.625rem (10px) |
+| Context           | Class              | Value           |
+| ----------------- | ------------------ | --------------- |
+| Inline / small UI | `rounded-md`       | 8px             |
+| Cards / panels    | `rounded-xl`       | 12px            |
+| Buttons / pills   | `rounded-full`     | 9999px          |
+| Badges / pills    | `rounded-md`       | 8px             |
+| Layout shell      | `rounded-t-[24px]` | 24px            |
+| Base token        | `--radius`         | 0.625rem (10px) |
 
 ## Component Library
 
@@ -45,7 +44,6 @@ Light theme with dark navbar. The application uses a light gray page background 
 Components live in `shared/ui/`. Use the CLI (`npx shadcn add`) to add new components rather than writing from scratch.
 
 ## Layout Patterns
-
 
 ## Icons
 

@@ -2,17 +2,17 @@
 
 ## Stack
 
-| Layer | Technology | Role |
-| --- | --- | --- |
-| Framework | Next.js App Router + TypeScript | Full-stack application framework |
-| UI | React + Tailwind CSS + shadcn/ui | Dashboard interface and reusable UI components |
-| Auth | Supabase Auth or temporary demo auth | User identity, admin/employee role access |
-| Database | Supabase Postgres | Stores users, documents, quizzes, assignments, attempts, answers |
-| Vector Search | Supabase pgvector | Stores document chunk embeddings for semantic search |
-| File Storage | Supabase Storage | Stores uploaded source documents |
-| Validation | Zod | Runtime validation for forms, API inputs, and AI outputs |
-| AI | Vercel AI SDK with OpenAI/Anthropic/Groq provider | Topic extraction, quiz generation, feedback generation |
-| Deployment | Vercel | Public demo deployment |
+| Layer         | Technology                                        | Role                                                             |
+| ------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| Framework     | Next.js App Router + TypeScript                   | Full-stack application framework                                 |
+| UI            | React + Tailwind CSS + shadcn/ui                  | Dashboard interface and reusable UI components                   |
+| Auth          | Supabase Auth or temporary demo auth              | User identity, admin/employee role access                        |
+| Database      | Supabase Postgres                                 | Stores users, documents, quizzes, assignments, attempts, answers |
+| Vector Search | Supabase pgvector                                 | Stores document chunk embeddings for semantic search             |
+| File Storage  | Supabase Storage                                  | Stores uploaded source documents                                 |
+| Validation    | Zod                                               | Runtime validation for forms, API inputs, and AI outputs         |
+| AI            | Vercel AI SDK with OpenAI/Anthropic/Groq provider | Topic extraction, quiz generation, feedback generation           |
+| Deployment    | Vercel                                            | Public demo deployment                                           |
 
 ---
 
@@ -275,7 +275,7 @@ AI must not:
 
 The quiz generation flow must be:
 
-text Selected document(s) → document chunks → semantic retrieval with pgvector → AI structured output → Zod validation → draft quiz → admin review/edit → publish 
+text Selected document(s) → document chunks → semantic retrieval with pgvector → AI structured output → Zod validation → draft quiz → admin review/edit → publish
 
 ---
 

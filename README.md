@@ -37,13 +37,13 @@ Admin uploads document
 
 ## Tech Stack
 
-* Framework: Next.js
-* Language: TypeScript
-* Styling: Tailwind CSS
-* UI: shadcn/ui
-* Backend: Supabase
-* Database: PostgreSQL
-* Auth: Supabase Auth
-* Storage: Supabase Storage
-* Vector Search: Supabase pgvector
-* AI: OpenAI / compatible LLM provider
+- Framework: Next.js
+- Language: TypeScript
+- Styling: Tailwind CSS
+- UI: shadcn/ui
+- Backend: Supabase
+- Database: PostgreSQL
+- Auth: Supabase Auth
+- Storage: Supabase Storage
+- Vector Search: Supabase pgvector
+- AI: OpenAI / compatible LLM provider

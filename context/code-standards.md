@@ -69,7 +69,9 @@
 - Keep database writes explicit and easy to audit.
 - Prefer transactions where multiple dependent writes are required.
 - Use consistent naming for database fields and domain types.
+
 #
+
 ## Testing
 
 Prioritize tests around business-critical behavior:

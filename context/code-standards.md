@@ -69,22 +69,7 @@
 - Keep database writes explicit and easy to audit.
 - Prefer transactions where multiple dependent writes are required.
 - Use consistent naming for database fields and domain types.
-## File Organization
-
-- `src/app/` — Next.js routes, layouts, pages, route handlers, and server actions
-- `src/features/auth/` — login flow, demo auth, role-based access helpers
-- `src/features/documents/` — document upload, document list, document detail, extracted text, topics, processing states
-- `src/features/quizzes/` — quiz generation, quiz review, quiz editor, quiz detail, quiz publishing
-- `src/features/assignments/` — assigning published quizzes to employees and tracking assignment status
-- `src/features/attempts/` — employee test-taking flow, answers, scoring, result page, AI feedback
-- `src/features/analytics/` — admin dashboard metrics, weak topics, quiz performance, employee progress summaries
-- `src/shared/ai/` — AI client, provider configuration, prompt templates, structured output schemas
-- `src/shared/db/` — Supabase clients, database types, query helpers, persistence helpers
-- `src/shared/ui/` — reusable shared UI components, layout primitives, empty/loading/error states
-- `src/shared/lib/` — generic utilities, formatting helpers, error helpers
-- `src/data/mock/` — temporary mock data for frontend-first development
-- `context/` — project context, feature specs, and progress documentation
-
+#
 ## Testing
 
 Prioritize tests around business-critical behavior:

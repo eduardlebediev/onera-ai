@@ -13,11 +13,11 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 
 const kpiIcons = [FileText, ClipboardList, BarChart2, Users, CheckCircle2, AlertTriangle]
 
-interface KpiSectionProps {
+interface KpiCardsProps {
   stats: KpiStat[]
 }
 
-export function KpiSection({ stats }: KpiSectionProps) {
+export function KpiCards({ stats }: KpiCardsProps) {
   return (
     <>
       {stats.map((stat, index) => {

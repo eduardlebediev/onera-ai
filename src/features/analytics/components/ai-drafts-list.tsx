@@ -2,13 +2,14 @@ import { Sparkles } from "lucide-react"
 
 import type { MockAiDraft } from "@/data/mock/admin-dashboard"
 import { Button } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { Card, CardContent, CardHeader } from "@/shared/ui/card"
+import { Typography } from "@/shared/ui/typography"
 
-interface AiReviewCardProps {
+interface AiDraftsListProps {
   drafts: MockAiDraft[]
 }
 
-export function AiReviewCard({ drafts }: AiReviewCardProps) {
+export function AiDraftsList({ drafts }: AiDraftsListProps) {
   return (
     <Card className="col-span-12 h-full lg:col-span-4">
       <CardHeader className="px-6 pb-3 pt-4">
@@ -17,10 +18,10 @@ export function AiReviewCard({ drafts }: AiReviewCardProps) {
             <Sparkles className="size-6" />
           </div>
           <div>
-            <CardTitle className="text-xl font-semibold">AI Review</CardTitle>
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            <Typography variant="h3">AI Review</Typography>
+            <Typography variant="muted" className="mt-1 typography-small font-medium">
               {drafts.length} Test drafts need to be reviewed
-            </p>
+            </Typography>
           </div>
         </div>
       </CardHeader>
@@ -29,28 +30,21 @@ export function AiReviewCard({ drafts }: AiReviewCardProps) {
           {drafts.map((draft) => (
             <div key={draft.id} className="flex items-center justify-between gap-4 py-4">
               <div>
-                <p className="text-base font-semibold text-foreground">{draft.title}</p>
-                <p className="mt-0.5 text-sm font-semibold text-muted-foreground">
+                <Typography variant="p" className="typography-small font-medium">
+                  {draft.title}
+                </Typography>
+                <Typography variant="muted" className="mt-0.5 typography-small font-medium">
                   {draft.questionCount} AI-generated questions
-                </p>
+                </Typography>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="h-9 rounded-full px-5 text-sm font-semibold"
-              >
+              <Button variant="secondary" size="sm">
                 Review
               </Button>
             </div>
           ))}
         </div>
         <div className="px-6 pb-4 pt-2">
-          <Button
-            variant="link"
-            className="h-auto p-0 text-sm font-semibold text-muted-foreground hover:text-foreground"
-          >
-            View all drafts &gt;
-          </Button>
+          <Button variant="link">View all drafts &gt;</Button>
         </div>
       </CardContent>
     </Card>

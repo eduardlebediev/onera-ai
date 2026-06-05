@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/shared/ui/card"
+import { Typography } from "@/shared/ui/typography"
 
 interface KpiCardProps {
   label: string
@@ -35,22 +36,25 @@ export function KpiCard({
       <CardContent className="flex h-full flex-col justify-between px-5 py-4 sm:px-6">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Icon className="size-5 shrink-0" />
-          <span className="truncate text-base font-semibold">{label}</span>
+          <Typography variant="small" as="span" className="truncate text-muted-foreground">
+            {label}
+          </Typography>
         </div>
         <div className="mt-3 flex items-baseline gap-3">
-          <span className={cn("text-4xl font-bold tracking-tight", valueColor)}>{value}</span>
-          <span className="mb-1 truncate text-sm font-medium text-muted-foreground">
+          <Typography variant="h2" as="span" className={cn(valueColor)}>
+            {value}
+          </Typography>
+          <Typography variant="small" as="span" className="mb-1 truncate text-muted-foreground">
             {getKpiValueLabel(label)}
-          </span>
+          </Typography>
         </div>
-        <p
-          className={`mt-1 truncate text-sm font-medium ${
-            trend ? "text-emerald-600" : "text-muted-foreground"
-          }`}
+        <Typography
+          variant="small"
+          className={cn("mt-1 truncate", trend ? "text-emerald-600" : "text-muted-foreground")}
         >
           {trend}
           {description}
-        </p>
+        </Typography>
       </CardContent>
     </Card>
   )

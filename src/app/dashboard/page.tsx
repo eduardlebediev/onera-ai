@@ -9,12 +9,14 @@ import { AdminDashboard } from "@/features/analytics/components/admin-dashboard"
 
 export default function DashboardPage() {
   return (
-    <AdminDashboard
-      aiDrafts={aiDrafts}
-      kpiStats={kpiStats}
-      recentDocuments={recentDocuments}
-      testPerformance={testPerformance}
-      weeklyCompletions={weeklyCompletions}
-    />
+    <div className="page-shell max-w-[1920px]">
+      <AdminDashboard
+        aiDrafts={aiDrafts}
+        kpiStats={kpiStats}
+        recentDocuments={recentDocuments}
+        testPerformance={testPerformance}
+        weeklyCompletions={weeklyCompletions}
+      />
+    </div>
   )
 }

@@ -21,10 +21,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans bg-foreground">
+      <body className="flex h-dvh flex-col overflow-hidden bg-foreground font-sans">
         <RoleProvider>
           <TopNavbar />
-          <main className="flex flex-1 flex-col bg-background rounded-t-[24px]">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[24px] bg-background">
+            <div className="h-full overflow-y-auto">{children}</div>
+          </main>
         </RoleProvider>
       </body>
     </html>

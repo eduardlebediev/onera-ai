@@ -39,7 +39,7 @@ export function TopNavbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")
 
   return (
-    <nav className="h-14 bg-foreground flex items-center px-4 md:px-6 gap-3 md:gap-6 shrink-0">
+    <nav className="flex h-16 shrink-0 items-center gap-3 bg-foreground px-4 md:gap-6 md:px-8">
       {/* Logo */}
       <Link href="/dashboard" className="shrink-0">
         <Logo />
@@ -52,7 +52,7 @@ export function TopNavbar() {
             key={link.href}
             href={link.href}
             className={cn(
-              "relative px-3.5 h-14 flex items-center text-sm font-medium transition-colors",
+              "relative flex h-16 items-center px-3.5 text-sm font-medium transition-colors",
               isActive(link.href)
                 ? "text-background"
                 : "text-background/55 hover:text-background/85"

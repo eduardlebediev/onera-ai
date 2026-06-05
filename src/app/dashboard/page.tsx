@@ -1,12 +1,20 @@
-import { LayoutDashboard } from "lucide-react"
-import { PlaceholderPage } from "@/shared/ui/placeholder-page"
+import {
+  aiDrafts,
+  kpiStats,
+  recentDocuments,
+  testPerformance,
+  weeklyCompletions,
+} from "@/data/mock/admin-dashboard"
+import { AdminDashboard } from "@/features/analytics/components/admin-dashboard"
 
 export default function DashboardPage() {
   return (
-    <PlaceholderPage
-      title="Dashboard"
-      description="Overview of key metrics, recent documents, and quiz activity."
-      icon={LayoutDashboard}
+    <AdminDashboard
+      aiDrafts={aiDrafts}
+      kpiStats={kpiStats}
+      recentDocuments={recentDocuments}
+      testPerformance={testPerformance}
+      weeklyCompletions={weeklyCompletions}
     />
   )
 }

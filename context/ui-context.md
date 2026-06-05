@@ -8,7 +8,7 @@ Light theme with dark navbar. The application uses a light gray page background 
 | ----------------- | -------------------- | --------- |
 | Page background   | `--background`       | `#E8E9EB` |
 | Surface / Card    | `--card`             | `#F0F1F3` |
-| Primary text      | `--foreground`       | `#0F172A` |
+| Primary text      | `--foreground`       | `#171717` |
 | Muted text        | `--muted-foreground` | `#64748B` |
 | Primary accent    | `--primary`          | `#eb5f24` |
 | Accent background | _derived_            | `#FFF2EC` |
@@ -16,8 +16,6 @@ Light theme with dark navbar. The application uses a light gray page background 
 | Error             | `--destructive`      | `#EF4444` |
 | Success           | _via badge_          | `#10B981` |
 | Warning           | _via badge_          | `#F59E0B` |
-
-**Navbar:** `#050505` (near-black) with white text. Active nav link has orange underline indicator (`bg-[#eb5f24]`, 3px tall).
 
 ## Typography
 

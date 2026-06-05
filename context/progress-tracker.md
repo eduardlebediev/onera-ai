@@ -35,6 +35,14 @@ Update this file after every meaningful implementation change.
 
 ## Completed
 
+- **Feature Spec 06: Documents Mock Pages with Quick Preview**
+  - `src/data/mock/documents.ts` — typed mock data for 5 documents with status, topics, chunks, and linked tests.
+  - `src/features/documents/components/documents-table.tsx` — client-side documents table with title search, status filter, sortable title/status/uploaded columns, file-type icons, title-triggered drawer previews, and quick preview actions.
+  - `src/features/documents/components/document-drawer.tsx` — right-side vaul Drawer showing document title, status, description, detected topics, content chunk preview, linked tests summary, empty states, custom triggers, and "Open Full Page" / "Close" actions.
+  - `src/features/documents/components/document-detail.tsx` — full detail presentation component scoped to the documents feature boundary.
+  - `src/app/documents/page.tsx` — `/documents` route using `DocumentsTable`; replaces placeholder.
+  - `src/app/documents/[id]/page.tsx` — thin `/documents/[id]` route that resolves mock data and renders `DocumentDetail`.
+
 - **Feature Spec 05: Add Responsive Design Tokens and Typography**
   - Added responsive spacing and typography CSS variables in `src/app/globals.css`.
   - Created `src/shared/ui/typography.tsx` with reusable CVA-backed variants: `h1`, `h2`, `h3`, `p`, `muted`, `small`, and `label`.

@@ -35,6 +35,7 @@
 - Model loading, empty, success, and error states explicitly.
 - Avoid deeply nested conditional rendering.
 - Use accessible labels and semantic HTML.
+- When a non-button element needs button styling (Link, DrawerClose, etc.), use asChild instead of extracting buttonVariants() and applying via cn(). This preserves a11y, focus-visible, press animations, and disabled state.
 
 ## Styling
 

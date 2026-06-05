@@ -7,6 +7,7 @@ import {
 } from "@/features/analytics/lib/dashboard-formatters"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 import { Typography } from "@/shared/ui/typography"
 
 function TestStatusBadge({ status }: { status: TestStatus }) {
@@ -40,106 +41,80 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-border/50">
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Test
+        <Table className="text-left">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Test
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Role
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Assigned
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Completed
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Ø Score
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Status
+                </Typography>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border/50">
+            {tests.map((test) => (
+              <TableRow key={test.id}>
+                <TableCell>
+                  <Typography variant="small" className="font-medium">
+                    {test.title}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Role
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {test.role}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Assigned
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {test.assignedCount} assigned
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Completed
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {test.completedCount} completed
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
+                </TableCell>
+                <TableCell>
                   <Typography
-                    variant="small"
+                    variant="p"
                     as="span"
-                    className="font-medium text-muted-foreground"
+                    className={`font-medium ${getScoreColorClass(test.averageScore)}`}
                   >
-                    Ø Score
+                    {test.averageScore}%
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Status
-                  </Typography>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {tests.map((test) => (
-                <tr key={test.id} className="transition-colors hover:bg-muted/30">
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium">
-                      {test.title}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {test.role}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {test.assignedCount} assigned
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {test.completedCount} completed
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography
-                      variant="p"
-                      as="span"
-                      className={`font-medium ${getScoreColorClass(test.averageScore)}`}
-                    >
-                      {test.averageScore}%
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <TestStatusBadge status={test.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </TableCell>
+                <TableCell>
+                  <TestStatusBadge status={test.status} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

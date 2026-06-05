@@ -8,6 +8,7 @@ import {
 } from "@/features/analytics/lib/dashboard-formatters"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 import { Typography } from "@/shared/ui/typography"
 
 function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
@@ -53,102 +54,76 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-border/50 text-muted-foreground">
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Document
+        <Table className="text-left">
+          <TableHeader>
+            <TableRow className="text-muted-foreground">
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Document
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Status
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Topics
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Tests
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Updated
+                </Typography>
+              </TableHead>
+              <TableHead className="py-3 text-right">
+                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                  Action
+                </Typography>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-border/50">
+            {documents.map((document) => (
+              <TableRow key={document.id}>
+                <TableCell>
+                  <Typography variant="small" className="font-medium">
+                    {document.title}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Status
+                </TableCell>
+                <TableCell>
+                  <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {document.topics.length > 0 ? document.topics.length : "—"}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Topics
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {document.quizCount > 0 ? document.quizCount : "—"}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Tests
+                </TableCell>
+                <TableCell>
+                  <Typography variant="small" className="font-medium text-muted-foreground">
+                    {document.updatedAt}
                   </Typography>
-                </th>
-                <th className="px-6 py-3">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Updated
-                  </Typography>
-                </th>
-                <th className="px-6 py-3 text-right">
-                  <Typography
-                    variant="small"
-                    as="span"
-                    className="font-medium text-muted-foreground"
-                  >
-                    Action
-                  </Typography>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {documents.map((document) => (
-                <tr key={document.id} className="transition-colors hover:bg-muted/30">
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium">
-                      {document.title}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {document.topics.length > 0 ? document.topics.length : "—"}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {document.quizCount > 0 ? document.quizCount : "—"}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3">
-                    <Typography variant="small" className="font-medium text-muted-foreground">
-                      {document.updatedAt}
-                    </Typography>
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <Button variant="ghost" size="sm">
-                      {getDocumentActionLabel(document)}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm">
+                    {getDocumentActionLabel(document)}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

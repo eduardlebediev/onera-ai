@@ -42,6 +42,8 @@
 - Prefer consistent spacing, radius, borders, and typography.
 - Do not hardcode random colors in components.
 - Use shadcn/ui components where appropriate.
+- Follow the shadcn/ui component pattern: use `class-variance-authority` for variants, accept `className` for extension, forward refs, and export as named functions.
+- When designing new UI primitives, prefer the `variant` prop pattern (CVA) over compound components or prop-heavy APIs.
 - Keep UI polished but avoid overengineering animations.
 
 ## API Routes

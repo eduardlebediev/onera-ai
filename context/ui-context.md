@@ -24,6 +24,19 @@ Light theme with dark navbar. The application uses a light gray page background 
 | UI text     | **Geist Sans** (Google Fonts) | `--font-sans` |
 | Code / mono | _Not defined_                 | —             |
 
+Responsive type tokens live in `src/app/globals.css`:
+
+| Role      | CSS Variable        | Behavior                    |
+| --------- | ------------------- | --------------------------- |
+| Heading 1 | `--font-size-h1`    | Fluid mobile-to-desktop h1  |
+| Heading 2 | `--font-size-h2`    | Fluid section heading scale |
+| Heading 3 | `--font-size-h3`    | Compact card/section titles |
+| Body      | `--font-size-body`  | Responsive body copy        |
+| Small     | `--font-size-small` | Helper and metadata text    |
+| Label     | `--font-size-label` | Uppercase section labels    |
+
+Use `src/shared/ui/typography.tsx` for common text variants: `h1`, `h2`, `h3`, `p`, `muted`, `small`, and `label`.
+
 ## Border Radius
 
 | Context           | Class              | Value           |
@@ -42,6 +55,15 @@ Light theme with dark navbar. The application uses a light gray page background 
 Components live in `shared/ui/`. Use the CLI (`npx shadcn add`) to add new components rather than writing from scratch.
 
 ## Layout Patterns
+
+Responsive spacing tokens (CSS variables) live in `src/app/globals.css`.
+
+| Token              | Purpose                        |
+| ------------------ | ------------------------------ |
+| `--spacing-page-x` | Responsive page horizontal pad |
+| `--spacing-page-y` | Responsive page vertical pad   |
+
+Use the `.page-shell` utility class for route-level page wrappers (padding + centering + full width). Compose max-width and other layout via Tailwind classes in JSX.
 
 ## Icons
 

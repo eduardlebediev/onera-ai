@@ -8,7 +8,7 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-- TBD
+- None.
 
 ## In Progress
 
@@ -34,6 +34,10 @@ Update this file after every meaningful implementation change.
 - Semantic color tokens drive the shell instead of hardcoded hex. `--primary` was aligned to the brand orange (`oklch(0.659 0.189 40)` ≈ `#eb5f24`) to match `ui-context.md`. The dark navbar/shell uses `bg-foreground` with `text-background`, and the page surface uses `bg-background`. No brand-specific tokens (e.g. `navbar-black`) were introduced.
 
 ## Completed
+
+- **Feature Spec 05: Add Responsive Design Tokens and Typography**
+  - Added responsive spacing and typography CSS variables in `src/app/globals.css`.
+  - Created `src/shared/ui/typography.tsx` with reusable CVA-backed variants: `h1`, `h2`, `h3`, `p`, `muted`, `small`, and `label`.
 
 - **Feature Spec 04: Admin Dashboard with Mock Data**
   - `src/data/mock/admin-dashboard.ts` — typed mock data for all dashboard sections (KPI stats, documents, tests, weak topics, recent activity)

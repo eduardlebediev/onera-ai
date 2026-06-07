@@ -2,17 +2,17 @@
 
 ## Stack
 
-| Layer         | Technology                                        | Role                                                             |
-| ------------- | ------------------------------------------------- | ---------------------------------------------------------------- |
-| Framework     | Next.js App Router + TypeScript                   | Full-stack application framework                                 |
-| UI            | React + Tailwind CSS + shadcn/ui                  | Dashboard interface and reusable UI components                   |
-| Auth          | Supabase Auth or temporary demo auth              | User identity, admin/employee role access                        |
-| Database      | Supabase Postgres                                 | Stores users, documents, quizzes, assignments, attempts, answers |
-| Vector Search | Supabase pgvector                                 | Stores document chunk embeddings for semantic search             |
-| File Storage  | Supabase Storage                                  | Stores uploaded source documents                                 |
-| Validation    | Zod                                               | Runtime validation for forms, API inputs, and AI outputs         |
-| AI            | Vercel AI SDK with OpenAI/Anthropic/Groq provider | Topic extraction, quiz generation, feedback generation           |
-| Deployment    | Vercel                                            | Public demo deployment                                           |
+| Layer         | Technology                                        | Role                                                           |
+| ------------- | ------------------------------------------------- | -------------------------------------------------------------- |
+| Framework     | Next.js App Router + TypeScript                   | Full-stack application framework                               |
+| UI            | React + Tailwind CSS + shadcn/ui                  | Dashboard interface and reusable UI components                 |
+| Auth          | Supabase Auth or temporary demo auth              | User identity, admin/employee role access                      |
+| Database      | Supabase Postgres                                 | Stores users, documents, tests, assignments, attempts, answers |
+| Vector Search | Supabase pgvector                                 | Stores document chunk embeddings for semantic search           |
+| File Storage  | Supabase Storage                                  | Stores uploaded source documents                               |
+| Validation    | Zod                                               | Runtime validation for forms, API inputs, and AI outputs       |
+| AI            | Vercel AI SDK with OpenAI/Anthropic/Groq provider | Topic extraction, test generation, feedback generation         |
+| Deployment    | Vercel                                            | Public demo deployment                                         |
 
 ---
 
@@ -20,10 +20,10 @@
 
 - src/app/ — Next.js routes, layouts, pages, route handlers, and server actions.
 - src/features/documents/ — document upload, document list, document detail, extracted topics, processing states.
-- src/features/quizzes/ — quiz generation, quiz review, quiz editor, quiz detail, quiz publishing.
-- src/features/assignments/ — assigning published quizzes to employees.
+- src/features/tests/ — test generation, test review, test editor, test detail, test publishing.
+- src/features/assignments/ — assigning published tests to employees.
 - src/features/attempts/ — employee test-taking flow, answers, scoring, result screen.
-- src/features/analytics/ — admin dashboard metrics, weak topics, quiz performance.
+- src/features/analytics/ — admin dashboard metrics, weak topics, test performance.
 - src/shared/ai/ — AI client, prompt templates, structured output schemas, provider configuration.
 - src/shared/db/ — Supabase clients, database types, query helpers.
 - src/shared/ui/ — reusable UI components, layout primitives, empty/loading/error states.
@@ -41,11 +41,11 @@ Stores structured application data:
 - user profiles;
 - uploaded document metadata;
 - document chunks;
-- quizzes;
-- quiz-document relations;
+- tests;
+- test-document relations;
 - questions;
-- quiz assignments;
-- quiz attempts;
+- test assignments;
+- test attempts;
 - answers;
 - follow-up questions;
 - follow-up answers.
@@ -113,9 +113,9 @@ Fields:
 - chunk_index
 - created_at
 
-### quizzes
+### tests
 
-Quiz metadata.
+Test metadata.
 
 Fields:
 
@@ -132,25 +132,25 @@ Fields:
 - created_at
 - updated_at
 
-### quiz_documents
+### test_documents
 
-Many-to-many relation between quizzes and source documents.
+Many-to-many relation between tests and source documents.
 
 Fields:
 
 - id
-- quiz_id
+- test_id
 - document_id
 - created_at
 
 ### questions
 
-Questions belonging to a quiz.
+Questions belonging to a test.
 
 Fields:
 
 - id
-- quiz_id
+- test_id
 - source_chunk_id
 - question_text
 - type — single_choice | multiple_choice | true_false | open_question
@@ -162,14 +162,14 @@ Fields:
 - created_at
 - updated_at
 
-### quiz_assignments
+### test_assignments
 
-Individual quiz assignments for employees.
+Individual test assignments for employees.
 
 Fields:
 
 - id
-- quiz_id
+- test_id
 - user_id
 - assigned_by
 - status — not_started | in_progress | completed | failed
@@ -177,14 +177,14 @@ Fields:
 - created_at
 - updated_at
 
-### quiz_attempts
+### test_attempts
 
-Employee quiz attempts.
+Employee test attempts.
 
 Fields:
 
 - id
-- quiz_id
+- test_id
 - user_id
 - assignment_id
 - score
@@ -196,7 +196,7 @@ Fields:
 
 ### answers
 
-Employee answers to quiz questions.
+Employee answers to test questions.
 
 Fields:
 
@@ -245,8 +245,8 @@ Fields:
 - Users authenticate through Supabase Auth or temporary demo auth during early MVP development.
 - Application-specific user data lives in profiles.
 - profiles.role controls access:
-  - admin can manage documents, quizzes, assignments, and analytics;
-  - employee can only see assigned quizzes and personal results.
+  - admin can manage documents, tests, assignments, and analytics;
+  - employee can only see assigned tests and personal results.
 - Employees must not access other employees' attempts, answers, or analytics.
 - Admin-only mutations must be checked server-side.
 - If Supabase Auth is enabled, use Row Level Security where practical.
@@ -260,22 +260,22 @@ AI output is untrusted and must be validated before use.
 AI may generate:
 
 - document topics;
-- quiz questions;
+- test questions;
 - answer explanations;
 - personalized feedback;
 - adaptive follow-up questions.
 
 AI must not:
 
-- publish quizzes automatically;
+- publish tests automatically;
 - bypass admin review;
 - mutate production data without explicit user action;
 - generate questions unrelated to selected source documents;
 - claim that external work was completed.
 
-The quiz generation flow must be:
+The test generation flow must be:
 
-text Selected document(s) → document chunks → semantic retrieval with pgvector → AI structured output → Zod validation → draft quiz → admin review/edit → publish
+text Selected document(s) → document chunks → semantic retrieval with pgvector → AI structured output → Zod validation → draft test → admin review/edit → publish
 
 ---
 
@@ -284,12 +284,12 @@ text Selected document(s) → document chunks → semantic retrieval with pgvect
 1. AI-generated questions must stay in draft state until reviewed and published by an admin.
 2. Each document chunk must belong to one document.
 3. Document chunk embeddings are stored in document_chunks.embedding using Supabase pgvector.
-4. A quiz can use multiple documents through quiz_documents.
+4. A test can use multiple documents through test_documents.
 5. A question should reference source_chunk_id when generated from document context.
-6. Employees can only complete assigned quizzes.
-7. Quiz attempts must belong to one user, one quiz, and preferably one assignment.
-8. Completed attempts should not break if a quiz is edited later.
+6. Employees can only complete assigned tests.
+7. Test attempts must belong to one user, one test, and preferably one assignment.
+8. Completed attempts must not break if a test is edited later.
 9. AI output must be validated with Zod before being saved or shown as final.
 10. The MVP should prioritize one complete flow over many incomplete features.
-11. Teams are out of scope for MVP; quiz assignments are individual for now.
+11. Teams are out of scope for MVP; test assignments are individual for now.
 12. Do not add integrations, payments, enterprise SSO, or advanced permissions before the core MVP works.

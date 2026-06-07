@@ -4,7 +4,7 @@
 
 Ontera AI is an AI-powered employee knowledge assessment platform.
 
-The product helps companies turn internal documentation into dynamic employee knowledge tests, personalized AI feedback, and learning progress dashboards. Admins can upload internal documents, generate quizzes from company knowledge, review AI-generated questions before publishing, assign quizzes to employees, and analyze weak topics across the team.
+The product helps companies turn internal documentation into dynamic employee knowledge tests, personalized AI feedback, and learning progress dashboards. Admins can upload internal documents, generate tests from company knowledge, review AI-generated questions before publishing, assign tests to employees, and analyze weak topics across the team.
 
 The product is intentionally not a generic chatbot. It demonstrates a controlled AI workflow with document processing, vector-based retrieval, structured AI outputs, validation, human review, employee testing, and analytics.
 
@@ -25,7 +25,7 @@ Example admins:
 
 ### Employee
 
-The employee completes assigned quizzes and receives feedback based on their results.
+The employee completes assigned tests and receives feedback based on their results.
 
 Example employees:
 
@@ -39,7 +39,7 @@ Example employees:
 
 Companies store important knowledge across PDFs, onboarding guides, internal wikis, process documents, technical documentation, and policies. Employees may read these materials, but managers often cannot verify whether the knowledge was actually understood.
 
-Manual quiz creation is slow, repetitive, and hard to keep updated when documentation changes.
+Manual test creation is slow, repetitive, and hard to keep updated when documentation changes.
 
 Ontera AI helps companies convert internal documentation into measurable knowledge checks and learning feedback.
 
@@ -47,10 +47,10 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 
 1. Admin can upload internal documents and use them as source material for employee knowledge testing.
 2. The system extracts document text, splits it into chunks, and stores embeddings with Supabase pgvector.
-3. AI can generate structured quiz questions from selected document chunks.
+3. AI can generate structured test questions from selected document chunks.
 4. AI-generated questions are shown as drafts and must be reviewed by an admin before publishing.
-5. Admin can publish and assign quizzes to individual employees.
-6. Employee can complete assigned quizzes and receive score, explanations, and AI-generated feedback.
+5. Admin can publish and assign tests to individual employees.
+6. Employee can complete assigned tests and receive score, explanations, and AI-generated feedback.
 7. Admin can see basic analytics: completion status, average score, weak topics, and difficult questions.
 8. The codebase demonstrates production-minded AI development: validation, source grounding, human review, scope control, documentation, and clean architecture.
 
@@ -62,17 +62,17 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 4. The system splits the document into chunks.
 5. The system stores document chunks and embeddings in Supabase Postgres with pgvector.
 6. AI extracts key topics from the document.
-7. Admin opens the quiz generator.
+7. Admin opens the test generator.
 8. Admin selects source document, difficulty, question count, target role, language, and question types.
 9. Backend retrieves relevant document chunks.
-10. AI generates structured quiz questions.
+10. AI generates structured test questions.
 11. AI output is validated with Zod.
-12. Generated questions are saved as a draft quiz.
+12. Generated questions are saved as a draft test.
 13. Admin reviews, edits, deletes, or approves questions.
-14. Admin publishes the quiz.
-15. Admin assigns the quiz to an employee.
+14. Admin publishes the test.
+15. Admin assigns the test to an employee.
 16. Employee opens assigned tests.
-17. Employee completes the quiz.
+17. Employee completes the test.
 18. System calculates score and pass/fail status.
 19. AI generates personalized feedback based on wrong answers and weak topics.
 20. Admin reviews analytics and employee results.
@@ -87,23 +87,23 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 - Split documents into chunks
 - Store document chunks with embeddings
 - Show AI-detected topics
-- Use documents as source material for quiz generation
+- Use documents as source material for test generation
 
 ### AI Topic Extraction
 
 - Analyze extracted document text
 - Detect key topics and concepts
 - Show topics on document detail pages
-- Use topics for quiz generation and analytics
+- Use topics for test generation and analytics
 
-### AI Quiz Generation
+### AI Test Generation
 
-- Generate quizzes from selected internal documents
+- Generate tests from selected internal documents
 - Use semantic retrieval over document chunks
 - Generate structured questions with answer options
 - Include correct answers, explanations, topics, and source references
 - Validate AI output before saving it
-- Save generated quizzes as drafts
+- Save generated tests as drafts
 
 ### Human Review
 
@@ -112,11 +112,11 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 - Admin can edit question text, answer options, correct answers, and explanations
 - Admin can delete weak questions
 - Admin can manually add questions
-- Admin publishes the quiz only after review
+- Admin publishes the test only after review
 
-### Quiz Assignment
+### Test Assignment
 
-- Admin can assign published quizzes to individual employees
+- Admin can assign published tests to individual employees
 - Assignments have status: not started, in progress, completed, failed
 - Team assignments are out of scope for MVP
 - The assignment model should remain compatible with future team support
@@ -124,7 +124,7 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 ### Employee Test Taking
 
 - Employee can view assigned tests
-- Employee can start and complete quizzes
+- Employee can start and complete tests
 - Employee answers questions one by one
 - System saves answers
 - System calculates score
@@ -132,7 +132,7 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 
 ### AI Feedback
 
-- Generate personalized feedback after a quiz attempt
+- Generate personalized feedback after a test attempt
 - Feedback is based on score, wrong answers, topics, and explanations
 - Feedback should not be generic
 - Feedback should recommend what the employee should review next
@@ -146,12 +146,12 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 ### Admin Analytics
 
 - Show total documents
-- Show published quizzes and draft quizzes
+- Show published tests and draft tests
 - Show assigned and completed tests
 - Show average score
 - Show weak topics
 - Show difficult questions
-- Show recent quiz attempts
+- Show recent test attempts
 - Show employee progress summaries
 
 ## Scope
@@ -165,12 +165,12 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 - Document chunking
 - Supabase pgvector for chunk embeddings
 - AI topic extraction
-- AI-generated quiz creation
+- AI-generated test creation
 - Zod validation for AI output
-- Draft quiz review flow
+- Draft test review flow
 - Editable generated questions
-- Quiz publishing
-- Individual quiz assignment
+- Test publishing
+- Individual test assignment
 - Employee test-taking flow
 - Score calculation
 - Pass/fail result
@@ -207,11 +207,11 @@ Ontera AI helps companies convert internal documentation into measurable knowled
 4. Document chunks can be connected to the original document.
 5. Document chunk embeddings can be stored in Supabase pgvector.
 6. AI can extract topics from document content.
-7. Admin can generate a quiz from selected document context.
-8. AI-generated quiz output is validated before use.
+7. Admin can generate a test from selected document context.
+8. AI-generated test output is validated before use.
 9. Admin can review and edit generated questions before publishing.
-10. Admin can publish and assign a quiz to an employee.
-11. Employee can complete an assigned quiz.
+10. Admin can publish and assign a test to an employee.
+11. Employee can complete an assigned test.
 12. System calculates score and pass/fail correctly.
 13. Employee receives result, explanations, and AI feedback.
 14. Admin can see basic analytics and weak topics.
@@ -227,7 +227,7 @@ Demo document:
 Expected AI output:
 
 - Extracted document topics
-- 5–10 quiz questions
+- 5–10 test questions
 - Answer options
 - Correct answers
 - Explanations
@@ -239,11 +239,11 @@ Demo should show:
 1. Admin logs in.
 2. Admin uploads an internal document.
 3. AI extracts topics from the document.
-4. Admin generates a quiz from the document.
+4. Admin generates a test from the document.
 5. Admin reviews and edits one AI-generated question.
-6. Admin publishes the quiz.
-7. Admin assigns the quiz to an employee.
+6. Admin publishes the test.
+7. Admin assigns the test to an employee.
 8. Employee logs in.
-9. Employee completes the quiz.
+9. Employee completes the test.
 10. Employee receives score and AI feedback.
 11. Admin opens analytics and sees weak topics.

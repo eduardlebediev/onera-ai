@@ -73,21 +73,32 @@
 - Prefer transactions where multiple dependent writes are required.
 - Use consistent naming for database fields and domain types.
 
-#
+## Colocation
+
+- Keep feature-specific components, schemas, types, mock data, and tests close to the feature folder.
+- Do not move domain logic into generic shared folders.
+- Use `src/shared/*` only for truly reusable cross-feature code.
+- Prefer feature folders that are easy for an AI agent to inspect without jumping across the whole codebase.
+
+## File Naming
+
+- Avoid generic file names like `utils.ts`, `helpers.ts`, `misc.ts`, or `data.ts` when they contain domain logic.
+- Prefer domain-specific names such as `test-score.ts`, `document-status.ts`, `question-review.ts`, or `source-chunks.ts`.
+- File names should communicate intent clearly to a cold reader.
 
 ## Testing
 
 Prioritize tests around business-critical behavior:
 
-- AI quiz generation schema validation
+- AI test generation schema validation
 - invalid AI output handling
 - admin review and publish flow
-- quiz assignment logic
+- test assignment logic
 - employee answer validation
 - score calculation
 - pass/fail calculation based on `passing_score`
 - AI feedback input preparation
-- employee access only to assigned quizzes
-- admin-only access to documents, quiz publishing, assignments, and analytics
+- employee access only to assigned tests
+- admin-only access to documents, test publishing, assignments, and analytics
 
 Avoid spending time on brittle snapshot tests for MVP.

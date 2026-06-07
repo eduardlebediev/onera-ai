@@ -4,6 +4,25 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 08: Improve Agent Context
+
+- `AGENTS.md`:
+  - Removed the stray output instruction line.
+  - Kept required workflow guidance for context-first implementation and progress-tracker updates.
+- Terminology normalization:
+  - Updated active context docs to Tests-first wording in `context/project-overview.md`, `context/architecture.md`, `context/code-standards.md`, and `context/progress-tracker.md`.
+  - Replaced legacy terms with preferred mappings (`quiz_documents`→`test_documents`, `quiz_assignments`→`test_assignments`, `quiz_attempts`→`test_attempts`, test generation/review wording).
+- Standards and context docs:
+  - Added `## Colocation` and `## File Naming` sections in `context/code-standards.md`.
+  - Added `context/decisions.md` and `context/invariants.md` for faster agent orientation and invariant checks.
+- Module manifests:
+  - Added `src/features/documents/MODULE.md`.
+  - Added `src/features/analytics/MODULE.md`.
+  - Deferred `src/features/tests/MODULE.md` because `src/features/tests/` does not exist yet; recorded in `context/progress-tracker.md`.
+- Validation:
+  - Ran `npm run lint` and `npm run typecheck`.
+  - Both commands fail due to pre-existing errors in `example/Ontera AI prototype/*`, unrelated to this documentation-only spec.
+
 ## Feature Spec 07: Redesign Documents Page with Document Detail Page
 
 - Deleted old `documents-table.tsx`, `documents-kpi-section.tsx`, and `document-kpi-stats.ts`.

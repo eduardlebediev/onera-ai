@@ -14,6 +14,13 @@ export interface LinkedTest {
   status: "draft" | "published"
 }
 
+export interface DocumentVersion {
+  id: string
+  version: number
+  uploadedAt: string
+  status: DocumentStatus
+}
+
 export interface MockDocumentDetail {
   id: string
   title: string
@@ -24,6 +31,7 @@ export interface MockDocumentDetail {
   topics: string[]
   chunks: DocumentChunk[]
   linkedTests: LinkedTest[]
+  versions: DocumentVersion[]
 }
 
 export const mockDocuments: MockDocumentDetail[] = [
@@ -77,6 +85,10 @@ export const mockDocuments: MockDocumentDetail[] = [
       { id: "test-1", title: "HR Policies Quiz", questionCount: 15, status: "published" },
       { id: "test-2", title: "Onboarding Essentials", questionCount: 10, status: "published" },
     ],
+    versions: [
+      { id: "v2", version: 2, uploadedAt: "2024-05-10", status: "ready" },
+      { id: "v1", version: 1, uploadedAt: "2024-05-01", status: "ready" },
+    ],
   },
   {
     id: "doc-2",
@@ -124,6 +136,7 @@ export const mockDocuments: MockDocumentDetail[] = [
         status: "published",
       },
     ],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-03", status: "ready" }],
   },
   {
     id: "doc-3",
@@ -136,6 +149,7 @@ export const mockDocuments: MockDocumentDetail[] = [
     topics: ["System Architecture", "Coding Standards", "Deployment Conventions", "API Design"],
     chunks: [],
     linkedTests: [],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-15", status: "processing" }],
   },
   {
     id: "doc-4",
@@ -179,6 +193,11 @@ export const mockDocuments: MockDocumentDetail[] = [
       { id: "test-4", title: "Support Protocols Quiz", questionCount: 12, status: "published" },
       { id: "test-5", title: "SLA & Escalation Test", questionCount: 8, status: "draft" },
     ],
+    versions: [
+      { id: "v3", version: 3, uploadedAt: "2024-04-20", status: "ready" },
+      { id: "v2", version: 2, uploadedAt: "2024-04-10", status: "ready" },
+      { id: "v1", version: 1, uploadedAt: "2024-03-15", status: "ready" },
+    ],
   },
   {
     id: "doc-5",
@@ -191,5 +210,6 @@ export const mockDocuments: MockDocumentDetail[] = [
     topics: [],
     chunks: [],
     linkedTests: [],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-18", status: "failed" }],
   },
 ]

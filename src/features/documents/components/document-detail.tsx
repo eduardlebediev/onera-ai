@@ -1,207 +1,500 @@
+"use client"
+
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  FileText,
+  MoreHorizontal,
+  Pencil,
+  Sparkles,
+  Trash2,
+} from "lucide-react"
 import Link from "next/link"
-import { ArrowLeft, CalendarDays, Tag, AlignLeft, FlaskConical, Wand2 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { MockDocumentDetail } from "@/data/mock/documents"
 import { Badge } from "@/shared/ui/badge"
-import { Button, buttonVariants } from "@/shared/ui/button"
-import { Card, CardContent, CardHeader } from "@/shared/ui/card"
+import { Button } from "@/shared/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 import { Typography } from "@/shared/ui/typography"
-import { type DocumentStatus, type MockDocumentDetail } from "@/data/mock/documents"
-
-const STATUS_LABELS: Record<DocumentStatus, string> = {
-  ready: "Ready",
-  processing: "Processing",
-  failed: "Failed",
-  uploaded: "Uploaded",
-}
-
-const STATUS_VARIANTS: Record<DocumentStatus, "default" | "secondary" | "destructive" | "outline"> =
-  {
-    ready: "default",
-    processing: "outline",
-    failed: "destructive",
-    uploaded: "secondary",
-  }
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })
-}
 
 interface DocumentDetailProps {
   document: MockDocumentDetail
 }
 
 export function DocumentDetail({ document }: DocumentDetailProps) {
-  const statusLabel = STATUS_LABELS[document.status]
-  const statusVariant = STATUS_VARIANTS[document.status]
-
   return (
-    <div className="page-shell mx-auto max-w-4xl">
-      <div className="mb-6">
-        <Link
-          href="/documents"
-          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 mb-4")}
-        >
-          <ArrowLeft className="mr-1.5 size-4" />
-          Back to Documents
+    <div className="page-shell max-w-7xl">
+      <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/documents" className="hover:text-foreground">
+          Documents
         </Link>
+        <ChevronRight className="size-4" />
+        <span className="text-foreground">{document.title}</span>
+      </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <Typography variant="h2">{document.title}</Typography>
-              <Badge variant={statusVariant}>{statusLabel}</Badge>
-            </div>
-            <Typography variant="muted">{document.description}</Typography>
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <div className="mb-2 flex items-center gap-3">
+            <Typography variant="h1">{document.title}</Typography>
           </div>
-          <Button className="shrink-0 rounded-full" disabled title="Coming soon">
-            <Wand2 className="mr-2 size-4" />
-            Generate Test
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <Badge
+              variant="secondary"
+              className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400"
+            >
+              <CheckCircle2 className="mr-1 size-3" />
+              Ready
+            </Badge>
+            <span className="text-border">|</span>
+            <div className="flex items-center gap-1.5">
+              <FileText className="size-4 text-red-500" />
+              <span className="font-medium text-foreground">PDF</span>
+            </div>
+            <span className="text-border">|</span>
+            <span>2.4 MB</span>
+            <span className="text-border">|</span>
+            <span>128 pages</span>
+            <span className="text-border">|</span>
+            <span>Uploaded May 15, 2024 at 10:32 AM</span>
+            <span className="text-border">|</span>
+            <span>by Administrator</span>
+          </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <CalendarDays className="size-4" />
-            Uploaded {formatDate(document.uploadedAt)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Tag className="size-4" />
-            {document.topicsCount} {document.topicsCount === 1 ? "topic" : "topics"}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <FlaskConical className="size-4" />
-            {document.linkedTests.length} linked{" "}
-            {document.linkedTests.length === 1 ? "test" : "tests"}
-          </span>
+        <div className="flex items-center gap-2">
+          <Button variant="outline">
+            <Download />
+            Download
+          </Button>
+          <Button>
+            <Sparkles />
+            Generate Assessment
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button variant="outline" size="icon" aria-label="More actions">
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>Edit Metadata</DropdownMenuItem>
+              <DropdownMenuItem>Share</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-1.5">
-                <Tag className="size-4 text-muted-foreground" />
-                <Typography variant="h3">Detected Topics</Typography>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger>
+          <TabsTrigger value="topics">Topics (12)</TabsTrigger>
+          <TabsTrigger value="metadata">Metadata</TabsTrigger>
+          <TabsTrigger value="versions">Versions (2)</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+            <div className="space-y-2 lg:col-span-2">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-muted-foreground" />
+                      <CardTitle>Document Summary</CardTitle>
+                    </div>
+                    <CardDescription>Generated by AI</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Typography>
+                      This document outlines the organization&apos;s information security policies,
+                      procedures, and guidelines to protect company data and systems. It covers
+                      access control, data classification, acceptable use, incident response, and
+                      compliance requirements.
+                    </Typography>
+                    <Button variant="outline" size="sm" className="mt-4">
+                      Show more
+                      <ChevronDown className="ml-1 size-3" />
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Processing Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-0">
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="rounded-full bg-emerald-100 p-1 dark:bg-emerald-900/30">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="my-1 h-full w-px bg-emerald-200 dark:bg-emerald-900/50"></div>
+                        </div>
+                        <div className="pb-4">
+                          <div className="text-sm font-medium text-foreground">Uploaded</div>
+                          <div className="text-xs text-muted-foreground">
+                            May 15, 2024 at 10:32 AM
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="rounded-full bg-emerald-100 p-1 dark:bg-emerald-900/30">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="my-1 h-full w-px bg-emerald-200 dark:bg-emerald-900/50"></div>
+                        </div>
+                        <div className="pb-4">
+                          <div className="text-sm font-medium text-foreground">Processing</div>
+                          <div className="text-xs text-muted-foreground">
+                            May 15, 2024 at 10:33 AM
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="rounded-full bg-emerald-100 p-1 dark:bg-emerald-900/30">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="my-1 h-full w-px bg-emerald-200 dark:bg-emerald-900/50"></div>
+                        </div>
+                        <div className="pb-4">
+                          <div className="text-sm font-medium text-foreground">AI Analysis</div>
+                          <div className="text-xs text-muted-foreground">
+                            May 15, 2024 at 10:34 AM
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="rounded-full bg-emerald-100 p-1 dark:bg-emerald-900/30">
+                            <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-foreground">Ready</div>
+                          <div className="text-xs text-muted-foreground">
+                            May 15, 2024 at 10:34 AM
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardHeader>
-            <CardContent>
-              {document.topics.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {document.topics.map((topic) => (
-                    <Badge key={topic} variant="secondary">
-                      {topic}
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <FileText className="size-4 text-muted-foreground" />
+                    <CardTitle>Extracted Text Preview</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                    <div>
+                      <div className="mb-1 font-medium text-foreground">1. Purpose</div>
+                      <p>
+                        This Security Policy establishes the framework for protecting the
+                        confidentiality, integrity, and availability of the company&apos;s
+                        information assets...
+                      </p>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-medium text-foreground">2. Scope</div>
+                      <p>
+                        This policy applies to all employees, contractors, vendors, and third
+                        parties who have access to company systems and data...
+                      </p>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-medium text-foreground">3. Access Control</div>
+                      <div className="mb-1 font-medium text-foreground">
+                        3.1. User Access Management
+                      </div>
+                      <p className="opacity-50">
+                        All users must have a unique user ID and strong password...
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="mt-4">
+                    View full text
+                    <ExternalLink className="ml-1 size-3" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle>AI-Detected Topics</CardTitle>
+                  <Button variant="outline" size="sm" className="h-7 text-xs">
+                    <Pencil className="mr-1 size-3" />
+                    Edit topics
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4 text-sm text-muted-foreground">12 topics identified</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-blue-500"></div>
+                      Data Security
                     </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No topics detected yet.</p>
-              )}
-            </CardContent>
-          </Card>
+                    <Badge
+                      variant="secondary"
+                      className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400"
+                    >
+                      <CheckCircle2 className="mr-1 size-3" />
+                      Access Control
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-purple-50 text-purple-700 hover:bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-purple-500"></div>
+                      Compliance
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-red-500"></div>
+                      Incident Response
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-orange-50 text-orange-700 hover:bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-orange-500"></div>
+                      Encryption
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-teal-50 text-teal-700 hover:bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-teal-500"></div>
+                      Authentication
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-blue-50 text-blue-700 hover:bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-blue-500"></div>
+                      Data Classification
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-pink-50 text-pink-700 hover:bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400"
+                    >
+                      <div className="mr-1.5 size-1.5 rounded-full bg-pink-500"></div>
+                      Network Security
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="bg-muted text-muted-foreground hover:bg-muted"
+                    >
+                      +4 more
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle>Document Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">File Name</span>
+                      <span className="font-medium text-foreground">Security Policy v2.1.pdf</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">File Type</span>
+                      <span className="font-medium text-foreground">PDF</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">File Size</span>
+                      <span className="font-medium text-foreground">2.4 MB</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Pages</span>
+                      <span className="font-medium text-foreground">128</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Language</span>
+                      <span className="font-medium text-foreground">English</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Created</span>
+                      <span className="font-medium text-foreground">May 15, 2024 at 10:32 AM</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Last Modified</span>
+                      <span className="font-medium text-foreground">May 15, 2024 at 10:32 AM</span>
+                    </div>
+                  </div>
+                  <div className="mt-6 border-t border-border pt-4">
+                    <Button
+                      variant="outline"
+                      className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      Delete Document
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="extracted-text">
           <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-1.5">
-                <AlignLeft className="size-4 text-muted-foreground" />
-                <Typography variant="h3">Document Chunks</Typography>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="size-4 text-muted-foreground" />
+                <CardTitle>Full Extracted Text</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              {document.chunks.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {document.chunks.map((chunk) => (
-                    <div
-                      key={chunk.id}
-                      className="rounded-xl border border-border bg-background p-4"
-                    >
-                      <div className="mb-1.5 flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-primary">{chunk.topic}</span>
-                        <span className="text-xs text-muted-foreground">
-                          Chunk {chunk.chunkIndex + 1}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground">{chunk.content}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-background p-6 text-center">
-                  {document.status === "processing" ? (
-                    <p className="text-sm text-muted-foreground">
-                      Document is still being processed. Check back shortly.
-                    </p>
-                  ) : document.status === "failed" ? (
-                    <p className="text-sm text-destructive">
-                      Processing failed. No chunks were extracted.
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No chunks available.</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-1.5">
-                <FlaskConical className="size-4 text-muted-foreground" />
-                <Typography variant="h3">Linked Tests</Typography>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {document.linkedTests.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                  {document.linkedTests.map((test) => (
-                    <div
-                      key={test.id}
-                      className="flex flex-col gap-1 rounded-xl border border-border bg-background p-3"
-                    >
-                      <span className="text-sm font-medium text-foreground">{test.title}</span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {test.questionCount} questions
-                        </span>
-                        <Badge
-                          variant={test.status === "published" ? "default" : "outline"}
-                          className="text-xs"
-                        >
-                          {test.status === "published" ? "Published" : "Draft"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No tests linked yet.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-              <Wand2 className="size-8 text-muted-foreground/50" />
-              <div>
-                <p className="text-sm font-medium text-foreground">Generate Test</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  AI-powered test generation from this document is coming soon.
+              <div className="space-y-4 rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p>
+                  This Security Policy establishes the framework for protecting the confidentiality,
+                  integrity, and availability of the company&apos;s information assets.
+                </p>
+                <p>
+                  This policy applies to all employees, contractors, vendors, and third parties who
+                  have access to company systems and data.
+                </p>
+                <p>
+                  All users must have a unique user ID and strong password. Passwords must be at
+                  least 12 characters long and include a mix of uppercase, lowercase, numbers, and
+                  special characters. Multi-factor authentication (MFA) is required for all
+                  administrative access.
                 </p>
               </div>
-              <Button className="w-full rounded-full" disabled>
-                Generate Test
-              </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="topics">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Detected Topics</CardTitle>
+              <CardDescription>
+                These topics were automatically extracted from the document content.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-2 rounded-full bg-blue-500" />
+                    <span className="font-medium text-foreground">Data Security</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">14 mentions</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="size-4 text-emerald-500" />
+                    <span className="font-medium text-foreground">Access Control</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">8 mentions</span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-2 rounded-full bg-purple-500" />
+                    <span className="font-medium text-foreground">Compliance</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">5 mentions</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="metadata">
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Metadata</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Author</span>
+                  <span className="text-sm text-foreground">Security Team</span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Department</span>
+                  <span className="text-sm text-foreground">IT & Security</span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Classification</span>
+                  <span className="text-sm text-foreground">Internal Confidential</span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4">
+                  <span className="text-sm font-medium text-muted-foreground">Review Cycle</span>
+                  <span className="text-sm text-foreground">Annual</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="versions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Version History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="relative pl-6">
+                  <div className="absolute left-2 top-2 h-full w-px bg-border"></div>
+                  <div className="absolute left-0 top-1.5 size-4 rounded-full border-2 border-primary bg-background"></div>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-foreground">v2.1 (Current)</span>
+                    <span className="text-sm text-muted-foreground">
+                      Uploaded May 15, 2024 by Administrator
+                    </span>
+                    <span className="text-sm text-foreground mt-1">
+                      Updated password requirements and MFA policies.
+                    </span>
+                  </div>
+                </div>
+                <div className="relative pl-6">
+                  <div className="absolute left-0 top-1.5 size-4 rounded-full border-2 border-border bg-background"></div>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-foreground">v2.0</span>
+                    <span className="text-sm text-muted-foreground">
+                      Uploaded Jan 10, 2024 by Security Team
+                    </span>
+                    <span className="text-sm text-foreground mt-1">
+                      Major revision for new compliance framework.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

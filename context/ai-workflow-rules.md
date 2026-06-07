@@ -82,11 +82,17 @@ Update relevant context files whenever implementation changes:
 - code conventions
 - feature scope
 - AI workflow or safety rules
-- current progress and next steps
+- current progress and next steps (`progress-tracker.md`)
+- implementation history (`context/history.md`) — detailed records for completed items
+
+### Progress Tracking Format
+
+- `context/progress-tracker.md`: keep Completed section as short headers only. Current Goal, In Progress, Next Up for actionable tracking.
+- `context/history.md`: store all detailed descriptions, decisions, and file lists per completed feature spec. Append new entries at the top.
 
 ## Before Moving to the Next Unit
 
 1. Current unit works end to end within its defined scope.
 2. No invariant in `architecture.md` was violated.
-3. `progress-tracker.md` reflects the completed work.
+3. `progress-tracker.md` and `context/history.md` reflect the completed work.
 4. Build, lint, and relevant tests pass or failures are documented.

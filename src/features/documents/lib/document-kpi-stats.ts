@@ -10,39 +10,27 @@ export function getDocumentKpiStats(documents: MockDocumentDetail[]): DocumentKp
   const readyCount = documents.filter((d) => d.status === "ready").length
   const processingCount = documents.filter((d) => d.status === "processing").length
   const failedCount = documents.filter((d) => d.status === "failed").length
-  const topicsCount = documents.reduce((sum, d) => sum + d.topicsCount, 0)
-  const linkedTestsCount = documents.reduce((sum, d) => sum + d.linkedTests.length, 0)
 
   return [
     {
       label: "Total Documents",
       value: String(documents.length),
-      description: `${readyCount} ready · ${processingCount} processing · ${failedCount} failed`,
+      description: "18.2 GB total size",
     },
     {
       label: "Ready",
       value: String(readyCount),
-      description: "Available for test generation",
+      description: "Ready for assessment",
     },
     {
       label: "Processing",
       value: String(processingCount),
-      description: "Extracting topics and chunks",
+      description: "Currently processing",
     },
     {
       label: "Failed",
       value: String(failedCount),
-      description: "Requires re-upload or review",
-    },
-    {
-      label: "Topics Detected",
-      value: String(topicsCount),
-      description: "Across all documents",
-    },
-    {
-      label: "Linked Tests",
-      value: String(linkedTestsCount),
-      description: "Published and draft tests",
+      description: "Needs attention",
     },
   ]
 }

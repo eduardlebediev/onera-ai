@@ -22,7 +22,7 @@ export default function DocumentsPage() {
         </Button>
       </div>
 
-      <div className="mt-8 grid grid-cols-12 gap-2">
+      <div className="mt-8">
         <DocumentsKpiSection documents={mockDocuments} />
       </div>
 

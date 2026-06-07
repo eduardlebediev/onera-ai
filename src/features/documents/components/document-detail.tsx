@@ -75,9 +75,11 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
             <Download />
             Download
           </Button>
-          <Button>
-            <Sparkles />
-            Generate Assessment
+          <Button asChild>
+            <Link href={`/documents/${document.id}/generate-test`}>
+              <Sparkles />
+              Generate Test
+            </Link>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

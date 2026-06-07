@@ -31,6 +31,7 @@ Owns document-focused UI and feature logic for browsing documents, previewing de
 
 - `/documents`
 - `/documents/[id]`
+- `/documents/[id]/generate-test`
 
 ## Future Boundaries
 

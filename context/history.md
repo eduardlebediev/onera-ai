@@ -4,6 +4,40 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 10: Generate Test Setup from Document
+
+- Added the Generate Test entry point from the full document detail page:
+  - `src/features/documents/components/document-detail.tsx` links the primary action to `/documents/[id]/generate-test` with label "Generate Test".
+  - `src/features/documents/components/document-drawer.tsx` passes through the same detail component for drawer previews.
+- Added the document-scoped generate test setup route:
+  - `src/app/documents/[id]/generate-test/page.tsx` resolves the source document from mock data and uses `notFound()` for unknown ids.
+- Built the mock-only setup experience in the documents feature:
+  - `generate-test-model.ts` centralizes setup defaults, option labels, topic summaries, and default topic/chunk selection helpers.
+  - `generate-test-setup.tsx` owns local state for settings, selected topics, and selected chunks; provides reset, select-all/clear-all chunk handlers, and a redesigned page layout.
+  - `generate-test-form.tsx` renders Test Configuration fields (title, difficulty, target role, question count, passing score, language) with bounded numeric parsing.
+  - `topic-selector.tsx` renders selectable topic cards with summaries from `getTopicSummary()` and Lucide check icons.
+  - `chunk-selector.tsx` renders selectable chunk rows from real `DocumentChunk` mock fields with wired Select All / Clear All actions.
+  - `generate-test-summary.tsx` shows generation summary rows (question count, distribution, difficulty, target role, topics, chunks, language, estimated time) and preview CTA.
+- Redesigned the setup page to match the reference layout:
+  - Top header with Back to Document, Reset, and Generate Test Preview actions.
+  - Horizontal source document summary card with status badge, description, and topic/chunk counts.
+  - Two-column layout (`lg:col-span-8` main form + `lg:col-span-4` sticky summary sidebar).
+- Added the next-flow placeholder:
+  - `src/app/tests/review/page.tsx` displays "Test Review Flow will be implemented next."
+  - Generate Test Preview navigates to `/tests/review?documentId=[id]`.
+- Added feature spec and module context:
+  - `context/feature-specs/10-generate-test-setup.md`
+  - `src/features/documents/MODULE.md` lists `/documents/[id]/generate-test` as a related route.
+- Post-review compliance fixes:
+  - Removed hardcoded chunk title/page metadata; chunk UI reads mock chunk fields only.
+  - Restored `passingScore` in settings with clamped input.
+  - Reset restores default settings, topics, and chunks.
+  - Document summary uses `document.description` instead of hardcoded file metadata.
+- Validation:
+  - `npm run lint` passes.
+  - `npm run typecheck` passes.
+  - `npm run format:check` passes.
+
 ## Feature Spec 09: Refactor UI Primitives from Base UI to Radix
 
 - Replaced Base UI primitives in shared UI:

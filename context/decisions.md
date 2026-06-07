@@ -1,5 +1,9 @@
 # Decisions
 
+## 016 — Generate test setup stays mock-only with feature-local state
+
+The `/documents/[id]/generate-test` flow uses client-side local state and `generate-test-model.ts` helpers only. No Supabase, AI calls, or persistence are added until the test generation backend slice is implemented. Topic and chunk selection stay synchronized in the UI (topic toggles related chunks; chunk select-all syncs topics).
+
 ## 015 — Dashboard KPI metadata should be keyed, not index-mapped
 
 Analytics KPI presentation metadata (icon, value label, trend treatment, color intent) should be mapped by a stable key/label rather than array index. This prevents UI drift when KPI ordering changes from API or backend sorting.

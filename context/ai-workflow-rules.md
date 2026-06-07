@@ -87,7 +87,7 @@ Update relevant context files whenever implementation changes:
 
 ### Progress Tracking Format
 
-- `context/progress-tracker.md`: only Current Goal, In Progress, Completed, Next Up, Open Questions. Completed section is short headers only.
+- `context/progress-tracker.md`: only Current Goal, In Progress, Completed, Next Up, Open Questions. Current Goal and In Progress are not rewritten — they persist across specs until completed. Next Up is ordered by priority; always pick the first item. Completed section is short headers only.
 - `context/decisions.md`: all architecture and design decisions. Newest first (highest number at top).
 - `context/history.md`: store all detailed descriptions, file lists, and implementation notes per completed feature spec. Append new entries at the top.
 

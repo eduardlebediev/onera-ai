@@ -1,12 +1,11 @@
 import { Sparkles, Upload } from "lucide-react"
 
 import { Button } from "@/shared/ui/button"
-import { Typography } from "@/shared/ui/typography"
 
 export function DashboardHeader() {
   return (
     <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-      <Typography variant="h1">Good Morning, Admin</Typography>
+      <h1 className="typography-h1">Good Morning, Admin</h1>
       <div className="flex shrink-0 flex-wrap items-center gap-3">
         <Button variant="outline" size="lg">
           <Sparkles className="size-4" />

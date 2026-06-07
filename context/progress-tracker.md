@@ -4,13 +4,28 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-- Feature Spec 07: Redesign Documents Page with Document Detail Page
+Build a clickable MVP prototype of Ontera AI that clearly demonstrates the core product flow:
+
+Internal documents are uploaded and processed into topics/chunks, an admin generates a knowledge test from those documents, reviews AI-generated questions, publishes the test, assigns it to employees, and an employee completes the test and receives results/feedback.
+
+This phase focuses on the full end-to-end user experience with mock data only. The goal is not to build the backend yet, but to create a polished, believable prototype that shows the product value, main screens, and interaction flow.
 
 ## In Progress
 
-- Feature Spec 07: Redesign Documents Page with Document Detail Page
+- None.
 
 ## Next Up
+
+- Generate Test Setup from Document
+- Test Review Flow
+- Publish Test Flow
+- Tests List and Test Detail
+- Assign Test to Employees
+- Employee My Tests
+- Employee Test Taking Flow
+- Test Result and AI Feedback
+- Follow-up Question Flow
+- Clickable Demo Polish
 
 ## Open Questions
 
@@ -18,6 +33,7 @@ Update this file after every meaningful implementation change.
 
 ## Completed
 
+- Feature Spec 09: Refactor UI Primitives from Base UI to Radix
 - Feature Spec 08: Improve Agent Context
 - Feature Spec 06: Documents Mock Pages with Quick Preview
 - Feature Spec 05: Responsive Design Tokens and Typography

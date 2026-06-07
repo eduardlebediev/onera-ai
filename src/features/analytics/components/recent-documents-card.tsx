@@ -9,17 +9,12 @@ import {
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-import { Typography } from "@/shared/ui/typography"
 
 function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
   const badgeConfig = getDocumentStatusBadgeConfig(status)
 
   if (status === "uploaded") {
-    return (
-      <Typography variant="small" as="span" className="font-medium">
-        {badgeConfig.label}
-      </Typography>
-    )
+    return <span className="typography-small font-medium">{badgeConfig.label}</span>
   }
 
   const Icon =
@@ -45,7 +40,7 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
       <CardHeader className="px-6 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <FileText className="size-5 text-muted-foreground" />
-          <Typography variant="h3">Recent Documents</Typography>
+          <h3 className="typography-h3">Recent Documents</h3>
           <div className="ml-auto">
             <Button variant="link" size="sm">
               View all &gt;
@@ -58,34 +53,22 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
           <TableHeader>
             <TableRow className="text-muted-foreground">
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Document
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Document</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Status
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Status</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Topics
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Topics</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Tests
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Tests</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Updated
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Updated</span>
               </TableHead>
               <TableHead className="py-3 text-right">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Action
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Action</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -93,27 +76,25 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
             {documents.map((document) => (
               <TableRow key={document.id}>
                 <TableCell>
-                  <Typography variant="small" className="font-medium">
-                    {document.title}
-                  </Typography>
+                  <p className="typography-small font-medium">{document.title}</p>
                 </TableCell>
                 <TableCell>
                   <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
+                  <p className="typography-small font-medium text-muted-foreground">
                     {document.topics.length > 0 ? document.topics.length : "—"}
-                  </Typography>
+                  </p>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
+                  <p className="typography-small font-medium text-muted-foreground">
                     {document.quizCount > 0 ? document.quizCount : "—"}
-                  </Typography>
+                  </p>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
+                  <p className="typography-small font-medium text-muted-foreground">
                     {document.updatedAt}
-                  </Typography>
+                  </p>
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm">

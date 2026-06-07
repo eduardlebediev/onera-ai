@@ -35,7 +35,7 @@ Responsive type tokens live in `src/app/globals.css`:
 | Small     | `--font-size-small` | Helper and metadata text    |
 | Label     | `--font-size-label` | Uppercase section labels    |
 
-Use `src/shared/ui/typography.tsx` for common text variants: `h1`, `h2`, `h3`, `p`, `muted`, `small`, and `label`.
+Use typography utility classes directly in JSX: `typography-h1`, `typography-h2`, `typography-h3`, `typography-p`, `typography-small`, and `typography-label`.
 
 ## Border Radius
 

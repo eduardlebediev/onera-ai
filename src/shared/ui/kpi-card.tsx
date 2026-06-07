@@ -3,25 +3,16 @@ import type { ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 import { Card, CardContent } from "@/shared/ui/card"
-import { Typography } from "@/shared/ui/typography"
 
 interface KpiCardProps {
   label: string
   value: string
   description: string
   icon: LucideIcon
+  valueLabel?: string
   trend?: ReactNode
   valueColor?: string
   size?: "default" | "compact"
-}
-
-function getKpiValueLabel(label: string) {
-  if (label === "Documents") return "uploaded"
-  if (label === "Active Tests") return "active"
-  if (label === "Assigned Tests") return "assigned"
-  if (label === "Active Employees") return "employees"
-  if (label === "Weak Topics") return "detected"
-  return ""
 }
 
 export function KpiCard({
@@ -29,11 +20,11 @@ export function KpiCard({
   value,
   description,
   icon: Icon,
+  valueLabel,
   trend,
   valueColor = "text-foreground",
   size = "default",
 }: KpiCardProps) {
-  const valueLabel = getKpiValueLabel(label)
   const isCompact = size === "compact"
 
   return (
@@ -53,35 +44,30 @@ export function KpiCard({
           )}
         >
           <Icon className={cn("shrink-0", isCompact ? "size-4" : "size-5")} />
-          <Typography variant="small" as="span" className="truncate text-muted-foreground">
-            {label}
-          </Typography>
+          <span className="typography-small truncate text-muted-foreground">{label}</span>
         </div>
         <div className={cn("flex items-baseline gap-2.5", isCompact ? "mt-2" : "mt-3 gap-3")}>
-          <Typography
-            variant={isCompact ? "h3" : "h2"}
-            as="span"
-            className={cn(valueColor, isCompact && "font-semibold")}
+          <span
+            className={cn(isCompact ? "typography-h3 font-semibold" : "typography-h2", valueColor)}
           >
             {value}
-          </Typography>
+          </span>
           {valueLabel ? (
-            <Typography variant="small" as="span" className="mb-0.5 truncate text-muted-foreground">
+            <span className="typography-small mb-0.5 truncate text-muted-foreground">
               {valueLabel}
-            </Typography>
+            </span>
           ) : null}
         </div>
-        <Typography
-          variant="small"
+        <p
           className={cn(
-            "truncate",
+            "typography-small truncate",
             isCompact ? "mt-0.5" : "mt-1",
             trend ? "text-emerald-600" : "text-muted-foreground"
           )}
         >
           {trend}
           {description}
-        </Typography>
+        </p>
       </CardContent>
     </Card>
   )

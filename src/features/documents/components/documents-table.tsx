@@ -20,7 +20,6 @@ import { Button } from "@/shared/ui/button"
 import { Card } from "@/shared/ui/card"
 import { Input } from "@/shared/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-import { Typography } from "@/shared/ui/typography"
 import { DocumentDrawer } from "./document-drawer"
 
 type StatusFilter = "all" | DocumentStatus
@@ -154,12 +153,10 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <FileText className="size-5 text-muted-foreground" />
-              <Typography variant="h3" className="font-semibold">
-                All Documents
-              </Typography>
-              <Typography variant="small" className="text-muted-foreground ml-2">
+              <h3 className="typography-h3 font-semibold">All Documents</h3>
+              <p className="typography-small text-muted-foreground ml-2">
                 {documents.length} total
-              </Typography>
+              </p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
@@ -240,20 +237,12 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                       >
                         <DocumentFileIcon fileType={getDocumentFileType(document)} />
                         <div className="flex flex-col">
-                          <Typography
-                            variant="small"
-                            as="span"
-                            className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1"
-                          >
+                          <span className="typography-small font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
                             {document.title}
-                          </Typography>
-                          <Typography
-                            variant="small"
-                            as="span"
-                            className="text-xs text-muted-foreground mt-0.5"
-                          >
+                          </span>
+                          <span className="typography-small text-xs text-muted-foreground mt-0.5">
                             2.4 MB
-                          </Typography>
+                          </span>
                         </div>
                       </button>
                     </TableCell>
@@ -286,35 +275,29 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                       {isFailed ? (
                         <span className="text-sm text-muted-foreground">—</span>
                       ) : (
-                        <Typography variant="small" className="font-medium text-foreground">
+                        <p className="typography-small font-medium text-foreground">
                           {document.topicsCount} topics
-                        </Typography>
+                        </p>
                       )}
                     </TableCell>
                     <TableCell className="py-4 w-[300px] max-w-[300px]">
                       {isFailed ? (
                         <span className="text-sm text-muted-foreground">—</span>
                       ) : (
-                        <Typography
-                          variant="small"
-                          className="text-muted-foreground truncate block"
-                        >
+                        <p className="typography-small text-muted-foreground truncate block">
                           {document.description}
-                        </Typography>
+                        </p>
                       )}
                     </TableCell>
                     <TableCell className="py-4">
-                      <Typography variant="small" className="font-medium text-foreground">
+                      <p className="typography-small font-medium text-foreground">
                         {document.linkedTests.length}
-                      </Typography>
+                      </p>
                     </TableCell>
                     <TableCell className="py-4">
-                      <Typography
-                        variant="small"
-                        className="text-muted-foreground whitespace-nowrap"
-                      >
+                      <p className="typography-small text-muted-foreground whitespace-nowrap">
                         {formatRelativeDate(document.uploadedAt)}
-                      </Typography>
+                      </p>
                     </TableCell>
                     <TableCell className="py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -361,7 +344,9 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="h-32 text-center">
-                  <Typography variant="muted">No documents match the current filters.</Typography>
+                  <p className="typography-p text-muted-foreground">
+                    No documents match the current filters.
+                  </p>
                 </TableCell>
               </TableRow>
             )}

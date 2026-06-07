@@ -83,10 +83,10 @@ export function TopNavbar() {
             {links.map((link) => (
               <DropdownMenuItem
                 key={link.href}
-                render={<Link href={link.href} />}
                 className={cn(isActive(link.href) && "text-primary font-medium")}
+                asChild
               >
-                {link.label}
+                <Link href={link.href}>{link.label}</Link>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

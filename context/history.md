@@ -4,6 +4,40 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 09: Refactor UI Primitives from Base UI to Radix
+
+- Replaced Base UI primitives in shared UI:
+  - `src/shared/ui/button.tsx` now uses Radix `Slot` with `asChild`.
+  - `src/shared/ui/input.tsx` and `src/shared/ui/badge.tsx` now use native/Radix-slot based shadcn patterns.
+  - `src/shared/ui/separator.tsx` now uses `@radix-ui/react-separator`.
+  - `src/shared/ui/dropdown-menu.tsx` now uses `@radix-ui/react-dropdown-menu`.
+- Updated Dropdown usage callsites for Radix semantics:
+  - `src/shared/ui/top-navbar.tsx` migrated from `render` to `asChild` with `Link`.
+  - `src/features/documents/components/document-detail.tsx` uses `DropdownMenuTrigger asChild`.
+- Removed Typography component usage and switched to typography utility classes:
+  - Deleted `src/shared/ui/typography.tsx`.
+  - Updated all active consumers in `src/app/documents` and `src/features/{analytics,documents}` plus `src/shared/ui/kpi-card.tsx`.
+- Refactored Documents KPI rendering:
+  - `src/features/documents/lib/document-kpi-stats.ts` now returns explicit KPI metadata (`id`, `icon`, `tone`, optional `status`).
+  - `src/features/documents/components/documents-kpi-section.tsx` now maps typed KPI items; removed index-based/manual card duplication.
+- Removed unnecessary client-only guard in chart:
+  - `src/features/analytics/components/test-completions-chart.tsx` no longer uses local `useIsClient`.
+  - Kept `src/shared/ui/chart.tsx` wrapper and added a short comment documenting the shadcn/Recharts wrapper rationale.
+- Dependency updates:
+  - Removed `@base-ui/react`.
+  - Added `@radix-ui/react-dropdown-menu`, `@radix-ui/react-separator`, `@radix-ui/react-slot`.
+  - Updated lockfile.
+- Context updates:
+  - Updated `context/ui-context.md` typography guidance to utility-class usage.
+  - Updated `context/progress-tracker.md` to mark Feature Spec 09 completed.
+- Validation:
+  - `npm run lint -- src` passes.
+  - Scoped Prettier check on active project files passes.
+  - Full-repo checks (`npm run lint`, `npm run typecheck`, `npm run format:check`) still fail due pre-existing `example/Ontera AI prototype/*` issues outside this spec scope.
+- Follow-up fixes after review:
+  - `src/shared/ui/separator.tsx`: replaced Base UI-oriented selectors (`data-horizontal`/`data-vertical`) with Radix `data-[orientation=...]` selectors to restore default visible sizing.
+  - `src/features/analytics/components/kpi-cards.tsx`: replaced index-based KPI metadata mapping with stable `label`-based metadata map to prevent icon/value-label drift when stat ordering changes.
+
 ## Feature Spec 08: Improve Agent Context
 
 - `AGENTS.md`:

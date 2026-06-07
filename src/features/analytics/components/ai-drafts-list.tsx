@@ -3,7 +3,6 @@ import { Sparkles } from "lucide-react"
 import type { MockAiDraft } from "@/data/mock/admin-dashboard"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
-import { Typography } from "@/shared/ui/typography"
 
 interface AiDraftsListProps {
   drafts: MockAiDraft[]
@@ -18,10 +17,10 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
             <Sparkles className="size-6" />
           </div>
           <div>
-            <Typography variant="h3">AI Review</Typography>
-            <Typography variant="muted" className="mt-1 typography-small font-medium">
+            <h3 className="typography-h3">AI Review</h3>
+            <p className="mt-1 typography-small text-muted-foreground font-medium">
               {drafts.length} Test drafts need to be reviewed
-            </Typography>
+            </p>
           </div>
         </div>
       </CardHeader>
@@ -30,12 +29,10 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
           {drafts.map((draft) => (
             <div key={draft.id} className="flex items-center justify-between gap-4 py-4">
               <div>
-                <Typography variant="p" className="typography-small font-medium">
-                  {draft.title}
-                </Typography>
-                <Typography variant="muted" className="mt-0.5 typography-small font-medium">
+                <p className="typography-small font-medium">{draft.title}</p>
+                <p className="mt-0.5 typography-small text-muted-foreground font-medium">
                   {draft.questionCount} AI-generated questions
-                </Typography>
+                </p>
               </div>
               <Button variant="secondary" size="sm">
                 Review

@@ -8,7 +8,6 @@ import {
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-import { Typography } from "@/shared/ui/typography"
 
 function TestStatusBadge({ status }: { status: TestStatus }) {
   const { label, className } = getTestStatusBadgeConfig(status)
@@ -32,7 +31,7 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
       <CardHeader className="px-6 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <ClipboardList className="size-5 text-muted-foreground" />
-          <Typography variant="h3">Test Performance Overview</Typography>
+          <h3 className="typography-h3">Test Performance Overview</h3>
           <div className="ml-auto">
             <Button variant="link" size="sm">
               View all &gt;
@@ -45,34 +44,24 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Test
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Test</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Role
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Role</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Assigned
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Assigned</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
+                <span className="typography-small font-medium text-muted-foreground">
                   Completed
-                </Typography>
+                </span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Ø Score
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Ø Score</span>
               </TableHead>
               <TableHead className="py-3">
-                <Typography variant="small" as="span" className="font-medium text-muted-foreground">
-                  Status
-                </Typography>
+                <span className="typography-small font-medium text-muted-foreground">Status</span>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -80,33 +69,27 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
             {tests.map((test) => (
               <TableRow key={test.id}>
                 <TableCell>
-                  <Typography variant="small" className="font-medium">
-                    {test.title}
-                  </Typography>
+                  <p className="typography-small font-medium">{test.title}</p>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
-                    {test.role}
-                  </Typography>
+                  <p className="typography-small font-medium text-muted-foreground">{test.role}</p>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
+                  <p className="typography-small font-medium text-muted-foreground">
                     {test.assignedCount} assigned
-                  </Typography>
+                  </p>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="small" className="font-medium text-muted-foreground">
+                  <p className="typography-small font-medium text-muted-foreground">
                     {test.completedCount} completed
-                  </Typography>
+                  </p>
                 </TableCell>
                 <TableCell>
-                  <Typography
-                    variant="p"
-                    as="span"
-                    className={`font-medium ${getScoreColorClass(test.averageScore)}`}
+                  <span
+                    className={`typography-p font-medium ${getScoreColorClass(test.averageScore)}`}
                   >
                     {test.averageScore}%
-                  </Typography>
+                  </span>
                 </TableCell>
                 <TableCell>
                   <TestStatusBadge status={test.status} />

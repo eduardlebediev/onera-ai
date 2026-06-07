@@ -1,5 +1,9 @@
 # Decisions
 
+## 015 — Dashboard KPI metadata should be keyed, not index-mapped
+
+Analytics KPI presentation metadata (icon, value label, trend treatment, color intent) should be mapped by a stable key/label rather than array index. This prevents UI drift when KPI ordering changes from API or backend sorting.
+
 ## 014 — Add MODULE manifests for major feature folders
 
 Major existing feature folders should include lightweight `MODULE.md` manifests that define ownership, boundaries, route scope, and future integration constraints. This improves navigation and reduces cross-feature drift for AI-assisted implementation.

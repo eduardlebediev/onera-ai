@@ -17,7 +17,6 @@ This phase focuses on the full end-to-end user experience with mock data only. T
 ## Next Up
 
 - Publish Test Flow
-- Tests List and Test Detail
 - Assign Test to Employees
 - Employee My Tests
 - Employee Test Taking Flow
@@ -31,6 +30,7 @@ This phase focuses on the full end-to-end user experience with mock data only. T
 
 ## Completed
 
+- Feature Spec 12: Tests List and Test Detail
 - Feature Spec 11: Test Review Flow with Mock Generated Questions (includes post-review fix pass)
 - Feature Spec 10: Generate Test Setup from Document
 - Feature Spec 09: Refactor UI Primitives from Base UI to Radix

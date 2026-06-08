@@ -1,12 +1,7 @@
-import { ClipboardList } from "lucide-react"
-import { PlaceholderPage } from "@/shared/ui/placeholder-page"
+import { TestsListPage } from "@/features/tests/components/tests-list-page"
+import { resolveMockTest } from "@/features/tests/lib/test-source-document"
+import { mockTests } from "@/features/tests/mock/tests"
 
 export default function TestsPage() {
-  return (
-    <PlaceholderPage
-      title="Tests"
-      description="Create, review, and publish AI-generated quizzes for your team."
-      icon={ClipboardList}
-    />
-  )
+  return <TestsListPage tests={mockTests.map(resolveMockTest)} />
 }

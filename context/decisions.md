@@ -1,5 +1,9 @@
 # Decisions
 
+## 019 — Tests list/detail use colocated mock tests model
+
+`mockTests` in `src/features/tests/mock/tests.ts` is the single source of truth for the tests list and test detail pages. Source document title and status are resolved from `mockDocuments` via `resolveMockTest()` — mock tests store only `documentId`, `topicsUsed`, and `chunksUsed`. KPI presentation metadata is keyed by stable ids (not index-mapped). Publish, archive, restore, and assignment actions remain mock/placeholder until backend slices land.
+
 ## 018 — Review question edits store correctAnswer as option text, not index
 
 In the mock review edit flow, `correctAnswer` remains the option string value (aligned with `ReviewQuestion.correctAnswer`), not a numeric index. The edit UI uses a per-option selector button; when option text changes, the correct-answer pointer follows if that option was selected. On save, if the pointer no longer matches any option, it falls back to the first resolved option.

@@ -4,6 +4,24 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 12: Tests List and Test Detail
+
+Built the admin Tests management area with mock data only — list page, detail page, and assign placeholder route.
+
+- Added colocated mock model in `src/features/tests/mock/tests.ts` with 5 tests (2 published, 2 draft, 1 archived), document-grounded questions, assignments summary, and results summary.
+- Added KPI helpers and UI: `src/features/tests/lib/test-kpi-stats.ts`, `src/features/tests/components/tests-kpi-section.tsx` (5 keyed KPI cards).
+- Replaced `/tests` placeholder with `TestsListPage` — KPI section, status filter tabs (All/Draft/Published/Archived), and table with View details links.
+- Added `/tests/[id]` detail page with header, status-dependent action bar, settings, questions preview, source document, assignments placeholder, and results summary.
+- Added `/tests/[id]/assign` placeholder route.
+- Added `src/features/tests/MODULE.md`.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass on `src/`.
+
+### Post-Review Fix Pass
+
+- Source document title/status now resolved from `mockDocuments` via `resolveMockTest()`; mock tests store only `documentId`, `topicsUsed`, and `chunksUsed` (Decision 017 alignment).
+- Extracted shared helpers: `test-format.ts`, `test-status-style.tsx`, `test-source-document.ts`.
+- Unified test status styling for list and detail; added `aria-pressed` on list filter tabs; standardized difficulty capitalization; documented mock-phase `Edit draft` link behavior.
+
 ## Post-Review Fix Pass: Resolve All Review Findings
 
 Systematically fixed all blocking and non-blocking issues found in the prior code review of the Test Review and Generate Test features.

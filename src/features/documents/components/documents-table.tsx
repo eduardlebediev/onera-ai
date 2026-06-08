@@ -13,8 +13,13 @@ import {
   Search,
   Trash2,
 } from "lucide-react"
+import Link from "next/link"
 
-import { type DocumentStatus, type MockDocumentDetail } from "@/data/mock/documents"
+import {
+  type DocumentFileType,
+  type DocumentStatus,
+  type MockDocumentDetail,
+} from "@/data/mock/documents"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card } from "@/shared/ui/card"
@@ -25,7 +30,6 @@ import { DocumentDrawer } from "./document-drawer"
 type StatusFilter = "all" | DocumentStatus
 type SortKey = "title" | "status" | "uploadedAt"
 type SortDirection = "asc" | "desc"
-type DocumentFileType = "pdf" | "docx" | "pptx" | "txt"
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   ready: "Ready",
@@ -50,14 +54,6 @@ const STATUS_VARIANTS: Record<DocumentStatus, "default" | "secondary" | "destruc
     uploaded: "outline",
   }
 
-const FILE_TYPE_BY_DOCUMENT_ID: Record<string, DocumentFileType> = {
-  "doc-1": "pdf",
-  "doc-2": "docx",
-  "doc-3": "pdf",
-  "doc-4": "docx",
-  "doc-5": "pdf",
-}
-
 const FILE_ICON_STYLES: Record<DocumentFileType, string> = {
   pdf: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/30",
   docx: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30",
@@ -80,8 +76,8 @@ function formatRelativeDate(dateStr: string): string {
   return `${diffDays} days ago`
 }
 
-function getDocumentFileType(document: MockDocumentDetail): DocumentFileType {
-  return FILE_TYPE_BY_DOCUMENT_ID[document.id] ?? "txt"
+function formatFileSize(sizeMb: number): string {
+  return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
 }
 
 interface DocumentsTableProps {
@@ -235,13 +231,13 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                         onClick={() => handleOpenDrawer(document)}
                         className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                       >
-                        <DocumentFileIcon fileType={getDocumentFileType(document)} />
+                        <DocumentFileIcon fileType={document.fileType} />
                         <div className="flex flex-col">
                           <span className="typography-small font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
                             {document.title}
                           </span>
                           <span className="typography-small text-xs text-muted-foreground mt-0.5">
-                            2.4 MB
+                            {formatFileSize(document.fileSizeMb)}
                           </span>
                         </div>
                       </button>
@@ -276,7 +272,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                         <span className="text-sm text-muted-foreground">—</span>
                       ) : (
                         <p className="typography-small font-medium text-foreground">
-                          {document.topicsCount} topics
+                          {document.topics.length} topics
                         </p>
                       )}
                     </TableCell>
@@ -303,13 +299,21 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                       <div className="flex items-center justify-end gap-2">
                         {isFailed ? (
                           <>
-                            <Button variant="outline" size="sm" className="h-8 text-xs">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 text-xs"
+                              disabled
+                              title="Retry (coming soon)"
+                            >
                               Retry
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
                               className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10"
+                              disabled
+                              title="Delete (coming soon)"
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -324,8 +328,15 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                             Processing...
                           </Button>
                         ) : (
-                          <Button variant="outline" size="sm" className="h-8 text-xs font-medium">
-                            Generate Assessment
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-medium"
+                          >
+                            <Link href={`/documents/${document.id}/generate-test`}>
+                              Generate Test
+                            </Link>
                           </Button>
                         )}
                         <Button

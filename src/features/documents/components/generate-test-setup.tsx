@@ -1,19 +1,22 @@
 "use client"
 
-import { ArrowLeft, CheckCircle2, FileText, RotateCcw, Sparkles } from "lucide-react"
+import { AlertTriangle, ArrowLeft, CheckCircle2, FileText, RotateCcw, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useCallback, useMemo, useState } from "react"
 
-import { type MockDocumentDetail, type DocumentStatus } from "@/data/mock/documents"
+import { type DocumentStatus, type MockDocumentDetail } from "@/data/mock/documents"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { ChunkSelector } from "./chunk-selector"
 import { GenerateTestForm } from "./generate-test-form"
 import {
+  canGenerateTest,
+  deriveTopicsFromChunks,
   getDefaultGenerateTestSettings,
   getDefaultSelectedChunkIds,
   getDefaultSelectedTopics,
+  getGenerateBlockReason,
   type GenerateTestSettings,
 } from "./generate-test-model"
 import { GenerateTestSummary } from "./generate-test-summary"
@@ -38,6 +41,7 @@ const STATUS_BADGE_CLASSES: Record<DocumentStatus, string> = {
 }
 
 export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
+  const isGeneratable = canGenerateTest(document)
   const defaultTopics = useMemo(() => getDefaultSelectedTopics(document), [document])
   const defaultChunkIds = useMemo(
     () => getDefaultSelectedChunkIds(document, defaultTopics),
@@ -48,6 +52,8 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   const [settings, setSettings] = useState<GenerateTestSettings>(defaultSettings)
   const [selectedTopics, setSelectedTopics] = useState<string[]>(defaultTopics)
   const [selectedChunkIds, setSelectedChunkIds] = useState<string[]>(defaultChunkIds)
+
+  const canPreview = isGeneratable && selectedChunkIds.length > 0 && selectedTopics.length > 0
 
   const handleSettingsChange = useCallback((updates: Partial<GenerateTestSettings>) => {
     setSettings((currentSettings) => ({ ...currentSettings, ...updates }))
@@ -77,19 +83,23 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   const handleToggleChunk = useCallback(
     (chunkId: string) => {
       const chunk = document.chunks.find((currentChunk) => currentChunk.id === chunkId)
-      const isSelected = selectedChunkIds.includes(chunkId)
+      const isRemoving = selectedChunkIds.includes(chunkId)
 
-      setSelectedChunkIds((currentChunkIds) =>
-        isSelected
-          ? currentChunkIds.filter((currentChunkId) => currentChunkId !== chunkId)
-          : [...currentChunkIds, chunkId]
-      )
+      const nextChunkIds = isRemoving
+        ? selectedChunkIds.filter((id) => id !== chunkId)
+        : [...selectedChunkIds, chunkId]
 
-      if (chunk && !isSelected && !selectedTopics.includes(chunk.topic)) {
+      setSelectedChunkIds(nextChunkIds)
+
+      if (isRemoving) {
+        // Prune topics that no longer have any selected chunks
+        setSelectedTopics(deriveTopicsFromChunks(document, nextChunkIds))
+      } else if (chunk && !selectedTopics.includes(chunk.topic)) {
+        // Add the new chunk's topic if not already present
         setSelectedTopics((currentTopics) => [...currentTopics, chunk.topic])
       }
     },
-    [document.chunks, selectedChunkIds, selectedTopics]
+    [document, selectedChunkIds, selectedTopics]
   )
 
   const handleSelectAllChunks = useCallback(() => {
@@ -99,6 +109,7 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
 
   const handleClearAllChunks = useCallback(() => {
     setSelectedChunkIds([])
+    setSelectedTopics([])
   }, [])
 
   const handleReset = useCallback(() => {
@@ -123,23 +134,50 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
               Back to Document
             </Link>
           </Button>
-          <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={handleReset}>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 rounded-xl"
+            onClick={handleReset}
+            disabled={!isGeneratable}
+          >
             <RotateCcw className="mr-2 size-4" />
             Reset
           </Button>
-          <Button asChild className="h-10 rounded-xl bg-foreground text-background">
-            <Link href={`/tests/review?documentId=${encodeURIComponent(document.id)}`}>
-              <Sparkles className="mr-2 size-4" />
-              Generate Test Preview
-            </Link>
+          <Button
+            asChild={canPreview}
+            disabled={!canPreview}
+            className="h-10 rounded-xl bg-foreground text-background"
+            title={canPreview ? undefined : getGenerateBlockReason(document)}
+          >
+            {canPreview ? (
+              <Link href={`/tests/review?documentId=${encodeURIComponent(document.id)}`}>
+                <Sparkles className="mr-2 size-4" />
+                Generate Test Preview
+              </Link>
+            ) : (
+              <>
+                <Sparkles className="mr-2 size-4" />
+                Generate Test Preview
+              </>
+            )}
           </Button>
         </div>
       </div>
 
+      {!isGeneratable && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
+          <p>{getGenerateBlockReason(document)}</p>
+        </div>
+      )}
+
       <DocumentSourceSummary document={document} />
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="space-y-6 lg:col-span-8">
+        <div
+          className={`space-y-6 lg:col-span-8 ${!isGeneratable ? "opacity-50 pointer-events-none" : ""}`}
+        >
           <GenerateTestForm settings={settings} onSettingsChange={handleSettingsChange} />
           <TopicSelector
             document={document}
@@ -161,6 +199,7 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
             settings={settings}
             selectedTopicsCount={selectedTopics.length}
             selectedChunksCount={selectedChunkIds.length}
+            canPreview={canPreview}
           />
         </div>
       </div>
@@ -174,7 +213,7 @@ function DocumentSourceSummary({ document }: GenerateTestSetupProps) {
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground border border-border">
               <FileText className="size-6" />
             </div>
             <div>
@@ -195,7 +234,7 @@ function DocumentSourceSummary({ document }: GenerateTestSetupProps) {
             <div className="flex flex-col">
               <span className="typography-small text-muted-foreground">Detected Topics</span>
               <span className="text-2xl font-semibold text-foreground mt-0.5">
-                {document.topicsCount}
+                {document.topics.length}
               </span>
             </div>
             <div className="flex flex-col">

@@ -4,6 +4,120 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Post-Review Fix Pass: Resolve All Review Findings
+
+Systematically fixed all blocking and non-blocking issues found in the prior code review of the Test Review and Generate Test features.
+
+### Fix 1 — Review page hardcoded metadata and CTAs
+
+- `TestReviewPage` now receives and uses `sourceDocumentTitle` and `sourceDocumentStatus` props (the latter was ignored before).
+- Status badge is driven by a `STATUS_BADGE` lookup record, covering all four `DocumentStatus` values.
+- Hardcoded `"Security Policy v2.1.pdf"` removed; file icon uses `text-muted-foreground` rather than red (file type is unknown without model).
+- Live progress indicator added: "X of Y questions approved — approve at least one to publish."
+- `reviewData.questionCount` was replaced by `questions.length` to reflect the live array.
+- **Test Setup** button now uses `Button asChild` → `Link` to `/documents/${documentId}/generate-test`.
+- **Continue to Publish** button is disabled when `approvedQuestions === 0`; navigates to `/tests/publish?documentId=…` when enabled.
+- `src/app/tests/publish/page.tsx` updated to accept `documentId` search param and show back link.
+
+### Fix 2 — Review mock data re-grounded to source documents
+
+- Rewrote `doc-1` mock review questions: all 8 questions now match `doc-1` chunks and topics (`Onboarding Steps`, `Code of Conduct`, `Benefits & Compensation`, `Leave Policies`).
+- Removed all security-policy content (Access Control, MFA, Data Classification) that was misaligned with the HR/onboarding document.
+- Fixed all `whyUseful` copy-paste errors (e.g., access-control question citing onboarding deadlines).
+- Normalized `questionCount` to `questions.length` throughout.
+- `selectedTopics` aligned with actual chunk topics.
+- `doc-2` mock review questions similarly aligned to Safety & Compliance Training Manual chunks.
+- Added `buildFallbackReviewData()` for documents with no dedicated mock set.
+
+### Fix 3 — Filter bar, question list, and accessibility
+
+- `ReviewFilterBar` is now a fully controlled component — no internal state; accepts `activeTab`, `onTabChange`, `searchQuery`, `onSearchChange`, `topics`, `topicFilter`, `onTopicFilterChange`.
+- Filter + search state lifted to `TestReviewPage`; `filteredQuestions` derived via `useMemo`.
+- `handleStatusFilterChange` selects the first matching question when tab changes.
+- `ReviewQuestionList` renders question rows as `<button type="button">` with `aria-pressed`, proper focus ring, and quick-approve button with full `aria-label`.
+- Empty state ("No questions match the current filters") added.
+- Fake pagination controls replaced with a simple "Showing N questions" footer.
+- Inline-approve button separated from row click to allow independent interaction.
+- All search/filter controls have `<label>` (`sr-only` or visible) and `aria-label` attributes.
+
+### Fix 4 — Review question detail: full edit mode, disabled regenerate, no hardcoded pages
+
+- Added local edit mode with `isEditing` state covering all spec-required fields: question text, options, correct answer, and explanation.
+- Options render as editable text inputs in edit mode; each row has a circle selector to mark the correct answer (green checkmark when selected).
+- `correctAnswer` is stored as the option string value; editing the text of the selected correct option keeps the pointer in sync.
+- Save trims all fields, persists `options` and `correctAnswer` together, and falls back to the first option if the pointer becomes orphaned.
+- Edit → Save saves via `onSaveEdit` callback (sets `status: "edited"`); Cancel discards.
+- Regenerate button is always `disabled` with a tooltip: "Regenerate is not yet implemented".
+- Hardcoded "Pages 6–12" removed; source chunk reference is read from `question.sourceChunkReference`.
+- `whyUseful` and `difficulty` added to sidebar.
+- Navigation arrow buttons and edit inputs have proper `aria-label`.
+
+### Fix 5 — Topic-chunk synchronization and generate-test guards
+
+- `handleClearAllChunks` now clears both `selectedChunkIds` and `selectedTopics`.
+- `handleToggleChunk` on deselect uses new `deriveTopicsFromChunks()` helper to prune orphaned topics — topics whose last chunk was removed are no longer shown as selected.
+- Added `canGenerateTest(document)` and `getGenerateBlockReason(document)` to `generate-test-model.ts`.
+- Generate Test Preview button is `disabled` when `selectedChunkIds.length === 0` or doc is not ready.
+- Non-ready documents show an orange alert banner with the block reason above the form.
+- Form sections are `opacity-50 pointer-events-none` for non-ready documents.
+- `getDefaultSelectedChunkIds` returns `[]` when `selectedTopics` is empty (was incorrectly falling back to `chunks.slice(0, 3)`).
+- `getDefaultSelectedTopics` returns `[]` when document has no chunks.
+- `GenerateTestSummary` sidebar button also respects `canPreview`.
+
+### Fix 6 — Document detail data-driven rendering
+
+- Status badge now reflects actual `document.status` via a `STATUS_CONFIG` record.
+- File metadata (type, size) reads from model; hardcoded `Security Policy v2.1.pdf`, `PDF`, `2.4 MB`, `128 pages` removed.
+- Tab counts `Topics (…)` and `Versions (…)` are real: `document.topics.length`, `document.versions.length`.
+- Topics tab renders all `document.topics` dynamically.
+- Extracted text preview and full text tab render `document.chunks`.
+- Versions tab renders `document.versions` dynamically.
+- Document Details sidebar shows real `fileType`, `fileSizeMb`, `uploadedAt`, `chunks.length`, `topics.length`.
+- Processing Status timeline now driven by `document.status`; failed state renders an error notice.
+- Download and Delete buttons explicitly disabled (coming soon).
+- Edit Metadata / Share dropdown items explicitly disabled.
+- Generate Test button disabled for non-ready documents.
+
+### Fix 7 — Documents table data-driven rendering
+
+- `FILE_TYPE_BY_DOCUMENT_ID` hardcoded lookup removed; uses `document.fileType` from the model.
+- `"2.4 MB"` hardcoded file size replaced with `formatFileSize(document.fileSizeMb)`.
+- `document.topicsCount` replaced with `document.topics.length`.
+- "Generate Assessment" label changed to "Generate Test" for terminology consistency.
+- Generate Test button now uses `Button asChild` → `Link` to the generate-test route.
+- Retry and Delete buttons (failed state) explicitly disabled (coming soon).
+- `fileType: DocumentFileType` and `fileSizeMb: number` added as required fields on `MockDocumentDetail`.
+- All five mock documents updated with correct `fileType` and `fileSizeMb` values.
+
+---
+
+## Feature Spec 11: Test Review Flow with Mock Generated Questions
+
+Closed with post-review fix pass. All verification checklist items pass (`lint`, `typecheck`, `format:check`).
+
+- Replaced the `/tests/review` placeholder with a document-aware review route:
+  - `src/app/tests/review/page.tsx` reads `documentId` from query params, resolves a source document from mock data, and loads generated test review data.
+- Added the next-step placeholder route:
+  - `src/app/tests/publish/page.tsx` displays "Publish Test Flow will be implemented next."
+- Added feature-local mock test review data for generated questions:
+  - `src/features/tests/mock/generated-test-review.ts` defines review question types/statuses and mock review payloads connected to source documents.
+  - Includes options, correct answer, explanation, topic, source chunk reference, tested skill, pedagogical goal, difficulty, usefulness rationale, and review statuses.
+  - Added fallback mock generation to keep the review screen functional for documents without a dedicated mock review set.
+- Built review UI components under the tests feature:
+  - `src/features/tests/components/test-review-page.tsx` renders the review header (title, source document, difficulty, role, count, language, progress), local question state, and continue action.
+  - `src/features/tests/components/review-question-card.tsx` renders per-question metadata and local actions for approve, reject, and edit.
+  - Edit mode supports local changes for question text, answer options, correct answer, and explanation, then marks the question as `edited`.
+  - `src/features/tests/components/review-summary-panel.tsx` renders live counts (total, approved, rejected, edited, remaining), source document, and selected topics.
+- Continue action behavior:
+  - Primary action "Continue to Publish" navigates to `/tests/publish`.
+  - The action is disabled and warning UI is shown when zero questions are approved.
+- Context update:
+  - `context/progress-tracker.md` moved Feature Spec 11 to Completed and cleared In Progress.
+- Validation:
+  - `npm run lint` passes.
+  - `npm run typecheck` passes.
+  - `npm run format:check` passes.
+
 ## Feature Spec 10: Generate Test Setup from Document
 
 - Added the Generate Test entry point from the full document detail page:

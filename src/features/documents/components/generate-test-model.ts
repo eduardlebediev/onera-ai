@@ -32,6 +32,34 @@ export const TARGET_ROLE_OPTIONS = [
   "HR team",
 ]
 
+export function canGenerateTest(document: MockDocumentDetail): boolean {
+  return document.status === "ready" && document.chunks.length > 0
+}
+
+export function getGenerateBlockReason(document: MockDocumentDetail): string {
+  if (document.status === "processing") {
+    return "This document is still being processed. Generation will be available once processing is complete."
+  }
+  if (document.status === "failed") {
+    return "Processing failed for this document. Please re-upload or contact support before generating a test."
+  }
+  if (document.status === "uploaded") {
+    return "This document has not been processed yet."
+  }
+  if (document.chunks.length === 0) {
+    return "No content chunks are available for this document."
+  }
+  return "Test generation is not available for this document."
+}
+
+/** Derive the unique set of topics represented by the given chunk ids. */
+export function deriveTopicsFromChunks(document: MockDocumentDetail, chunkIds: string[]): string[] {
+  const topics = document.chunks
+    .filter((chunk) => chunkIds.includes(chunk.id))
+    .map((chunk) => chunk.topic)
+  return Array.from(new Set(topics))
+}
+
 export function getDefaultGenerateTestSettings(document: MockDocumentDetail): GenerateTestSettings {
   return {
     title: `${document.title} Knowledge Test`,
@@ -44,6 +72,7 @@ export function getDefaultGenerateTestSettings(document: MockDocumentDetail): Ge
 }
 
 export function getDefaultSelectedTopics(document: MockDocumentDetail): string[] {
+  if (document.chunks.length === 0) return []
   return document.topics.slice(0, Math.min(document.topics.length, 3))
 }
 
@@ -51,13 +80,9 @@ export function getDefaultSelectedChunkIds(
   document: MockDocumentDetail,
   selectedTopics: string[]
 ): string[] {
+  if (document.chunks.length === 0 || selectedTopics.length === 0) return []
   const matchingChunks = document.chunks.filter((chunk) => selectedTopics.includes(chunk.topic))
-
-  if (matchingChunks.length > 0) {
-    return matchingChunks.map((chunk) => chunk.id)
-  }
-
-  return document.chunks.slice(0, 3).map((chunk) => chunk.id)
+  return matchingChunks.map((chunk) => chunk.id)
 }
 
 export function getTopicSummary(document: MockDocumentDetail, topic: string): string {

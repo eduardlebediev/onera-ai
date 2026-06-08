@@ -14,6 +14,7 @@ interface GenerateTestSummaryProps {
   settings: GenerateTestSettings
   selectedTopicsCount: number
   selectedChunksCount: number
+  canPreview: boolean
 }
 
 function toCapitalizedLabel(value: string): string {
@@ -29,6 +30,7 @@ export function GenerateTestSummary({
   settings,
   selectedTopicsCount,
   selectedChunksCount,
+  canPreview,
 }: GenerateTestSummaryProps) {
   const reviewHref = `/tests/review?documentId=${encodeURIComponent(document.id)}`
 
@@ -94,11 +96,22 @@ export function GenerateTestSummary({
         </div>
       </CardContent>
       <CardFooter className="px-6 pb-6 pt-0">
-        <Button asChild className="h-11 w-full rounded-xl bg-foreground text-background">
-          <Link href={reviewHref}>
-            <Sparkles className="mr-2 size-4" />
-            Generate Test Preview
-          </Link>
+        <Button
+          asChild={canPreview}
+          disabled={!canPreview}
+          className="h-11 w-full rounded-xl bg-foreground text-background"
+        >
+          {canPreview ? (
+            <Link href={reviewHref}>
+              <Sparkles className="mr-2 size-4" />
+              Generate Test Preview
+            </Link>
+          ) : (
+            <>
+              <Sparkles className="mr-2 size-4" />
+              Generate Test Preview
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

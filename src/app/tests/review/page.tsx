@@ -1,25 +1,25 @@
-import { ClipboardCheck } from "lucide-react"
+import { mockDocuments } from "@/data/mock/documents"
+import { TestReviewPage } from "@/features/tests/components/test-review-page"
+import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+interface TestReviewRouteProps {
+  searchParams: Promise<{ documentId?: string }>
+}
 
-export default function TestReviewPlaceholderPage() {
+export default async function TestReviewRoute({ searchParams }: TestReviewRouteProps) {
+  const { documentId } = await searchParams
+  const defaultDocument =
+    mockDocuments.find((document) => document.chunks.length > 0) ?? mockDocuments[0]
+  const sourceDocument =
+    mockDocuments.find((document) => document.id === documentId) ?? defaultDocument
+  const reviewData = getMockTestReviewData(sourceDocument)
+
   return (
-    <div className="page-shell max-w-7xl">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl border border-border bg-background">
-              <ClipboardCheck className="size-4 text-muted-foreground" />
-            </div>
-            <CardTitle>Test Review</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="typography-p text-muted-foreground">
-            Test Review Flow will be implemented next.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <TestReviewPage
+      sourceDocumentTitle={sourceDocument.title}
+      sourceDocumentStatus={sourceDocument.status}
+      reviewData={reviewData}
+      documentId={sourceDocument.id}
+    />
   )
 }

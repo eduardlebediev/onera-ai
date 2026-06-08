@@ -1,4 +1,5 @@
 export type DocumentStatus = "ready" | "processing" | "failed" | "uploaded"
+export type DocumentFileType = "pdf" | "docx" | "pptx" | "txt"
 
 export interface DocumentChunk {
   id: string
@@ -25,8 +26,11 @@ export interface MockDocumentDetail {
   id: string
   title: string
   status: DocumentStatus
+  fileType: DocumentFileType
+  fileSizeMb: number
   description: string
   uploadedAt: string
+  /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]
   chunks: DocumentChunk[]
@@ -39,6 +43,8 @@ export const mockDocuments: MockDocumentDetail[] = [
     id: "doc-1",
     title: "Onboarding Process & HR Policies 2024",
     status: "ready",
+    fileType: "pdf",
+    fileSizeMb: 1.8,
     description:
       "Comprehensive guide covering the full employee onboarding lifecycle, HR policies, code of conduct, and benefits overview for all new hires.",
     uploadedAt: "2024-05-10",
@@ -94,6 +100,8 @@ export const mockDocuments: MockDocumentDetail[] = [
     id: "doc-2",
     title: "Safety & Compliance Training Manual",
     status: "ready",
+    fileType: "pdf",
+    fileSizeMb: 3.2,
     description:
       "Mandatory safety training document for all operational staff. Covers workplace hazards, emergency procedures, fire safety protocols, and regulatory compliance requirements.",
     uploadedAt: "2024-06-03",
@@ -142,6 +150,8 @@ export const mockDocuments: MockDocumentDetail[] = [
     id: "doc-3",
     title: "Product Architecture & Engineering Standards",
     status: "processing",
+    fileType: "docx",
+    fileSizeMb: 0.9,
     description:
       "Internal engineering reference covering the product architecture, system boundaries, coding standards, and deployment conventions used across the engineering team.",
     uploadedAt: "2024-06-15",
@@ -155,6 +165,8 @@ export const mockDocuments: MockDocumentDetail[] = [
     id: "doc-4",
     title: "Customer Support Playbook",
     status: "ready",
+    fileType: "docx",
+    fileSizeMb: 2.1,
     description:
       "Playbook for the customer support team covering escalation paths, communication templates, SLA definitions, and common resolution patterns for tier-1 and tier-2 issues.",
     uploadedAt: "2024-04-20",
@@ -203,6 +215,8 @@ export const mockDocuments: MockDocumentDetail[] = [
     id: "doc-5",
     title: "Data Privacy & GDPR Guidelines",
     status: "failed",
+    fileType: "pdf",
+    fileSizeMb: 4.7,
     description:
       "Guidelines on data handling, GDPR compliance requirements, user consent management, and breach notification procedures for all staff handling personal data.",
     uploadedAt: "2024-06-18",

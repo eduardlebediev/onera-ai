@@ -1,5 +1,13 @@
 # Decisions
 
+## 018 — Review question edits store correctAnswer as option text, not index
+
+In the mock review edit flow, `correctAnswer` remains the option string value (aligned with `ReviewQuestion.correctAnswer`), not a numeric index. The edit UI uses a per-option selector button; when option text changes, the correct-answer pointer follows if that option was selected. On save, if the pointer no longer matches any option, it falls back to the first resolved option.
+
+## 017 — Document model owns fileType and fileSizeMb; components must not hardcode per-ID metadata
+
+`fileType` (pdf|docx|pptx|txt) and `fileSizeMb` are first-class fields on `MockDocumentDetail`. Components must read these from the model and must not maintain a per-document-ID mapping in component code. This ensures the table, detail page, and any drawer all render consistent, data-driven values with zero component-level hardcoding.
+
 ## 016 — Generate test setup stays mock-only with feature-local state
 
 The `/documents/[id]/generate-test` flow uses client-side local state and `generate-test-model.ts` helpers only. No Supabase, AI calls, or persistence are added until the test generation backend slice is implemented. Topic and chunk selection stay synchronized in the UI (topic toggles related chunks; chunk select-all syncs topics).

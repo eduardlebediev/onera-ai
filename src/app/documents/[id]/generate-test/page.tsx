@@ -15,5 +15,7 @@ export default async function GenerateTestPage({ params }: GenerateTestPageProps
     notFound()
   }
 
+  // Render the setup for all documents — the component handles the non-ready blocked state.
+  // We intentionally don't redirect so the admin can see why generation is unavailable.
   return <GenerateTestSetup document={document} />
 }

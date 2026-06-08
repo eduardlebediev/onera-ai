@@ -1,6 +1,6 @@
-import { Target } from "lucide-react"
-
-import { PlaceholderPage } from "@/shared/ui/placeholder-page"
+import { TestResultNotFound } from "@/features/employee/tests/components/test-result-not-found"
+import { TestResultPage } from "@/features/employee/tests/components/test-result-page"
+import { getEmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
 
 interface EmployeeTestResultRouteProps {
   params: Promise<{ id: string }>
@@ -8,12 +8,11 @@ interface EmployeeTestResultRouteProps {
 
 export default async function EmployeeTestResultRoute({ params }: EmployeeTestResultRouteProps) {
   const { id } = await params
+  const result = getEmployeeTestResult(id)
 
-  return (
-    <PlaceholderPage
-      title="Test Results"
-      description={`Placeholder for test ${id} results and feedback. The result and AI feedback flow will be implemented next.`}
-      icon={Target}
-    />
-  )
+  if (!result) {
+    return <TestResultNotFound />
+  }
+
+  return <TestResultPage result={result} />
 }

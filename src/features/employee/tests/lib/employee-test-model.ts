@@ -68,6 +68,12 @@ const EMPLOYEE_TEST_STATUS_BADGE_CLASS = {
   notStarted: "text-muted-foreground",
 } as const
 
+export function getPassFailBadgeClass(passed: boolean): string {
+  return passed
+    ? EMPLOYEE_TEST_STATUS_BADGE_CLASS.completed
+    : EMPLOYEE_TEST_STATUS_BADGE_CLASS.danger
+}
+
 export function getEmployeeTestStatusBadgeClass(status: EmployeeTestDisplayStatus): string {
   switch (status) {
     case "completed":

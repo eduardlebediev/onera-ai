@@ -1,5 +1,9 @@
 # Decisions
 
+## 023 — Employee test results use colocated mock attempt records
+
+The `/employee/tests/[id]/result` page lives in `src/features/employee/tests/` with colocated mock attempt records in `mock/test-results.ts`. Results merge assignment metadata, `mockTests` questions, and explicit attempt data (answers, weak topics, AI feedback). Score and pass/fail are derived from employee answers against question correct answers — not stored independently on attempt records. No state is passed from the take flow; both passed and failed states are represented via static mock records. KPI presentation uses keyed objects with explicit `tone` and `status` properties.
+
 ## 022 — Employee test-taking uses feature-local mock state and assignment gate
 
 The `/employee/tests/[id]/take` flow lives in `src/features/employee/tests/` with colocated helpers and components. Only tests assigned to the demo employee (`emp-6`) are takeable; questions resolve from `mockTests`. Answer selection, navigation, progress, and local score calculation use client-side state only — no persistence or result-page state passing until the result spec lands.

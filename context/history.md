@@ -4,6 +4,35 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 16: Test Result and AI Feedback
+
+Replaced the `/employee/tests/[id]/result` placeholder with a full mock result page showing score, pass/fail status, answer breakdown, weak topics, and AI feedback.
+
+- Added `src/features/employee/tests/mock/test-results.ts` with colocated mock attempt records for `test-1` (passed 80%), `test-2` (passed 100%), and `test-5` (failed 67%), including employee answers, weak topics, and mock AI feedback grounded in real question ids.
+- Added `test-result-model.ts` — `getEmployeeTestResult()` merges assignment metadata, `mockTests` questions, and attempt records into a full result; builds answer-review items with correct/incorrect status, explanations, topics, and source chunk references.
+- Added `test-result-kpi-stats.ts` — keyed KPI objects (Score, Correct answers, Wrong answers, Weak topics, Time spent) with explicit `icon`, `tone`, and `status` properties.
+- Added UI components:
+  - `test-result-page.tsx` — desktop two-column layout (main + sidebar); mobile stacked order per spec.
+  - `test-result-summary.tsx` — title, source document, score, pass/fail badge, completed date, question counts.
+  - `test-result-kpi-section.tsx` — 5 keyed KPI cards reusing shared `KPI_TONE_STYLES`.
+  - `test-ai-feedback.tsx` — performance summary, understood well, needs improvement, recommended next step.
+  - `test-weak-topics.tsx` — topic name, missed count, explanation, recommended review action.
+  - `test-answer-review.tsx` — all questions with employee/correct answers, status, explanation, topic, source chunk.
+  - `test-result-actions.tsx` — Back to My Tests, Review Source Material, Retake Test navigation.
+  - `test-result-not-found.tsx` — not-found state for invalid or unassigned test ids.
+- Updated `/employee/tests/[id]/result` route to resolve mock result data and render the page.
+- Updated `src/features/employee/tests/MODULE.md` boundaries.
+- Decision 023 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+
+### Post-Review Fix Pass
+
+- Removed contradictory `SLA Definitions` weak topic from `test-5`; weak topics and AI feedback now align with the single incorrect answer (Escalation Paths).
+- Aligned `test-1` and `test-2` assignment records to `completed` with scores matching derived results (80%, 100%).
+- Score and pass/fail are now derived from answer review in `test-result-model.ts`; removed redundant `score`/`passed` fields from attempt mock records.
+- Extracted shared `getPassFailBadgeClass()` in `employee-test-model.ts`; result summary and answer review reuse it.
+- Replaced duplicate `formatTestResultCompletedDate` with existing `formatEmployeeTestDeadline`.
+
 ## Feature Spec 15: Employee Test Taking Flow
 
 Replaced the `/employee/tests/[id]/take` placeholder with a full mock test-taking experience using local client state.

@@ -1,13 +1,25 @@
-import { UserPlus } from "lucide-react"
+import { notFound } from "next/navigation"
 
-import { PlaceholderPage } from "@/shared/ui/placeholder-page"
+import { AssignEmployeesPage } from "@/features/tests/components/assign-employees-page"
+import { AssignNotPublished } from "@/features/tests/components/assign-not-published"
+import { getResolvedMockTestById } from "@/features/tests/lib/test-source-document"
+import { mockTests } from "@/features/tests/mock/tests"
 
-export default function AssignTestPage() {
-  return (
-    <PlaceholderPage
-      title="Assign Test"
-      description="Assign Test to Employees will be implemented next."
-      icon={UserPlus}
-    />
-  )
+interface AssignTestRouteProps {
+  params: Promise<{ id: string }>
+}
+
+export default async function AssignTestRoute({ params }: AssignTestRouteProps) {
+  const { id } = await params
+  const test = getResolvedMockTestById(mockTests, id)
+
+  if (!test) {
+    notFound()
+  }
+
+  if (test.status !== "published") {
+    return <AssignNotPublished test={test} />
+  }
+
+  return <AssignEmployeesPage test={test} />
 }

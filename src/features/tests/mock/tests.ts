@@ -90,7 +90,7 @@ export const mockTests: MockTest[] = [
     ],
     selectedChunksCount: 4,
     createdAt: "2024-05-15",
-    assignedEmployeesCount: 12,
+    assignedEmployeesCount: 8,
     attemptsCount: 9,
     sourceDocument: {
       documentId: "doc-1",
@@ -189,9 +189,9 @@ export const mockTests: MockTest[] = [
       },
     ],
     assignments: {
-      assigned: 12,
-      completed: 7,
-      inProgress: 3,
+      assigned: 8,
+      completed: 3,
+      inProgress: 2,
       notStarted: 2,
     },
     results: {
@@ -313,9 +313,9 @@ export const mockTests: MockTest[] = [
     ],
     assignments: {
       assigned: 8,
-      completed: 5,
+      completed: 3,
       inProgress: 2,
-      notStarted: 1,
+      notStarted: 3,
     },
     results: {
       averageScore: 82,

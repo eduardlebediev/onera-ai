@@ -1,12 +1,13 @@
 import Link from "next/link"
 
-import type { TestAssignmentsSummary } from "@/features/tests/mock/tests"
+import type { TestAssignmentsSummary, TestStatus } from "@/features/tests/mock/tests"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
 interface TestAssignmentsSectionProps {
   assignments: TestAssignmentsSummary
   testId: string
+  testStatus: TestStatus
 }
 
 function AssignmentStat({ label, value }: { label: string; value: number }) {
@@ -18,7 +19,11 @@ function AssignmentStat({ label, value }: { label: string; value: number }) {
   )
 }
 
-export function TestAssignmentsSection({ assignments, testId }: TestAssignmentsSectionProps) {
+export function TestAssignmentsSection({
+  assignments,
+  testId,
+  testStatus,
+}: TestAssignmentsSectionProps) {
   return (
     <Card>
       <CardHeader>
@@ -31,9 +36,19 @@ export function TestAssignmentsSection({ assignments, testId }: TestAssignmentsS
           <AssignmentStat label="In Progress" value={assignments.inProgress} />
           <AssignmentStat label="Not Started" value={assignments.notStarted} />
         </div>
-        <Button asChild className="w-full">
-          <Link href={`/tests/${testId}/assign`}>Assign to Employees</Link>
-        </Button>
+        {testStatus === "published" ? (
+          <Button asChild className="w-full">
+            <Link href={`/tests/${testId}/assign`}>Assign to Employees</Link>
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            disabled
+            title="Publish this test before assigning it to employees."
+          >
+            Assign to Employees
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

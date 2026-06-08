@@ -1,5 +1,9 @@
 # Decisions
 
+## 020 — Assign test flow uses feature-local mock employees and client state
+
+The `/tests/[id]/assign` flow uses colocated mock data in `src/features/tests/mock/employees.ts` for employee profiles and per-test assignment status. Assignment confirmation updates client-side state only — no Supabase or persistence. Employee selection uses accessible selectable rows (no checkbox primitive installed). Success navigation links to `/employee/tests` as the next planned employee route.
+
 ## 019 — Tests list/detail use colocated mock tests model
 
 `mockTests` in `src/features/tests/mock/tests.ts` is the single source of truth for the tests list and test detail pages. Source document title and status are resolved from `mockDocuments` via `resolveMockTest()` — mock tests store only `documentId`, `topicsUsed`, and `chunksUsed`. KPI presentation metadata is keyed by stable ids (not index-mapped). Publish, archive, restore, and assignment actions remain mock/placeholder until backend slices land.

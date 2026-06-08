@@ -29,6 +29,9 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
                   Edit draft
                 </Link>
               </Button>
+              <Button disabled title="Publish this test before assigning it to employees.">
+                Assign to Employees
+              </Button>
               <Button disabled title="Coming soon">
                 Publish
               </Button>
@@ -58,6 +61,12 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
         </div>
       </div>
 
+      {test.status === "draft" && (
+        <p className="mb-4 typography-small text-muted-foreground">
+          Publish this test before assigning it to employees.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         <div className="space-y-2 lg:col-span-2">
           <TestQuestionsSection questions={test.questions} />
@@ -66,7 +75,11 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
         <div className="space-y-2">
           <TestSettingsSection test={test} />
           <TestSourceDocumentsSection source={test.sourceDocument} />
-          <TestAssignmentsSection assignments={test.assignments} testId={test.id} />
+          <TestAssignmentsSection
+            assignments={test.assignments}
+            testId={test.id}
+            testStatus={test.status}
+          />
         </div>
       </div>
     </div>

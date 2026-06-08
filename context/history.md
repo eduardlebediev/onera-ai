@@ -4,6 +4,33 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 13: Assign Test to Employees
+
+Built the mock admin assignment flow connecting test detail to employee selection, configuration, and success state.
+
+- Added colocated mock employees and per-test assignment data in `src/features/tests/mock/employees.ts` (10 employees, assignment status per test).
+- Added assignment domain helpers in `src/features/tests/lib/assign-employees-model.ts` (filters, enrichment, summary builder, default settings).
+- Replaced `/tests/[id]/assign` placeholder with full assignment workflow:
+  - `assign-employees-page.tsx` — client container with selection, filter, settings, confirm, and success states.
+  - `assign-test-context.tsx` — test summary card at top of assign page.
+  - `assign-employee-list.tsx` — selectable employee table with filter tabs (All / Not assigned / In progress / Completed / At risk).
+  - `assign-settings-panel.tsx` — deadline, optional note, reminder placeholder toggle, selected count.
+  - `assign-summary-panel.tsx` — live summary with disabled confirm when zero selected.
+  - `assign-not-published.tsx` — guard for non-published tests on assign route.
+- Updated test detail entry points:
+  - Draft tests show disabled "Assign to Employees" button and helper text.
+  - `test-assignments-section.tsx` disables assign CTA for non-published tests.
+- Added `/employee/tests` placeholder route for success-state "View Employee Tests" navigation.
+- Decision 020 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass on `src/`.
+
+### Post-Review Fix Pass
+
+- Added `formatAssignmentDeadline()` and `canConfirmAssignment()` helpers; success state and summary panel no longer render `Invalid Date` for empty deadlines; confirm is disabled without a deadline.
+- Reconciled `test-1` and `test-2` assignment counts in `mock/tests.ts` with `mockTestEmployeeAssignments` records.
+- Extracted shared `AssignBreadcrumb` component; removed duplicated breadcrumb markup.
+- Scoped deselect actions to visible rows only (`onDeselectAllVisible`, "Deselect visible" label).
+
 ## Feature Spec 12: Tests List and Test Detail
 
 Built the admin Tests management area with mock data only — list page, detail page, and assign placeholder route.

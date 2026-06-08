@@ -17,7 +17,6 @@ This phase focuses on the full end-to-end user experience with mock data only. T
 ## Next Up
 
 - Publish Test Flow
-- Follow-up Question Flow
 - Clickable Demo Polish
 
 ## Open Questions
@@ -26,6 +25,7 @@ This phase focuses on the full end-to-end user experience with mock data only. T
 
 ## Completed
 
+- Feature Spec 17: Follow-up Question Flow
 - Feature Spec 16: Test Result and AI Feedback
 - Feature Spec 15: Employee Test Taking Flow
 - Feature Spec 14: Employee My Tests

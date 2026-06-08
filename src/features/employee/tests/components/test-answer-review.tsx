@@ -1,16 +1,33 @@
-import { CheckCircle2, XCircle } from "lucide-react"
+"use client"
 
+import { useState } from "react"
+import { CheckCircle2, Sparkles, XCircle } from "lucide-react"
+
+import { FollowUpQuestionCard } from "@/features/employee/tests/components/follow-up-question-card"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
 import { Badge } from "@/shared/ui/badge"
+import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
 
 interface TestAnswerReviewProps {
   answerReview: AnswerReviewItem[]
+  sourceDocumentId: string
+  onFollowUpComplete: (topic: string, isCorrect: boolean) => void
 }
 
-export function TestAnswerReview({ answerReview }: TestAnswerReviewProps) {
+export function TestAnswerReview({
+  answerReview,
+  sourceDocumentId,
+  onFollowUpComplete,
+}: TestAnswerReviewProps) {
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null)
+
+  function toggleFollowUp(questionId: string) {
+    setExpandedQuestionId((current) => (current === questionId ? null : questionId))
+  }
+
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
@@ -19,6 +36,8 @@ export function TestAnswerReview({ answerReview }: TestAnswerReviewProps) {
         <ul className="space-y-4">
           {answerReview.map((item, index) => {
             const StatusIcon = item.isCorrect ? CheckCircle2 : XCircle
+            const showFollowUp = !item.isCorrect && item.followUp
+            const isFollowUpExpanded = expandedQuestionId === item.questionId
 
             return (
               <li
@@ -74,6 +93,31 @@ export function TestAnswerReview({ answerReview }: TestAnswerReviewProps) {
                     {item.sourceChunkReference}
                   </span>
                 </div>
+
+                {showFollowUp ? (
+                  <div className="space-y-3 pt-1">
+                    {!isFollowUpExpanded ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleFollowUp(item.questionId)}
+                      >
+                        <Sparkles className="size-4" />
+                        Check understanding
+                      </Button>
+                    ) : null}
+
+                    {isFollowUpExpanded && item.followUp ? (
+                      <FollowUpQuestionCard
+                        followUp={item.followUp}
+                        sourceDocumentId={sourceDocumentId}
+                        onComplete={onFollowUpComplete}
+                        onBackToResults={() => setExpandedQuestionId(null)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             )
           })}

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the employee-facing My Tests experience: assigned test list, progress summary, filters, test-taking flow, and test result with mock AI feedback.
+Owns the employee-facing My Tests experience: assigned test list, progress summary, filters, test-taking flow, test result with mock AI feedback, and mock follow-up questions for weak topics.
 
 ## Contains
 
@@ -17,6 +17,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 - admin test management logic
 - real auth or assignment persistence
 - real AI feedback generation or persistence
+- real follow-up question generation or persistence
 
 ## Conventions
 
@@ -25,13 +26,14 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 - Reuse admin test metadata from `src/features/tests/mock/tests.ts` where appropriate.
 - Test-taking uses local client state only; questions resolve from `mockTests`.
 - Test results use colocated mock attempt records in `mock/test-results.ts`; no state is passed from the take flow.
+- Follow-up questions use colocated mock records in `mock/follow-up-questions.ts`, keyed by original incorrect question id; completion state is local client state only and drives weak-topic status badges.
 - Avoid generic file names for domain logic.
 
 ## Related Routes
 
 - `/employee/tests`
 - `/employee/tests/[id]/take` — mock test-taking flow with local state
-- `/employee/tests/[id]/result` — mock result page with score, answer review, weak topics, and AI feedback
+- `/employee/tests/[id]/result` — mock result page with score, answer review, weak topics, AI feedback, and inline follow-up questions for incorrect answers
 
 ## Future Boundaries
 

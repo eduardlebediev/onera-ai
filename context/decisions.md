@@ -1,5 +1,9 @@
 # Decisions
 
+## 024 — Follow-up questions use inline mock flow with topic-keyed local state
+
+The result-page follow-up flow lives in `src/features/employee/tests/` with colocated mock follow-up records in `mock/follow-up-questions.ts`, keyed by `originalQuestionId`. Incorrect answers in answer review expose a "Check understanding" action that expands an inline card (explanation, single-choice question, feedback). Entry point is answer review only; weak topics reflect completion status via local state keyed by topic (`needs_review`, `follow_up_completed`, `topic_understood`). No AI generation, persistence, or new routes.
+
 ## 023 — Employee test results use colocated mock attempt records
 
 The `/employee/tests/[id]/result` page lives in `src/features/employee/tests/` with colocated mock attempt records in `mock/test-results.ts`. Results merge assignment metadata, `mockTests` questions, and explicit attempt data (answers, weak topics, AI feedback). Score and pass/fail are derived from employee answers against question correct answers — not stored independently on attempt records. No state is passed from the take flow; both passed and failed states are represented via static mock records. KPI presentation uses keyed objects with explicit `tone` and `status` properties.

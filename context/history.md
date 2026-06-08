@@ -4,6 +4,23 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 17: Follow-up Question Flow
+
+Extended the employee test result page with a lightweight mock follow-up question flow for incorrect answers.
+
+- Added `src/features/employee/tests/mock/follow-up-questions.ts` with `FollowUpQuestion` records for `test-1-q5` (Leave Policies) and `test-5-q2` (Escalation Paths), plus `FollowUpTopicStatus` and lookup helper.
+- Updated `test-result-model.ts` to attach optional `followUp` to incorrect `AnswerReviewItem` entries.
+- Added UI components:
+  - `follow-up-question-card.tsx` — explanation, metadata, single-choice selection, submit, and feedback handoff.
+  - `follow-up-answer-feedback.tsx` — "Topic understood" / "Review recommended" feedback with correct answer, explanation, and next actions.
+- Updated `test-answer-review.tsx` — "Check understanding" action on incorrect answers with inline expandable follow-up card.
+- Updated `test-weak-topics.tsx` — local follow-up status badges (Needs review, Follow-up completed, Topic understood).
+- Updated `test-result-page.tsx` — client-side topic-keyed completion state lifted to page level.
+- Updated `src/features/employee/tests/MODULE.md` boundaries.
+- Decision 024 recorded in `context/decisions.md`.
+- Post-review polish: restored unrelated plan doc deletion, switched UI copy to ASCII punctuation, renamed retry CTA to "Try again".
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+
 ## Feature Spec 16: Test Result and AI Feedback
 
 Replaced the `/employee/tests/[id]/result` placeholder with a full mock result page showing score, pass/fail status, answer breakdown, weak topics, and AI feedback.

@@ -45,8 +45,7 @@ export function TopNavbar() {
         <Logo />
       </Link>
 
-      {/* Desktop nav links */}
-      <div className="hidden md:flex items-center gap-0.5 flex-1">
+      <div className="hidden md:flex items-center justify-center gap-0.5 flex-1">
         {links.map((link) => (
           <Link
             key={link.href}

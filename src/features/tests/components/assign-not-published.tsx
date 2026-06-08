@@ -11,7 +11,7 @@ interface AssignNotPublishedProps {
 
 export function AssignNotPublished({ test }: AssignNotPublishedProps) {
   return (
-    <div className="page-shell max-w-3xl">
+    <div className="page-shell-narrow">
       <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mb-6" />
 
       <Card>

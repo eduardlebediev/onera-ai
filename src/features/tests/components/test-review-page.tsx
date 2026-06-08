@@ -134,7 +134,7 @@ export function TestReviewPage({
   const statusBadge = STATUS_BADGE[sourceDocumentStatus]
 
   return (
-    <div className="page-shell max-w-[1600px] flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="page-shell flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
       <div className="mb-6 shrink-0">
         <Link
           href={`/documents/${documentId}`}

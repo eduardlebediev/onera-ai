@@ -15,7 +15,7 @@ interface TestDetailPageProps {
 
 export function TestDetailPage({ test }: TestDetailPageProps) {
   return (
-    <div className="page-shell max-w-7xl">
+    <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
         <TestDetailHeader test={test} />
         <div className="flex shrink-0 flex-wrap items-center gap-2">

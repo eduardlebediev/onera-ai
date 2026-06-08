@@ -22,9 +22,10 @@ import {
 } from "@/data/mock/documents"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
-import { Card } from "@/shared/ui/card"
+import { DataTableShell } from "@/shared/ui/data-table-shell"
 import { Input } from "@/shared/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
+import { cn } from "@/lib/utils"
 import { DocumentDrawer } from "./document-drawer"
 
 type StatusFilter = "all" | DocumentStatus
@@ -143,44 +144,39 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
   }, [documents, searchQuery, sortDirection, sortKey, statusFilter])
 
   return (
-    <Card className="border-none shadow-none bg-transparent">
-      <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-        <div className="border-b border-border/50 px-4 py-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="size-5 text-muted-foreground" />
-              <h3 className="typography-h3 font-semibold">All Documents</h3>
-              <p className="typography-small text-muted-foreground ml-2">
-                {documents.length} total
-              </p>
+    <>
+      <DataTableShell
+        icon={FileText}
+        title="All Documents"
+        countLabel={`${documents.length} total`}
+        toolbar={
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder="Search documents..."
+                className="pl-9 bg-background border-border/50 rounded-lg h-9"
+              />
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search documents..."
-                  className="pl-9 bg-background border-border/50 rounded-lg h-9"
-                />
-              </div>
-              <div className="relative shrink-0">
-                <select
-                  value={statusFilter}
-                  onChange={handleStatusFilterChange}
-                  className="h-9 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {STATUS_FILTER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <Filter className="absolute left-3 top-2.5 size-4 text-muted-foreground pointer-events-none" />
-              </div>
+            <div className="relative shrink-0">
+              <select
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+                className="h-9 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                {STATUS_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <Filter className="absolute left-3 top-2.5 size-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
-        </div>
+        }
+      >
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="hover:bg-transparent">
@@ -245,7 +241,8 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                     <TableCell className="py-4">
                       <Badge
                         variant={STATUS_VARIANTS[document.status]}
-                        className={`text-[11px] font-medium rounded-md px-2 py-0.5 ${
+                        className={cn(
+                          "status-badge",
                           document.status === "ready"
                             ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
                             : document.status === "processing"
@@ -253,7 +250,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                               : document.status === "failed"
                                 ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"
                                 : ""
-                        }`}
+                        )}
                       >
                         {document.status === "ready" && (
                           <span className="mr-1 size-1.5 rounded-full bg-emerald-500" />
@@ -391,13 +388,13 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
             </Button>
           </div>
         </div>
-      </div>
+      </DataTableShell>
       <DocumentDrawer
         document={selectedDocument}
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
       />
-    </Card>
+    </>
   )
 }
 

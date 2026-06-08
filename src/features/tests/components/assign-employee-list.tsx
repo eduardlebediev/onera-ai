@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { FilterTabBar } from "@/shared/ui/filter-tab-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 import { cn } from "@/lib/utils"
 
@@ -114,25 +115,7 @@ export function AssignEmployeeList({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {EMPLOYEE_FILTER_OPTIONS.map((option) => (
-            <Button
-              key={option.value}
-              type="button"
-              variant={filter === option.value ? "default" : "outline"}
-              size="sm"
-              className={
-                filter === option.value
-                  ? "bg-foreground text-background hover:bg-foreground/90"
-                  : ""
-              }
-              onClick={() => onFilterChange(option.value)}
-              aria-pressed={filter === option.value}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
+        <FilterTabBar options={EMPLOYEE_FILTER_OPTIONS} value={filter} onChange={onFilterChange} />
       </CardHeader>
 
       <CardContent className="p-0">

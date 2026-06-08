@@ -119,7 +119,7 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   }, [defaultChunkIds, defaultSettings, defaultTopics])
 
   return (
-    <div className="page-shell max-w-[1400px]">
+    <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="typography-h1">Generate Test Setup</h1>

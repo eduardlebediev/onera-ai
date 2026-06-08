@@ -116,7 +116,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
 
   if (successState) {
     return (
-      <div className="page-shell max-w-3xl">
+      <div className="page-shell-narrow">
         <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mb-6" />
 
         <Card>
@@ -171,7 +171,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
   }
 
   return (
-    <div className="page-shell max-w-7xl">
+    <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mb-4" />

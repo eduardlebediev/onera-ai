@@ -63,7 +63,14 @@ Responsive spacing tokens (CSS variables) live in `src/app/globals.css`.
 | `--spacing-page-x` | Responsive page horizontal pad |
 | `--spacing-page-y` | Responsive page vertical pad   |
 
-Use the `.page-shell` utility class for route-level page wrappers (padding + centering + full width). Compose max-width and other layout via Tailwind classes in JSX.
+Use one of two `.page-shell` utility classes for route-level page wrappers:
+
+| Class                | Max-width | Use case                      |
+| -------------------- | --------- | ----------------------------- |
+| `.page-shell`        | 1920px    | Dashboard-like, full-width    |
+| `.page-shell-narrow` | 1280px    | Content-focused, detail pages |
+
+Both include responsive horizontal/vertical padding, center alignment, and full width.
 
 ## Icons
 

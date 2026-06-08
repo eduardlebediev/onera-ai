@@ -9,7 +9,7 @@ import { AdminDashboard } from "@/features/analytics/components/admin-dashboard"
 
 export default function DashboardPage() {
   return (
-    <div className="page-shell max-w-[1920px]">
+    <div className="page-shell">
       <AdminDashboard
         aiDrafts={aiDrafts}
         kpiStats={kpiStats}

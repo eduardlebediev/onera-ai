@@ -86,7 +86,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
       : `${Math.round(document.fileSizeMb * 1024)} KB`
 
   return (
-    <div className="page-shell max-w-7xl">
+    <div className="page-shell-narrow">
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/documents" className="hover:text-foreground">
           Documents

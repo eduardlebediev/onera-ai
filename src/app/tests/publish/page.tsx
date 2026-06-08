@@ -14,7 +14,7 @@ export default async function PublishTestPlaceholderPage({ searchParams }: Publi
   const sourceDocument = mockDocuments.find((d) => d.id === documentId)
 
   return (
-    <div className="page-shell max-w-7xl">
+    <div className="page-shell-narrow">
       {documentId && (
         <Button asChild variant="outline" className="mb-6 h-9">
           <Link href={`/tests/review?documentId=${encodeURIComponent(documentId)}`}>

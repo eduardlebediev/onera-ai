@@ -13,8 +13,8 @@ import {
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import type { MockEmployee } from "@/features/tests/mock/employees"
 import { Badge } from "@/shared/ui/badge"
-import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { FilterTabBar } from "@/shared/ui/filter-tab-bar"
 
 interface EmployeeTestsPageProps {
   employee: MockEmployee
@@ -55,22 +55,8 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
         <EmployeeTestsKpiSection tests={tests} />
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {EMPLOYEE_TEST_FILTER_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            variant={filter === option.value ? "default" : "outline"}
-            size="sm"
-            className={
-              filter === option.value ? "bg-foreground text-background hover:bg-foreground/90" : ""
-            }
-            onClick={() => setFilter(option.value)}
-            aria-pressed={filter === option.value}
-          >
-            {option.label}
-          </Button>
-        ))}
+      <div className="mt-6">
+        <FilterTabBar options={EMPLOYEE_TEST_FILTER_OPTIONS} value={filter} onChange={setFilter} />
       </div>
 
       <div className="mt-2 space-y-2">

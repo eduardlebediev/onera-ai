@@ -93,7 +93,7 @@ export function TestProgressPanel({
             <p className="typography-label text-muted-foreground">Status</p>
             <Badge
               variant="outline"
-              className={`text-[11px] font-medium rounded-md px-2 py-0.5 ${getEmployeeTestStatusBadgeClass(displayStatus)}`}
+              className={cn("status-badge", getEmployeeTestStatusBadgeClass(displayStatus))}
             >
               {formatEmployeeTestStatus(displayStatus)}
             </Badge>

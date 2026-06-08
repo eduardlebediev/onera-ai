@@ -17,6 +17,7 @@ import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employ
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { cn } from "@/lib/utils"
 
 interface EmployeeTestCardProps {
   test: EmployeeAssignedTest
@@ -37,7 +38,7 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
               <h3 className="typography-h3 font-semibold text-foreground">{test.title}</h3>
               <Badge
                 variant="outline"
-                className={`text-[11px] font-medium rounded-md px-2 py-0.5 ${getEmployeeTestStatusBadgeClass(displayStatus)}`}
+                className={cn("status-badge", getEmployeeTestStatusBadgeClass(displayStatus))}
               >
                 {formatEmployeeTestStatus(displayStatus)}
               </Badge>

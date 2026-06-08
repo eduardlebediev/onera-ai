@@ -1,5 +1,9 @@
 # Decisions
 
+## 022 — Employee test-taking uses feature-local mock state and assignment gate
+
+The `/employee/tests/[id]/take` flow lives in `src/features/employee/tests/` with colocated helpers and components. Only tests assigned to the demo employee (`emp-6`) are takeable; questions resolve from `mockTests`. Answer selection, navigation, progress, and local score calculation use client-side state only — no persistence or result-page state passing until the result spec lands.
+
 ## 021 — Employee My Tests uses dedicated feature module and mock current employee
 
 The `/employee/tests` page lives in `src/features/employee/tests/` with colocated mock assignments for a fixed demo employee (`emp-6`). Assignment deadlines, scores, progress, and required flags are enriched in employee mock data while test metadata resolves from `mockTests`. Employee nav "My Tests" links to `/employee/tests`. Test-taking and result routes are placeholders only. Shared KPI tone styles live in `src/shared/lib/kpi-tone-styles.ts`.

@@ -1,3 +1,4 @@
+import type { EmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
 import { resolveMockTest } from "@/features/tests/lib/test-source-document"
 import type { TestAssignmentStatus } from "@/features/tests/mock/employees"
 import { mockEmployees } from "@/features/tests/mock/employees"
@@ -102,4 +103,23 @@ export function getEmployeeAssignedTests(): EmployeeAssignedTest[] {
   return mockCurrentEmployeeAssignments
     .map(buildAssignedTest)
     .filter((item): item is EmployeeAssignedTest => item !== null)
+}
+
+export function getEmployeeAssignedTestById(id: string): EmployeeAssignedTest | null {
+  const record = mockCurrentEmployeeAssignments.find((item) => item.testId === id)
+  if (!record) return null
+  return buildAssignedTest(record)
+}
+
+export function getEmployeeTakeableTestById(id: string): EmployeeTakeableTest | null {
+  const assignedTest = getEmployeeAssignedTestById(id)
+  if (!assignedTest) return null
+
+  const test = getMockTestById(id)
+  if (!test || test.questions.length === 0) return null
+
+  return {
+    ...assignedTest,
+    questions: test.questions,
+  }
 }

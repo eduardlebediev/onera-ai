@@ -4,6 +4,28 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 15: Employee Test Taking Flow
+
+Replaced the `/employee/tests/[id]/take` placeholder with a full mock test-taking experience using local client state.
+
+- Extended `employee-tests.ts` with `getEmployeeAssignedTestById()` and `getEmployeeTakeableTestById()` — merges assignment metadata with questions from `mockTests`; returns null for unassigned or missing tests.
+- Added `test-taking-state.ts` — answer map type, progress helpers, question-type formatting, and local score calculation against `passingScore`.
+- Added UI components:
+  - `test-taking-page.tsx` — client container with question index, answer map, prev/next/submit navigation, and incomplete-submit warning.
+  - `test-question-card.tsx` — one question at a time with topic/type badges, source hint, and selectable answer options (single choice and true/false).
+  - `test-progress-panel.tsx` — progress bar, answered/unanswered counts, question navigator (current/answered/unanswered), and test context sidebar.
+  - `test-taking-not-found.tsx` — simple not-found state for invalid or unassigned test ids.
+- Updated `/employee/tests/[id]/take` route to resolve takeable test and render the flow; submit navigates to the existing result placeholder.
+- Updated `src/features/employee/tests/MODULE.md` boundaries.
+- Decision 022 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+
+### Post-Review Fix Pass
+
+- Removed dead `calculateLocalTestScore()` call from submit handler; helper retained in `test-taking-state.ts` for the result spec.
+- Documented MVP single-select answer behavior in `test-question-card.tsx` (true_false and single_choice only).
+- Excluded unrelated navbar centering change from the feature commit scope.
+
 ## Feature Spec 14: Employee My Tests
 
 Built the employee-facing My Tests dashboard with mock assignments, KPI summary, filters, priority indicators, and placeholder take/result routes.

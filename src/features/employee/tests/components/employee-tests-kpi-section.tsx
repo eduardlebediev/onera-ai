@@ -1,14 +1,14 @@
-import type { MockTest } from "@/features/tests/mock/tests"
-import { getTestKpiStats } from "@/features/tests/lib/test-kpi-stats"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import { getEmployeeTestKpiStats } from "@/features/employee/tests/lib/employee-test-kpi-stats"
 import { KPI_TONE_STYLES } from "@/shared/lib/kpi-tone-styles"
 import { Card, CardContent } from "@/shared/ui/card"
 
-interface TestsKpiSectionProps {
-  tests: MockTest[]
+interface EmployeeTestsKpiSectionProps {
+  tests: EmployeeAssignedTest[]
 }
 
-export function TestsKpiSection({ tests }: TestsKpiSectionProps) {
-  const stats = getTestKpiStats(tests)
+export function EmployeeTestsKpiSection({ tests }: EmployeeTestsKpiSectionProps) {
+  const stats = getEmployeeTestKpiStats(tests)
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">

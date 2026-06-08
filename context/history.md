@@ -4,6 +4,37 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 14: Employee My Tests
+
+Built the employee-facing My Tests dashboard with mock assignments, KPI summary, filters, priority indicators, and placeholder take/result routes.
+
+- Added `src/features/employee/tests/` module with colocated mock data for demo employee `emp-6` (Alex Turner).
+- Mock assignments include deadlines, estimated time, required flags, progress, and scores; test metadata resolves from `mockTests` via `resolveMockTest()`.
+- Added domain helpers:
+  - `employee-test-model.ts` — display status (including overdue), filters, status badges, and action resolution (Start/Continue/View Results/Review).
+  - `employee-test-kpi-stats.ts` — keyed KPI stats and overall progress summary.
+  - `employee-test-format.ts` — deadline and estimated-time formatting.
+  - `employee-test-indicators.ts` — priority indicators (overdue, due soon, required, low score).
+- Added UI components:
+  - `employee-tests-page.tsx` — header with employee name/role, progress summary, KPI section, filter tabs, card list.
+  - `employee-test-card.tsx` — task-style card with metadata, indicators, and status-based actions.
+  - `employee-tests-kpi-section.tsx` — 5 keyed KPI cards.
+- Replaced `/employee/tests` placeholder with full page; added `/employee/tests/[id]/take` and `/employee/tests/[id]/result` placeholders.
+- Updated employee nav "My Tests" link from `/my-tests` to `/employee/tests`.
+- Added `src/features/employee/tests/MODULE.md`; updated tests `MODULE.md` related routes.
+- Decision 021 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+
+### Post-Review Fix Pass
+
+- Split mis-scoped `employee-test-kpi-stats.ts` into focused lib files: `employee-test-format.ts`, `employee-test-indicators.ts`, and KPI-only `employee-test-kpi-stats.ts`.
+- Reused `TestDifficulty` from tests mock instead of inline union on `EmployeeAssignedTest`.
+- Added `isEmployeeTestFinished()` helper; KPI completed count, overall progress, and completed filter now share one definition.
+- Consolidated deadline math via `getDaysUntilDeadline()` in `employee-test-format.ts`; removed duplicate overdue/due-soon date logic.
+- Removed redundant completed-filter condition in `filterEmployeeTests()`.
+- Extracted shared `KPI_TONE_STYLES` to `src/shared/lib/kpi-tone-styles.ts`; admin and employee KPI sections consume the same tone map.
+- Consolidated duplicate status badge classes in `employee-test-model.ts` via `EMPLOYEE_TEST_STATUS_BADGE_CLASS`.
+
 ## Feature Spec 13: Assign Test to Employees
 
 Built the mock admin assignment flow connecting test detail to employee selection, configuration, and success state.

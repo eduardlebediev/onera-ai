@@ -23,7 +23,7 @@ const ADMIN_LINKS = [
 
 const EMPLOYEE_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/my-tests", label: "My Tests" },
+  { href: "/employee/tests", label: "My Tests" },
   { href: "/progress", label: "Progress" },
 ] as const
 

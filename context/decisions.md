@@ -1,5 +1,9 @@
 # Decisions
 
+## 021 — Employee My Tests uses dedicated feature module and mock current employee
+
+The `/employee/tests` page lives in `src/features/employee/tests/` with colocated mock assignments for a fixed demo employee (`emp-6`). Assignment deadlines, scores, progress, and required flags are enriched in employee mock data while test metadata resolves from `mockTests`. Employee nav "My Tests" links to `/employee/tests`. Test-taking and result routes are placeholders only. Shared KPI tone styles live in `src/shared/lib/kpi-tone-styles.ts`.
+
 ## 020 — Assign test flow uses feature-local mock employees and client state
 
 The `/tests/[id]/assign` flow uses colocated mock data in `src/features/tests/mock/employees.ts` for employee profiles and per-test assignment status. Assignment confirmation updates client-side state only — no Supabase or persistence. Employee selection uses accessible selectable rows (no checkbox primitive installed). Success navigation links to `/employee/tests` as the next planned employee route.

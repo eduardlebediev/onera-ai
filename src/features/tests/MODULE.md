@@ -34,7 +34,9 @@ Owns test-focused UI and feature logic for generating, reviewing, listing, and v
 - `/tests/[id]/assign`
 - `/tests/review`
 - `/tests/publish`
-- `/employee/tests` (placeholder for employee My Tests)
+- `/employee/tests`
+- `/employee/tests/[id]/take`
+- `/employee/tests/[id]/result`
 
 ## Future Boundaries
 

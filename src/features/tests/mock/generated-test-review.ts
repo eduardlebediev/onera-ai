@@ -25,6 +25,8 @@ export interface MockTestReviewData {
   targetRole: string
   questionCount: number
   language: ReviewLanguage
+  passingScore: number
+  selectedChunksCount: number
   selectedTopics: string[]
   questions: ReviewQuestion[]
 }
@@ -38,6 +40,8 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
     targetRole: "New employees",
     questionCount: 8,
     language: "English",
+    passingScore: 70,
+    selectedChunksCount: 4,
     selectedTopics: [
       "Onboarding Steps",
       "Code of Conduct",
@@ -216,6 +220,8 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
     targetRole: "Operations staff",
     questionCount: 5,
     language: "English",
+    passingScore: 75,
+    selectedChunksCount: 3,
     selectedTopics: ["Workplace Hazards", "Emergency Procedures", "Incident Reporting"],
     questions: [
       {
@@ -318,6 +324,11 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
   },
 }
 
+function countSelectedChunks(document: MockDocumentDetail, selectedTopics: string[]): number {
+  if (selectedTopics.length === 0) return 0
+  return document.chunks.filter((chunk) => selectedTopics.includes(chunk.topic)).length
+}
+
 function buildFallbackReviewData(document: MockDocumentDetail): MockTestReviewData {
   const selectedTopics = document.topics.slice(0, Math.min(document.topics.length, 3))
   const fallbackQuestions: ReviewQuestion[] = document.chunks.slice(0, 3).map((chunk, index) => ({
@@ -342,6 +353,8 @@ function buildFallbackReviewData(document: MockDocumentDetail): MockTestReviewDa
     targetRole: "All employees",
     questionCount: fallbackQuestions.length,
     language: "English",
+    passingScore: 80,
+    selectedChunksCount: countSelectedChunks(document, selectedTopics),
     selectedTopics,
     questions: fallbackQuestions,
   }

@@ -9,21 +9,13 @@ import {
 } from "@/features/tests/lib/assign-employees-model"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { SummaryRow } from "@/shared/ui/summary-row"
 
 interface AssignSummaryPanelProps {
   testTitle: string
   deadline: string
   summary: AssignmentSummary
   onAssign: () => void
-}
-
-function SummaryRow({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="typography-small text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
-    </div>
-  )
 }
 
 export function AssignSummaryPanel({

@@ -4,6 +4,24 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 18: Publish Test Flow
+
+Replaced the `/tests/publish` placeholder with a full mock publish confirmation flow using local UI state only.
+
+- Extended `MockTestReviewData` in `generated-test-review.ts` with `passingScore` and `selectedChunksCount` for `doc-1`, `doc-2`, and fallback documents.
+- Added `publish-test-model.ts` — `buildPublishContext()`, readiness checks, `isPublishReady()`, approved-question filter, and `resolvePublishedTestId()` mapping to existing published mock tests.
+- Added UI components:
+  - `publish-test-page.tsx` — orchestrator with local `published` and `draftSaved` state; desktop two-column layout (summary + approved questions | readiness + actions).
+  - `publish-test-summary.tsx` — final test summary with readiness-driven publish badge, source document, metadata, and review counts.
+  - `publish-readiness-card.tsx` — required and informational readiness checks with ready/needs-attention status.
+  - `publish-approved-questions.tsx` — approved-questions preview with topic, difficulty, skill, goal, and source chunk; rejected note.
+  - `publish-success-state.tsx` — success message, published badge, summary, and next actions (Open Test Detail, Assign to Employees, View All Tests).
+- Updated `/tests/publish` route to resolve document via `documentId` query param (same fallback pattern as review route) and render `PublishTestPage`.
+- Added shared `document-status-style.ts` and `summary-row.tsx`; reused in review, publish, and assign summary panels.
+- Decision 025 recorded in `context/decisions.md`.
+- Post-review polish: publish summary badge reflects readiness state; removed duplicate Back to Review link; simplified summary card header layout.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+
 ## Feature Spec 17: Follow-up Question Flow
 
 Extended the employee test result page with a lightweight mock follow-up question flow for incorrect answers.

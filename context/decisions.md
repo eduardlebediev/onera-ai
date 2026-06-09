@@ -1,5 +1,9 @@
 # Decisions
 
+## 025 — Publish test flow uses static review mock data and local UI state
+
+The `/tests/publish` flow lives in `src/features/tests/` with helpers in `lib/publish-test-model.ts` and colocated publish UI components. Publish reads `getMockTestReviewData()` on load (same static source as review route); review-page approve/reject edits are not passed across routes. Readiness checks gate the Publish action; success routes to the closest existing published mock test id (`doc-1` -> `test-1`, `doc-2` -> `test-2`). No Supabase, persistence, or global state.
+
 ## 024 — Follow-up questions use inline mock flow with topic-keyed local state
 
 The result-page follow-up flow lives in `src/features/employee/tests/` with colocated mock follow-up records in `mock/follow-up-questions.ts`, keyed by `originalQuestionId`. Incorrect answers in answer review expose a "Check understanding" action that expands an inline card (explanation, single-choice question, feedback). Entry point is answer review only; weak topics reflect completion status via local state keyed by topic (`needs_review`, `follow_up_completed`, `topic_understood`). No AI generation, persistence, or new routes.

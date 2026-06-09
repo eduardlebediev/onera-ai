@@ -4,23 +4,34 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-Build a clickable MVP prototype of Ontera AI that clearly demonstrates the core product flow:
+Build a backend-backed RAG demo slice for Ontera AI that proves internal documents can be chunked, embedded, retrieved with pgvector, and used by AI to generate reviewable employee knowledge tests.
 
-Internal documents are uploaded and processed into topics/chunks, an admin generates a knowledge test from those documents, reviews AI-generated questions, publishes the test, assigns it to employees, and an employee completes the test and receives results/feedback.
+The current phase is presentation-focused. The goal is not to build a complete production backend, but to implement the smallest useful vertical slice:
 
-This phase focuses on the full end-to-end user experience with mock data only. The goal is not to build the backend yet, but to create a polished, believable prototype that shows the product value, main screens, and interaction flow.
+Admin document
+→ document chunks
+→ embeddings
+→ pgvector retrieval
+→ AI-generated test draft
+→ admin review
+→ publish test
+→ employee demo flow.
 
 ## In Progress
 
-- None.
+- Supabase pgvector Backend Foundation
 
 ## Next Up
 
-- Final README and demo handoff preparation
+- Demo Seed Data: Organization, Users, Documents, Chunks
+- Embedding Script for Demo Chunks
+- `match_document_chunks` RPC
+- AI Generate Test from Document Chunks
+- Connect Generate Test Setup to AI
+- Save Published Tests and Questions to Supabase
+- Presentation Demo Polish
 
 ## Open Questions
-
-- None at this stage.
 
 ## Completed
 

@@ -38,7 +38,7 @@ export function TestAssignmentsSection({
         </div>
         {testStatus === "published" ? (
           <Button asChild className="w-full">
-            <Link href={`/tests/${testId}/assign`}>Assign to Employees</Link>
+            <Link href={`/admin/tests/${testId}/assign`}>Assign to Employees</Link>
           </Button>
         ) : (
           <Button

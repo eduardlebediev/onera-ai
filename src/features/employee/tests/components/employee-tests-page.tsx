@@ -33,7 +33,7 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
         <div>
           <h1 className="typography-h1">My Tests</h1>
           <p className="mt-1 typography-p text-muted-foreground">
-            View assigned knowledge tests, track deadlines, and continue where you left off.
+            Complete assigned knowledge tests and review your results and feedback.
           </p>
         </div>
 
@@ -60,7 +60,16 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
       </div>
 
       <div className="mt-2 space-y-2">
-        {visibleTests.length > 0 ? (
+        {tests.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <p className="typography-h3 font-semibold">No assigned tests yet</p>
+              <p className="max-w-md typography-p text-muted-foreground">
+                When an admin assigns a test to you, it will appear here with a Start Test action.
+              </p>
+            </CardContent>
+          </Card>
+        ) : visibleTests.length > 0 ? (
           visibleTests.map((test) => <EmployeeTestCard key={test.id} test={test} />)
         ) : (
           <Card>

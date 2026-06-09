@@ -45,6 +45,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
   const [filter, setFilter] = useState<EmployeeFilter>("all")
   const [settings, setSettings] = useState<AssignmentSettings>(getDefaultAssignmentSettings())
   const [successState, setSuccessState] = useState<SuccessState | null>(null)
+  const [isAssigning, setIsAssigning] = useState(false)
 
   const employeesWithStatus = useMemo(
     () => enrichEmployeesWithAssignmentStatus(mockEmployees, assignments, test.id),
@@ -80,32 +81,36 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
   }
 
   const handleAssign = () => {
-    if (!canConfirmAssignment(selectedEmployeeIds.length, settings.deadline)) return
+    if (!canConfirmAssignment(selectedEmployeeIds.length, settings.deadline) || isAssigning) return
 
-    setAssignments((current) => {
-      const next = [...current]
+    setIsAssigning(true)
+    window.setTimeout(() => {
+      setAssignments((current) => {
+        const next = [...current]
 
-      for (const employeeId of selectedEmployeeIds) {
-        const existingIndex = next.findIndex(
-          (item) => item.testId === test.id && item.employeeId === employeeId
-        )
+        for (const employeeId of selectedEmployeeIds) {
+          const existingIndex = next.findIndex(
+            (item) => item.testId === test.id && item.employeeId === employeeId
+          )
 
-        if (existingIndex === -1) {
-          next.push({
-            testId: test.id,
-            employeeId,
-            status: "not_started",
-          })
+          if (existingIndex === -1) {
+            next.push({
+              testId: test.id,
+              employeeId,
+              status: "not_started",
+            })
+          }
         }
-      }
 
-      return next
-    })
+        return next
+      })
 
-    setSuccessState({
-      assignedCount: selectedEmployeeIds.length,
-      deadline: settings.deadline,
-    })
+      setSuccessState({
+        assignedCount: selectedEmployeeIds.length,
+        deadline: settings.deadline,
+      })
+      setIsAssigning(false)
+    }, 700)
   }
 
   const handleAssignMore = () => {
@@ -155,10 +160,10 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button asChild>
-                <Link href={`/tests/${test.id}`}>Back to Test Detail</Link>
+                <Link href="/employee/tests">View Employee Tests</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/employee/tests">View Employee Tests</Link>
+                <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>
               </Button>
               <Button type="button" variant="outline" onClick={handleAssignMore}>
                 Assign More Employees
@@ -181,7 +186,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
           </p>
         </div>
         <Button asChild variant="outline" className="shrink-0">
-          <Link href={`/tests/${test.id}`}>Back to Test Detail</Link>
+          <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>
         </Button>
       </div>
 
@@ -211,6 +216,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
               testTitle={test.title}
               deadline={settings.deadline}
               summary={summary}
+              isAssigning={isAssigning}
               onAssign={handleAssign}
             />
           </div>

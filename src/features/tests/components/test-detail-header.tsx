@@ -16,7 +16,7 @@ export function TestDetailHeader({ test }: TestDetailHeaderProps) {
   return (
     <div>
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/tests" className="hover:text-foreground">
+        <Link href="/admin/tests" className="hover:text-foreground">
           Tests
         </Link>
         <ChevronRight className="size-4" />
@@ -44,7 +44,7 @@ export function TestDetailHeader({ test }: TestDetailHeaderProps) {
           <div className="flex items-center gap-1.5">
             <FileText className="size-4 text-muted-foreground" />
             <Link
-              href={`/documents/${test.sourceDocument.documentId}`}
+              href={`/admin/documents/${test.sourceDocument.documentId}`}
               className="font-medium text-foreground hover:text-primary"
             >
               {test.sourceDocument.title}

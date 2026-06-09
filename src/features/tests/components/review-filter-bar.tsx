@@ -146,8 +146,8 @@ export function ReviewFilterBar({
 
         <button
           disabled
-          title="Advanced filter settings (coming soon)"
-          aria-label="Advanced filter settings (coming soon)"
+          title="Advanced filters are not available in this demo"
+          aria-label="Advanced filters are not available in this demo"
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-input bg-card text-muted-foreground shadow-sm opacity-50 cursor-not-allowed"
         >
           <Settings className="size-4" aria-hidden="true" />

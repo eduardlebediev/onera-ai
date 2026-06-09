@@ -32,6 +32,15 @@ export function TestAnswerReview({
     <Card>
       <CardContent className="space-y-4 p-6">
         <h2 className="typography-h3 font-semibold">Answer Review</h2>
+        <p className="typography-small text-muted-foreground">
+          Follow-up questions help you check understanding after a wrong answer.
+        </p>
+
+        {answerReview.every((item) => item.isCorrect) ? (
+          <p className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3 typography-small text-muted-foreground">
+            All answers were correct — no follow-up questions needed for this attempt.
+          </p>
+        ) : null}
 
         <ul className="space-y-4">
           {answerReview.map((item, index) => {

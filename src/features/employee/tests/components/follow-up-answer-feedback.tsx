@@ -66,7 +66,7 @@ export function FollowUpAnswerFeedback({
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm">
-          <Link href={`/documents/${sourceDocumentId}`}>
+          <Link href={`/admin/documents/${sourceDocumentId}`}>
             <BookOpen className="size-4" />
             Review source material
           </Link>

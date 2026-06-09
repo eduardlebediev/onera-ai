@@ -88,7 +88,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
   return (
     <div className="page-shell-narrow">
       <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/documents" className="hover:text-foreground">
+        <Link href="/admin/documents" className="hover:text-foreground">
           Documents
         </Link>
         <ChevronRight className="size-4" />
@@ -126,7 +126,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
           </Button>
           <Button asChild={isReady} disabled={!isReady}>
             {isReady ? (
-              <Link href={`/documents/${document.id}/generate-test`}>
+              <Link href={`/admin/documents/${document.id}/generate-test`}>
                 <Sparkles />
                 Generate Test
               </Link>

@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Bell, ChevronDown, Menu, Search } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { ChevronDown, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRole } from "@/shared/lib/role-context"
 import {
@@ -14,34 +14,41 @@ import {
 import { Logo } from "@/shared/ui/logo"
 
 const ADMIN_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/documents", label: "Documents" },
-  { href: "/tests", label: "Tests" },
-  { href: "/employees", label: "Employees" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/admin/dashboard", label: "Dashboard" },
+  { href: "/admin/documents", label: "Documents" },
+  { href: "/admin/tests", label: "Tests" },
 ] as const
 
 const EMPLOYEE_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/employee/dashboard", label: "Dashboard" },
   { href: "/employee/tests", label: "My Tests" },
-  { href: "/progress", label: "Progress" },
 ] as const
+
+const ADMIN_DASHBOARD = "/admin/dashboard"
+const EMPLOYEE_DASHBOARD = "/employee/dashboard"
 
 export function TopNavbar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { role, setRole } = useRole()
 
   const links = role === "admin" ? ADMIN_LINKS : EMPLOYEE_LINKS
+  const dashboardHref = role === "admin" ? ADMIN_DASHBOARD : EMPLOYEE_DASHBOARD
   const userName = role === "admin" ? "Administrator" : "Employee"
   const userTitle = role === "admin" ? "System Administrator" : "Team Member"
   const initials = role === "admin" ? "Ad" : "Em"
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")
 
+  function switchRole(nextRole: "admin" | "employee") {
+    setRole(nextRole)
+    router.push(nextRole === "admin" ? ADMIN_DASHBOARD : EMPLOYEE_DASHBOARD)
+  }
+
   return (
     <nav className="flex h-16 shrink-0 items-center gap-3 bg-foreground px-4 md:gap-6 md:px-8">
       {/* Logo */}
-      <Link href="/dashboard" className="shrink-0">
+      <Link href={dashboardHref} className="shrink-0">
         <Logo />
       </Link>
 
@@ -91,19 +98,6 @@ export function TopNavbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button
-          className="w-8 h-8 flex items-center justify-center text-background/55 hover:text-background transition-colors rounded-md hover:bg-background/5"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4.5 h-4.5" />
-        </button>
-        <button
-          className="w-8 h-8 flex items-center justify-center text-background/55 hover:text-background transition-colors rounded-md hover:bg-background/5"
-          aria-label="Search"
-        >
-          <Search className="w-4.5 h-4.5" />
-        </button>
-
         {/* Role switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2.5 ml-1 pl-2 pr-1 py-1 rounded-md hover:bg-background/5 transition-colors text-background/90 hover:text-background cursor-pointer bg-transparent border-0 outline-none">
@@ -118,13 +112,13 @@ export function TopNavbar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
-              onClick={() => setRole("admin")}
+              onClick={() => switchRole("admin")}
               className={cn(role === "admin" && "text-primary font-medium")}
             >
               Admin
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setRole("employee")}
+              onClick={() => switchRole("employee")}
               className={cn(role === "employee" && "text-primary font-medium")}
             >
               Employee

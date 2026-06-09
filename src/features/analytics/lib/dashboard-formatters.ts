@@ -46,7 +46,7 @@ export function getDocumentStatusBadgeConfig(
 
 export function getDocumentActionLabel(document: MockDocument) {
   if (document.status === "failed") return "Retry"
-  if (document.quizCount === 0 && document.status === "ready") return "Create Test"
+  if (document.testCount === 0 && document.status === "ready") return "Create Test"
   return "View"
 }
 

@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
-import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
+import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 import { TestProgressPanel } from "@/features/employee/tests/components/test-progress-panel"
 import { TestQuestionCard } from "@/features/employee/tests/components/test-question-card"
@@ -13,6 +13,7 @@ import {
   type EmployeeTakeableTest,
   type TestTakingAnswers,
 } from "@/features/employee/tests/lib/test-taking-state"
+import { saveTakeSession } from "@/features/employee/tests/lib/take-session"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -22,9 +23,11 @@ interface TestTakingPageProps {
 
 export function TestTakingPage({ test }: TestTakingPageProps) {
   const router = useRouter()
+  const startedAtRef = useRef(Date.now())
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<TestTakingAnswers>({})
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const questions = test.questions
   const totalQuestions = questions.length
@@ -83,7 +86,19 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
   }
 
   function submitTest() {
-    router.push(`/employee/tests/${test.id}/result`)
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+    const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 60000))
+
+    window.setTimeout(() => {
+      saveTakeSession(test.id, {
+        answers,
+        submittedAt: new Date().toISOString(),
+        timeSpentMinutes: elapsedMinutes,
+      })
+      router.push(`/employee/tests/${test.id}/result`)
+    }, 700)
   }
 
   if (!currentQuestion) {
@@ -153,8 +168,15 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                   >
                     Keep reviewing
                   </Button>
-                  <Button type="button" onClick={submitTest}>
-                    Submit anyway
+                  <Button type="button" onClick={submitTest} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit anyway"
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -179,8 +201,15 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                   <ChevronRight className="size-4" />
                 </Button>
               ) : (
-                <Button type="button" onClick={handleSubmitClick}>
-                  Submit Test
+                <Button type="button" onClick={handleSubmitClick} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit Test"
+                  )}
                 </Button>
               )}
             </div>

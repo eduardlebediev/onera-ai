@@ -50,7 +50,7 @@ export function AssignTestContext({ test }: AssignTestContextProps) {
             <div className="mt-0.5 flex items-center gap-1.5">
               <FileText className="size-4 text-muted-foreground" />
               <Link
-                href={`/documents/${test.sourceDocument.documentId}`}
+                href={`/admin/documents/${test.sourceDocument.documentId}`}
                 className="text-sm font-medium text-foreground hover:text-primary"
               >
                 {test.sourceDocument.title}

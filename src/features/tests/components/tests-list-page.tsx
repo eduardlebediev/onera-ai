@@ -117,7 +117,7 @@ export function TestsListPage({ tests }: TestsListPageProps) {
                       <TableRow key={test.id} className="group hover:bg-muted/30 transition-colors">
                         <TableCell className="py-4">
                           <Link
-                            href={`/tests/${test.id}`}
+                            href={`/admin/tests/${test.id}`}
                             className="typography-small font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1"
                           >
                             {test.title}
@@ -153,7 +153,7 @@ export function TestsListPage({ tests }: TestsListPageProps) {
                         <TableCell className="py-4">{test.attemptsCount}</TableCell>
                         <TableCell className="py-4 text-right">
                           <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                            <Link href={`/tests/${test.id}`}>View details</Link>
+                            <Link href={`/admin/tests/${test.id}`}>View details</Link>
                           </Button>
                         </TableCell>
                       </TableRow>

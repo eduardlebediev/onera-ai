@@ -198,9 +198,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
               <TableHead className="text-xs font-medium text-muted-foreground">
                 Extracted Text
               </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                Assessments
-              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Tests</TableHead>
               <SortableTableHead
                 label="Updated"
                 sortKey="uploadedAt"
@@ -331,7 +329,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                             size="sm"
                             className="h-8 text-xs font-medium"
                           >
-                            <Link href={`/documents/${document.id}/generate-test`}>
+                            <Link href={`/admin/documents/${document.id}/generate-test`}>
                               Generate Test
                             </Link>
                           </Button>

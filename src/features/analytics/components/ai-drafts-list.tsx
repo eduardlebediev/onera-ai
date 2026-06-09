@@ -1,8 +1,15 @@
+import Link from "next/link"
 import { Sparkles } from "lucide-react"
 
 import type { MockAiDraft } from "@/data/mock/admin-dashboard"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
+
+const DRAFT_REVIEW_LINKS: Record<string, string> = {
+  "draft-1": "/admin/tests/review?documentId=doc-1",
+  "draft-2": "/admin/tests/review?documentId=doc-1",
+  "draft-3": "/admin/tests/review?documentId=doc-4",
+}
 
 interface AiDraftsListProps {
   drafts: MockAiDraft[]
@@ -19,7 +26,7 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
           <div>
             <h3 className="typography-h3">AI Review</h3>
             <p className="mt-1 typography-small text-muted-foreground font-medium">
-              {drafts.length} Test drafts need to be reviewed
+              {drafts.length} test drafts need to be reviewed
             </p>
           </div>
         </div>
@@ -34,14 +41,18 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
                   {draft.questionCount} AI-generated questions
                 </p>
               </div>
-              <Button variant="secondary" size="sm">
-                Review
+              <Button variant="secondary" size="sm" asChild>
+                <Link href={DRAFT_REVIEW_LINKS[draft.id] ?? "/admin/tests/review?documentId=doc-1"}>
+                  Review
+                </Link>
               </Button>
             </div>
           ))}
         </div>
         <div className="px-6 pb-4 pt-2">
-          <Button variant="link">View all drafts &gt;</Button>
+          <Button variant="link" asChild>
+            <Link href="/admin/tests/review?documentId=doc-1">View all drafts &gt;</Link>
+          </Button>
         </div>
       </CardContent>
     </Card>

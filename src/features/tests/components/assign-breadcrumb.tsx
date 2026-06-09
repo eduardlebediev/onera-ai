@@ -12,11 +12,11 @@ interface AssignBreadcrumbProps {
 export function AssignBreadcrumb({ testId, testTitle, className }: AssignBreadcrumbProps) {
   return (
     <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
-      <Link href="/tests" className="hover:text-foreground">
+      <Link href="/admin/tests" className="hover:text-foreground">
         Tests
       </Link>
       <ChevronRight className="size-4" />
-      <Link href={`/tests/${testId}`} className="hover:text-foreground">
+      <Link href={`/admin/tests/${testId}`} className="hover:text-foreground">
         {testTitle}
       </Link>
       <ChevronRight className="size-4" />

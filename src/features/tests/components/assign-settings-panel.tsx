@@ -56,7 +56,7 @@ export function AssignSettingsPanel({
           <div>
             <p className="text-sm font-medium text-foreground">Send reminder</p>
             <p className="typography-small text-muted-foreground">
-              Placeholder — reminders are not implemented yet.
+              Email reminders are not available in this demo.
             </p>
           </div>
           <button

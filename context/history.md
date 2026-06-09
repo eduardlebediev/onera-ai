@@ -4,6 +4,45 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 20: Role-Based Route Structure and Employee Dashboard
+
+Refactored the clickable MVP into role-based URLs and added an employee dashboard.
+
+- Moved admin routes into `src/app/(admin)/admin/...` (`/admin/dashboard`, `/admin/documents`, `/admin/tests`, review, publish, detail, assign).
+- Moved employee routes into `src/app/(employee)/employee/...` and added `/employee/dashboard`.
+- Updated all admin internal links from `/documents` and `/tests` to `/admin/...`; employee take/result links unchanged.
+- Repointed global navbar links and role switcher to `/admin/dashboard` and `/employee/dashboard`.
+- Deleted orphan stub routes: `/analytics`, `/employees`, `/progress`, `/my-tests`.
+- Added employee dashboard feature module:
+  - `employee-dashboard-kpi.ts` — explicit KPI objects (Assigned, Due Soon, Completed, Average Score, Weak Topics).
+  - `employee-dashboard-model.ts` — next required test, recent feedback, learning focus, quick actions.
+  - Dashboard UI sections: header, KPIs, next test, recent feedback, learning focus, quick actions.
+- Enriched `test-5` weak topics in mock results for learning-focus demo (Escalation Paths, Incident Reporting, P0 Routing).
+- Root `/` redirects to `/admin/dashboard`.
+- Decision 026 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Fixed Quick Actions card text overflow (`whitespace-normal`, `min-w-0`, `line-clamp-2`) so descriptions stay within each action card.
+- Removed non-functional search and notifications buttons from the top navbar.
+- Aligned employee dashboard KPI-to-widget vertical spacing with the system `gap-2` rhythm used across dashboard grids.
+
+## Feature Spec 19: Clickable Demo Polish
+
+Polished the clickable MVP into a coherent, demo-ready flow centered on the Security Guidelines story.
+
+- Rethemed canonical mock data (`doc-1`, `test-1`, review, results, follow-up, dashboard) to Security Guidelines with aligned topics, chunks, questions, and weak topics.
+- Renamed dashboard `quizCount` → `testCount`; removed residual Quiz wording in user-facing copy.
+- Wired dashboard CTAs (Generate Test, document rows, test performance, AI review drafts) to real demo routes.
+- Hid off-path nav items (Employees, Analytics, Progress); added friendly not-found pages for invalid document/test IDs.
+- Added `review-session.ts` and `take-session.ts` for lightweight sessionStorage continuity (review → publish, take → result).
+- Set demo employee `test-1` assignment to `not_started` so Start Test appears in My Tests.
+- Added local loading states on generate preview, publish, assign, submit, and follow-up check.
+- Improved empty/invalid states (no assigned tests, no approved questions, all-correct follow-up, generate setup hint).
+- Added helper copy on review, publish, result, and answer review screens; deduped generate-test primary CTA.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 18: Publish Test Flow
 
 Replaced the `/tests/publish` placeholder with a full mock publish confirmation flow using local UI state only.

@@ -41,55 +41,63 @@ export interface MockDocumentDetail {
 export const mockDocuments: MockDocumentDetail[] = [
   {
     id: "doc-1",
-    title: "Onboarding Process & HR Policies 2024",
+    title: "Security Guidelines",
     status: "ready",
     fileType: "pdf",
     fileSizeMb: 1.8,
     description:
-      "Comprehensive guide covering the full employee onboarding lifecycle, HR policies, code of conduct, and benefits overview for all new hires.",
+      "Company-wide security standards covering password policy, data classification, access control, and phishing awareness for all employees.",
     uploadedAt: "2024-05-10",
-    topicsCount: 6,
+    topicsCount: 4,
     topics: [
-      "Onboarding Steps",
-      "Code of Conduct",
-      "Benefits & Compensation",
-      "Leave Policies",
-      "Performance Reviews",
-      "Company Values",
+      "Password Policy",
+      "Data Classification",
+      "Access Control",
+      "Phishing & Social Engineering",
     ],
     chunks: [
       {
         id: "doc-1-c1",
-        topic: "Onboarding Steps",
+        topic: "Password Policy",
         chunkIndex: 0,
         content:
-          "The onboarding process begins on Day 1 with an orientation session covering company history, mission, and team introductions. New employees receive access to all relevant tools within the first 48 hours.",
+          "All employee accounts must use passwords of at least 12 characters including uppercase, lowercase, numbers, and symbols. Multi-factor authentication (MFA) is required for all systems handling company data.",
       },
       {
         id: "doc-1-c2",
-        topic: "Code of Conduct",
+        topic: "Data Classification",
         chunkIndex: 1,
         content:
-          "All employees are expected to act with integrity, respect, and professionalism. Violations of the code of conduct are subject to disciplinary action up to and including termination.",
+          "Company data is classified as Public, Internal, Confidential, or Restricted. Customer personally identifiable information (PII) must always be treated as Confidential and stored only in approved systems.",
       },
       {
         id: "doc-1-c3",
-        topic: "Benefits & Compensation",
+        topic: "Access Control",
         chunkIndex: 2,
         content:
-          "Employees are eligible for health, dental, and vision insurance from the first day of employment. Annual salary reviews occur every December based on performance ratings.",
+          "Access to systems and data follows the principle of least privilege. Employees receive only the permissions necessary for their role. Access requests must be approved by the employee's manager and reviewed quarterly.",
       },
       {
         id: "doc-1-c4",
-        topic: "Leave Policies",
+        topic: "Phishing & Social Engineering",
         chunkIndex: 3,
         content:
-          "Full-time employees receive 25 days of paid vacation per year, plus public holidays. Sick leave is separate and not capped. Parental leave includes 16 weeks fully paid for primary caregivers.",
+          "Employees must report suspicious emails to the security team immediately using the Report Phishing button in their email client. Never click links or download attachments from unknown senders. Security will never ask for your password via email.",
       },
     ],
     linkedTests: [
-      { id: "test-1", title: "HR Policies Quiz", questionCount: 15, status: "published" },
-      { id: "test-2", title: "Onboarding Essentials", questionCount: 10, status: "published" },
+      {
+        id: "test-1",
+        title: "Security Guidelines Knowledge Test",
+        questionCount: 5,
+        status: "published",
+      },
+      {
+        id: "test-3",
+        title: "Security Essentials (Draft)",
+        questionCount: 3,
+        status: "draft",
+      },
     ],
     versions: [
       { id: "v2", version: 2, uploadedAt: "2024-05-10", status: "ready" },
@@ -138,9 +146,9 @@ export const mockDocuments: MockDocumentDetail[] = [
     ],
     linkedTests: [
       {
-        id: "test-3",
-        title: "Safety Compliance Assessment",
-        questionCount: 20,
+        id: "test-2",
+        title: "Safety & Compliance Assessment",
+        questionCount: 4,
         status: "published",
       },
     ],
@@ -202,7 +210,7 @@ export const mockDocuments: MockDocumentDetail[] = [
       },
     ],
     linkedTests: [
-      { id: "test-4", title: "Support Protocols Quiz", questionCount: 12, status: "published" },
+      { id: "test-4", title: "Support Protocols Test", questionCount: 4, status: "published" },
       { id: "test-5", title: "SLA & Escalation Test", questionCount: 8, status: "draft" },
     ],
     versions: [

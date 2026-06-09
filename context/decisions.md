@@ -1,5 +1,9 @@
 # Decisions
 
+## 026 — Role-based route groups with global demo navbar
+
+Admin routes live under `src/app/(admin)/admin/...` (`/admin/dashboard`, `/admin/documents`, `/admin/tests`, etc.). Employee routes live under `src/app/(employee)/employee/...` (`/employee/dashboard`, `/employee/tests`, take/result). Route groups are organizational only. The global `TopNavbar` and `RoleProvider` remain in the root layout; nav links and the role switcher navigate to `/admin/...` or `/employee/...` dashboards. No auth middleware or legacy redirects. Orphan stub routes (`/analytics`, `/employees`, `/progress`, `/my-tests`) were removed.
+
 ## 025 — Publish test flow uses static review mock data and local UI state
 
 The `/tests/publish` flow lives in `src/features/tests/` with helpers in `lib/publish-test-model.ts` and colocated publish UI components. Publish reads `getMockTestReviewData()` on load (same static source as review route); review-page approve/reject edits are not passed across routes. Readiness checks gate the Publish action; success routes to the closest existing published mock test id (`doc-1` -> `test-1`, `doc-2` -> `test-2`). No Supabase, persistence, or global state.

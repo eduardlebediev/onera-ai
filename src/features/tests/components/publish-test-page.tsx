@@ -1,6 +1,6 @@
 "use client"
 
-import { Rocket, Save } from "lucide-react"
+import { Rocket, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
@@ -17,6 +17,7 @@ import {
   resolvePublishedTestId,
   type PublishTestContext,
 } from "@/features/tests/lib/publish-test-model"
+import { mergeReviewSession } from "@/features/tests/lib/review-session"
 import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { Button } from "@/shared/ui/button"
@@ -27,9 +28,17 @@ interface PublishTestPageProps {
   reviewData: MockTestReviewData
 }
 
-export function PublishTestPage({ document, reviewData }: PublishTestPageProps) {
+export function PublishTestPage({ document, reviewData: initialReviewData }: PublishTestPageProps) {
   const [published, setPublished] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [reviewData] = useState(() => ({
+    ...initialReviewData,
+    questions:
+      typeof window !== "undefined"
+        ? mergeReviewSession(document.id, initialReviewData.questions)
+        : initialReviewData.questions,
+  }))
 
   const context = useMemo<PublishTestContext>(
     () => buildPublishContext(document, reviewData),
@@ -49,6 +58,16 @@ export function PublishTestPage({ document, reviewData }: PublishTestPageProps) 
     setDraftSaved(true)
   }
 
+  const handlePublish = () => {
+    if (!canPublish || isPublishing) return
+
+    setIsPublishing(true)
+    window.setTimeout(() => {
+      setPublished(true)
+      setIsPublishing(false)
+    }, 700)
+  }
+
   if (published) {
     return (
       <div className="page-shell-narrow">
@@ -63,6 +82,9 @@ export function PublishTestPage({ document, reviewData }: PublishTestPageProps) 
         <h1 className="typography-h1">Publish Test</h1>
         <p className="typography-p text-muted-foreground">
           Review the final test summary, confirm readiness, and publish when you are ready.
+        </p>
+        <p className="typography-small text-muted-foreground">
+          This test was generated from selected document topics and source chunks.
         </p>
       </div>
 
@@ -93,15 +115,19 @@ export function PublishTestPage({ document, reviewData }: PublishTestPageProps) 
               <Button
                 type="button"
                 className="w-full bg-foreground text-background"
-                disabled={!canPublish}
-                onClick={() => setPublished(true)}
+                disabled={!canPublish || isPublishing}
+                onClick={handlePublish}
               >
-                <Rocket className="mr-2 size-4" />
-                Publish Test
+                {isPublishing ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <Rocket className="mr-2 size-4" />
+                )}
+                {isPublishing ? "Publishing..." : "Publish Test"}
               </Button>
 
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/tests/review?documentId=${encodeURIComponent(document.id)}`}>
+                <Link href={`/admin/tests/review?documentId=${encodeURIComponent(document.id)}`}>
                   Back to Review
                 </Link>
               </Button>
@@ -112,7 +138,7 @@ export function PublishTestPage({ document, reviewData }: PublishTestPageProps) 
               </Button>
 
               <Button asChild variant="ghost" className="w-full">
-                <Link href="/tests">Cancel</Link>
+                <Link href="/admin/tests">Cancel</Link>
               </Button>
             </CardContent>
           </Card>

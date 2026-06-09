@@ -21,7 +21,7 @@ export function AssignNotPublished({ test }: AssignNotPublishedProps) {
             Publish this test before assigning it to employees.
           </p>
           <Button asChild>
-            <Link href={`/tests/${test.id}`}>Back to Test Detail</Link>
+            <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>
           </Button>
         </CardContent>
       </Card>

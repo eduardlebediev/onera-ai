@@ -30,10 +30,10 @@ Owns test-focused UI and feature logic for generating, reviewing, listing, and v
 ## Related Routes
 
 - `/tests`
-- `/tests/[id]`
-- `/tests/[id]/assign`
-- `/tests/review`
-- `/tests/publish`
+- `/admin/tests/[id]`
+- `/admin/tests/[id]/assign`
+- `/admin/tests/review`
+- `/admin/tests/publish`
 - `/employee/tests`
 - `/employee/tests/[id]/take`
 - `/employee/tests/[id]/result`

@@ -74,7 +74,7 @@ export function TestSourceDocumentsSection({ source }: TestSourceDocumentsSectio
           <p className="mt-0.5 text-sm font-medium text-foreground">{source.chunksUsed}</p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href={`/documents/${source.documentId}`}>
+          <Link href={`/admin/documents/${source.documentId}`}>
             Open document
             <ExternalLink className="ml-1 size-3" />
           </Link>

@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { CheckCircle2, FileText, Loader2, XCircle } from "lucide-react"
 
 import type { DocumentDisplayStatus, MockDocument } from "@/data/mock/admin-dashboard"
@@ -30,6 +31,14 @@ function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
   )
 }
 
+function getDocumentActionHref(document: MockDocument): string {
+  if (document.status === "failed") return `/admin/documents/${document.id}`
+  if (document.testCount === 0 && document.status === "ready") {
+    return `/admin/documents/${document.id}/generate-test`
+  }
+  return `/admin/documents/${document.id}`
+}
+
 interface RecentDocumentsCardProps {
   documents: MockDocument[]
 }
@@ -42,8 +51,8 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
           <FileText className="size-5 text-muted-foreground" />
           <h3 className="typography-h3">Recent Documents</h3>
           <div className="ml-auto">
-            <Button variant="link" size="sm">
-              View all &gt;
+            <Button variant="link" size="sm" asChild>
+              <Link href="/admin/documents">View all &gt;</Link>
             </Button>
           </div>
         </div>
@@ -76,7 +85,12 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
             {documents.map((document) => (
               <TableRow key={document.id}>
                 <TableCell>
-                  <p className="typography-small font-medium">{document.title}</p>
+                  <Link
+                    href={`/admin/documents/${document.id}`}
+                    className="typography-small font-medium hover:text-primary hover:underline"
+                  >
+                    {document.title}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
@@ -88,7 +102,7 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
                 </TableCell>
                 <TableCell>
                   <p className="typography-small font-medium text-muted-foreground">
-                    {document.quizCount > 0 ? document.quizCount : "—"}
+                    {document.testCount > 0 ? document.testCount : "—"}
                   </p>
                 </TableCell>
                 <TableCell>
@@ -97,8 +111,10 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
                   </p>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    {getDocumentActionLabel(document)}
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={getDocumentActionHref(document)}>
+                      {getDocumentActionLabel(document)}
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>

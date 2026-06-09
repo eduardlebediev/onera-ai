@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { ClipboardList } from "lucide-react"
 
 import type { MockTest, TestStatus } from "@/data/mock/admin-dashboard"
@@ -33,8 +34,8 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
           <ClipboardList className="size-5 text-muted-foreground" />
           <h3 className="typography-h3">Test Performance Overview</h3>
           <div className="ml-auto">
-            <Button variant="link" size="sm">
-              View all &gt;
+            <Button variant="link" size="sm" asChild>
+              <Link href="/admin/tests">View all &gt;</Link>
             </Button>
           </div>
         </div>
@@ -67,9 +68,14 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
           </TableHeader>
           <TableBody className="divide-y divide-border/50">
             {tests.map((test) => (
-              <TableRow key={test.id}>
+              <TableRow key={test.id} className="cursor-pointer hover:bg-muted/50">
                 <TableCell>
-                  <p className="typography-small font-medium">{test.title}</p>
+                  <Link
+                    href={`/admin/tests/${test.id}`}
+                    className="typography-small font-medium hover:text-primary hover:underline"
+                  >
+                    {test.title}
+                  </Link>
                 </TableCell>
                 <TableCell>
                   <p className="typography-small font-medium text-muted-foreground">{test.role}</p>
@@ -86,9 +92,9 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
                 </TableCell>
                 <TableCell>
                   <span
-                    className={`typography-p font-medium ${getScoreColorClass(test.averageScore)}`}
+                    className={`typography-p font-medium ${test.averageScore > 0 ? getScoreColorClass(test.averageScore) : "text-muted-foreground"}`}
                   >
-                    {test.averageScore}%
+                    {test.averageScore > 0 ? `${test.averageScore}%` : "—"}
                   </span>
                 </TableCell>
                 <TableCell>

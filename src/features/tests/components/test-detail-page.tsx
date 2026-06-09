@@ -23,7 +23,7 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
             <>
               <Button asChild variant="outline">
                 <Link
-                  href={`/tests/review?documentId=${encodeURIComponent(test.sourceDocument.documentId)}`}
+                  href={`/admin/tests/review?documentId=${encodeURIComponent(test.sourceDocument.documentId)}`}
                   title="Opens document review flow; mock phase has no per-test draft editor yet"
                 >
                   Edit draft
@@ -43,7 +43,7 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
           {test.status === "published" && (
             <>
               <Button asChild>
-                <Link href={`/tests/${test.id}/assign`}>Assign to Employees</Link>
+                <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="#results">View results</Link>

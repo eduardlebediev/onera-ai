@@ -2,7 +2,7 @@
 
 import { ArrowLeft, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 
 import type { DocumentStatus } from "@/data/mock/documents"
 import type {
@@ -11,6 +11,7 @@ import type {
   ReviewStatus,
 } from "@/features/tests/mock/generated-test-review"
 import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
+import { saveReviewSession } from "@/features/tests/lib/review-session"
 import {
   ReviewFilterBar,
   type ReviewStatusFilter,
@@ -71,6 +72,14 @@ export function TestReviewPage({
 
   const canPublish = approvedQuestions > 0
 
+  useEffect(() => {
+    saveReviewSession(documentId, questions)
+  }, [documentId, questions])
+
+  const handleContinueToPublish = () => {
+    saveReviewSession(documentId, questions)
+  }
+
   const handleStatusFilterChange = (tab: ReviewStatusFilter) => {
     setStatusFilter(tab)
     const firstVisible = questions.find((q) => tab === "all" || q.status === tab)
@@ -109,7 +118,7 @@ export function TestReviewPage({
     <div className="page-shell flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
       <div className="mb-6 shrink-0">
         <Link
-          href={`/documents/${documentId}`}
+          href={`/admin/documents/${documentId}`}
           className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="mr-2 size-4" />
@@ -121,6 +130,9 @@ export function TestReviewPage({
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-foreground">Test Review</h1>
               <p className="mt-1 text-base text-muted-foreground">{reviewData.testTitle}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                AI-generated questions stay in review until an admin approves them.
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 pt-1">
@@ -157,9 +169,9 @@ export function TestReviewPage({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Button asChild variant="outline" className="h-10 px-4">
-              <Link href={`/documents/${documentId}/generate-test`}>
+              <Link href={`/admin/documents/${documentId}/generate-test`}>
                 <Settings className="mr-2 size-4" />
                 Test Setup
               </Link>
@@ -170,7 +182,10 @@ export function TestReviewPage({
               className="h-10 px-4 bg-foreground text-background"
             >
               {canPublish ? (
-                <Link href={`/tests/publish?documentId=${encodeURIComponent(documentId)}`}>
+                <Link
+                  href={`/admin/tests/publish?documentId=${encodeURIComponent(documentId)}`}
+                  onClick={handleContinueToPublish}
+                >
                   <Rocket className="mr-2 size-4" />
                   Continue to Publish
                 </Link>

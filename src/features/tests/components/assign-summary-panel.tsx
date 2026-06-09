@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 import {
   canConfirmAssignment,
@@ -15,6 +15,7 @@ interface AssignSummaryPanelProps {
   testTitle: string
   deadline: string
   summary: AssignmentSummary
+  isAssigning?: boolean
   onAssign: () => void
 }
 
@@ -22,6 +23,7 @@ export function AssignSummaryPanel({
   testTitle,
   deadline,
   summary,
+  isAssigning = false,
   onAssign,
 }: AssignSummaryPanelProps) {
   const canAssign = canConfirmAssignment(summary.selectedCount, deadline)
@@ -51,8 +53,14 @@ export function AssignSummaryPanel({
           </div>
         )}
 
-        <Button type="button" className="w-full" disabled={!canAssign} onClick={onAssign}>
-          Assign Test
+        <Button
+          type="button"
+          className="w-full"
+          disabled={!canAssign || isAssigning}
+          onClick={onAssign}
+        >
+          {isAssigning ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+          {isAssigning ? "Assigning..." : "Assign Test"}
         </Button>
       </CardContent>
     </Card>

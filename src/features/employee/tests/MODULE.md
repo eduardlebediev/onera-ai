@@ -31,6 +31,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 
 ## Related Routes
 
+- `/employee/dashboard` — employee home with KPIs, next test, feedback, and learning focus
 - `/employee/tests`
 - `/employee/tests/[id]/take` — mock test-taking flow with local state
 - `/employee/tests/[id]/result` — mock result page with score, answer review, weak topics, AI feedback, and inline follow-up questions for incorrect answers

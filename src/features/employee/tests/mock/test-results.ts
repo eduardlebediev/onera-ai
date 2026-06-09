@@ -25,38 +25,6 @@ export interface EmployeeTestAttemptRecord {
 
 const mockEmployeeTestAttempts: EmployeeTestAttemptRecord[] = [
   {
-    testId: "test-1",
-    completedDate: "2026-06-07",
-    timeSpentMinutes: 14,
-    employeeAnswers: {
-      "test-1-q1":
-        "Day 1 with an orientation session covering company history and team introductions",
-      "test-1-q2": "48 hours",
-      "test-1-q3": "Acting with integrity, respect, and professionalism",
-      "test-1-q4": "True",
-      "test-1-q5": "Sick leave is capped at 10 days annually",
-    },
-    weakTopics: [
-      {
-        topic: "Leave Policies",
-        missedQuestionsCount: 1,
-        explanation:
-          "You confused sick leave limits with vacation policy. Sick leave is separate and not capped.",
-        recommendedAction: "Review the Leave Policies section in the HR onboarding guide.",
-      },
-    ],
-    aiFeedback: {
-      performanceSummary:
-        "You scored 80% and passed the HR Policies Knowledge Test. You demonstrated solid understanding of onboarding and conduct expectations.",
-      understoodWell:
-        "You answered onboarding steps and code of conduct questions correctly, showing good awareness of Day 1 expectations and professional behavior standards.",
-      needsImprovement:
-        "You missed the sick leave policy question. The correct answer is that sick leave is separate from vacation and has no annual cap.",
-      recommendedNextStep:
-        "Review the Leave Policies section before your next compliance check-in. Focus on how sick leave differs from paid vacation.",
-    },
-  },
-  {
     testId: "test-2",
     completedDate: "2026-06-06",
     timeSpentMinutes: 11,
@@ -95,10 +63,24 @@ const mockEmployeeTestAttempts: EmployeeTestAttemptRecord[] = [
           "P0 issues bypass standard escalation and go directly to the on-call engineering lead.",
         recommendedAction: "Review the Escalation Paths section in the support playbook.",
       },
+      {
+        topic: "Incident Reporting",
+        missedQuestionsCount: 1,
+        explanation:
+          "Security incidents must be reported immediately after identification, not within 24 hours.",
+        recommendedAction: "Review escalation rules before retaking the test.",
+      },
+      {
+        topic: "P0 Routing",
+        missedQuestionsCount: 1,
+        explanation:
+          "P0 incidents require direct routing to the on-call lead without waiting for Tier-2 review.",
+        recommendedAction: "Study the P0 routing checklist in the support protocols document.",
+      },
     ],
     aiFeedback: {
       performanceSummary:
-        "You scored 67% and did not meet the 70% passing threshold on the Support Protocols Quiz.",
+        "You scored 67% and did not meet the 70% passing threshold on the Support Protocols Test.",
       understoodWell:
         "You answered the SLA definition questions correctly, showing familiarity with Tier-1 and Tier-2 response expectations.",
       needsImprovement:

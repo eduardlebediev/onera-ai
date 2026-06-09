@@ -23,7 +23,7 @@ export function TestResultActions({ testId, sourceDocumentId }: TestResultAction
         </Button>
 
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/documents/${sourceDocumentId}`}>
+          <Link href={`/admin/documents/${sourceDocumentId}`}>
             <BookOpen className="size-4" />
             Review Source Material
           </Link>

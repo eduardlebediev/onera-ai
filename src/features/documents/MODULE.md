@@ -30,8 +30,8 @@ Owns document-focused UI and feature logic for browsing documents, previewing de
 ## Related Routes
 
 - `/documents`
-- `/documents/[id]`
-- `/documents/[id]/generate-test`
+- `/admin/documents/[id]`
+- `/admin/documents/[id]/generate-test`
 
 ## Future Boundaries
 

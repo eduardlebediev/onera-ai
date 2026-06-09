@@ -19,7 +19,7 @@ export interface MockDocument {
   status: DocumentStatus
   displayStatus?: DocumentDisplayStatus
   topics: string[]
-  quizCount: number
+  testCount: number
   updatedAt: string
 }
 
@@ -89,7 +89,7 @@ export const kpiStats: KpiStat[] = [
   {
     label: "Weak Topics",
     value: "5",
-    description: "Access, Security, Deployment",
+    description: "Phishing, Access Control, Escalation",
   },
 ]
 
@@ -98,41 +98,41 @@ export const recentDocuments: MockDocument[] = [
     id: "doc-1",
     title: "Security Guidelines",
     status: "ready",
-    topics: ["Security", "Access", "Policies", "Compliance"],
-    quizCount: 3,
+    topics: ["Password Policy", "Data Classification", "Access Control", "Phishing"],
+    testCount: 2,
     updatedAt: "Today",
   },
   {
     id: "doc-2",
-    title: "Code Review Policy",
+    title: "Safety & Compliance Training Manual",
     status: "ready",
-    topics: ["Code", "Quality", "Standards"],
-    quizCount: 1,
+    topics: ["Workplace Hazards", "Emergency Procedures", "Incident Reporting"],
+    testCount: 1,
     updatedAt: "Yesterday",
   },
   {
     id: "doc-3",
-    title: "Deployment SOP",
+    title: "Product Architecture & Engineering Standards",
     status: "processing",
     topics: [],
-    quizCount: 0,
+    testCount: 0,
     updatedAt: "Today",
   },
   {
     id: "doc-4",
-    title: "Incident Management",
+    title: "Customer Support Playbook",
     status: "ready",
     displayStatus: "uploaded",
-    topics: [],
-    quizCount: 0,
+    topics: ["SLA Definitions", "Escalation Paths"],
+    testCount: 2,
     updatedAt: "2 days ago",
   },
   {
     id: "doc-5",
-    title: "Privacy Policy",
+    title: "Data Privacy & GDPR Guidelines",
     status: "failed",
     topics: [],
-    quizCount: 0,
+    testCount: 0,
     updatedAt: "3 days ago",
   },
 ]
@@ -140,37 +140,37 @@ export const recentDocuments: MockDocument[] = [
 export const testPerformance: MockTest[] = [
   {
     id: "test-1",
-    title: "Security Basics",
+    title: "Security Guidelines Knowledge Test",
     role: "All",
     assignedCount: 18,
     completedCount: 14,
-    averageScore: 82,
+    averageScore: 76,
     status: "active",
   },
   {
     id: "test-2",
-    title: "Code Review Process",
-    role: "Developer",
+    title: "Safety & Compliance Assessment",
+    role: "Operations",
     assignedCount: 8,
     completedCount: 5,
-    averageScore: 74,
+    averageScore: 82,
     status: "active",
   },
   {
     id: "test-3",
-    title: "Support Escalation",
-    role: "Support",
-    assignedCount: 12,
-    completedCount: 9,
-    averageScore: 69,
-    status: "active",
+    title: "Security Essentials (Draft)",
+    role: "All",
+    assignedCount: 0,
+    completedCount: 0,
+    averageScore: 0,
+    status: "draft",
   },
 ]
 
 export const aiDrafts: MockAiDraft[] = [
-  { id: "draft-1", title: "Security Advanced", questionCount: 10 },
-  { id: "draft-2", title: "Deployment Basics", questionCount: 8 },
-  { id: "draft-3", title: "Support Rules", questionCount: 12 },
+  { id: "draft-1", title: "Security Guidelines Knowledge Test", questionCount: 8 },
+  { id: "draft-2", title: "Security Essentials (Draft)", questionCount: 3 },
+  { id: "draft-3", title: "Support Protocols Test", questionCount: 4 },
 ]
 
 export const weeklyCompletions: WeeklyCompletion[] = [
@@ -186,38 +186,38 @@ export const weeklyCompletions: WeeklyCompletion[] = [
 export const weakTopics: MockWeakTopic[] = [
   {
     id: "wt-1",
-    topic: "Emergency Evacuation Procedures",
-    averageCorrectness: 38,
-    relatedDocument: "Q1 Safety Protocol Manual",
-    relatedTest: "Safety Protocol Assessment",
+    topic: "Phishing & Social Engineering",
+    averageCorrectness: 58,
+    relatedDocument: "Security Guidelines",
+    relatedTest: "Security Guidelines Knowledge Test",
   },
   {
     id: "wt-2",
-    topic: "Corrective Action Reports",
-    averageCorrectness: 44,
-    relatedDocument: "ISO 9001 Quality Standards",
-    relatedTest: "ISO Quality Fundamentals",
+    topic: "Access Control",
+    averageCorrectness: 65,
+    relatedDocument: "Security Guidelines",
+    relatedTest: "Security Guidelines Knowledge Test",
   },
   {
     id: "wt-3",
-    topic: "Chemical PPE Requirements",
-    averageCorrectness: 51,
-    relatedDocument: "Chemical Handling Procedures",
-    relatedTest: "Safety Protocol Assessment",
+    topic: "Emergency Procedures",
+    averageCorrectness: 62,
+    relatedDocument: "Safety & Compliance Training Manual",
+    relatedTest: "Safety & Compliance Assessment",
   },
   {
     id: "wt-4",
     topic: "Incident Reporting Timelines",
     averageCorrectness: 55,
-    relatedDocument: "Q1 Safety Protocol Manual",
-    relatedTest: "Safety Protocol Assessment",
+    relatedDocument: "Safety & Compliance Training Manual",
+    relatedTest: "Safety & Compliance Assessment",
   },
   {
     id: "wt-5",
-    topic: "Probationary Review Process",
+    topic: "Escalation Paths",
     averageCorrectness: 58,
-    relatedDocument: "Onboarding Handbook 2024",
-    relatedTest: "Onboarding Knowledge Check",
+    relatedDocument: "Customer Support Playbook",
+    relatedTest: "Support Protocols Test",
   },
 ]
 
@@ -225,42 +225,42 @@ export const recentActivity: MockActivity[] = [
   {
     id: "act-1",
     type: "weak_topic_detected",
-    description: "Weak topic detected: Emergency Evacuation Procedures (38% avg)",
+    description: "Weak topic detected: Phishing & Social Engineering (58% avg)",
     actor: "System",
     timestamp: "10 minutes ago",
   },
   {
     id: "act-2",
     type: "employee_completed",
-    description: "Maria S. completed Safety Protocol Assessment — scored 72%",
-    actor: "Maria S.",
+    description: "Alex T. completed Security Guidelines Knowledge Test — scored 80%",
+    actor: "Alex T.",
     timestamp: "1 hour ago",
   },
   {
     id: "act-3",
     type: "document_processed",
-    description: "Q1 Safety Protocol Manual finished processing — 3 topics extracted",
+    description: "Security Guidelines finished processing — 4 topics extracted",
     actor: "System",
     timestamp: "2 hours ago",
   },
   {
     id: "act-4",
     type: "employee_completed",
-    description: "James R. completed Onboarding Knowledge Check — scored 95%",
-    actor: "James R.",
+    description: "Priya S. completed Safety & Compliance Assessment — scored 100%",
+    actor: "Priya S.",
     timestamp: "4 hours ago",
   },
   {
     id: "act-5",
     type: "test_published",
-    description: "ISO Quality Fundamentals published and assigned to 8 employees",
+    description: "Security Guidelines Knowledge Test published and assigned to 8 employees",
     actor: "Admin",
     timestamp: "Yesterday",
   },
   {
     id: "act-6",
     type: "document_processed",
-    description: "Onboarding Handbook 2024 finished processing — 3 topics extracted",
+    description: "Safety & Compliance Training Manual finished processing — 5 topics extracted",
     actor: "System",
     timestamp: "1 day ago",
   },

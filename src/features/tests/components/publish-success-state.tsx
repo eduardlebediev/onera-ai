@@ -49,13 +49,13 @@ export function PublishSuccessState({ context, publishedTestId }: PublishSuccess
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button asChild>
-            <Link href={`/tests/${publishedTestId}`}>Open Test Detail</Link>
+            <Link href={`/admin/tests/${publishedTestId}`}>Open Test Detail</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={`/tests/${publishedTestId}/assign`}>Assign to Employees</Link>
+            <Link href={`/admin/tests/${publishedTestId}/assign`}>Assign to Employees</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/tests">View All Tests</Link>
+            <Link href="/admin/tests">View All Tests</Link>
           </Button>
         </div>
       </CardContent>

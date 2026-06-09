@@ -25,22 +25,22 @@ const mockFollowUpQuestions: FollowUpQuestion[] = [
   {
     id: "follow-up-test-1-q5",
     originalQuestionId: "test-1-q5",
-    topic: "Leave Policies",
+    topic: "Phishing & Social Engineering",
     sourceChunkReference: "Chunk 4 (doc-1-c4)",
     explanationBeforeQuestion:
-      "You missed the sick leave policy distinction. The key idea is that sick leave is separate from paid vacation and is not capped at a fixed number of days annually.",
+      "You clicked a link in a suspicious email instead of reporting it. The key rule is: never click links or download attachments from unknown senders — always use the Report Phishing button.",
     questionText:
-      "An employee needs to take a sick day. Which statement best reflects the sick leave policy?",
+      "You receive an email claiming to be from IT asking you to verify your account by clicking a link. What is the correct response?",
     options: [
-      { id: "opt-a", label: "Sick leave counts against the annual vacation allowance" },
-      { id: "opt-b", label: "Sick leave is separate from vacation and has no annual cap" },
-      { id: "opt-c", label: "Sick leave is limited to 10 days per year" },
-      { id: "opt-d", label: "Sick leave requires pre-approval for every absence" },
+      { id: "opt-a", label: "Click the link to verify your account quickly" },
+      { id: "opt-b", label: "Reply to the email asking if it is legitimate" },
+      { id: "opt-c", label: "Report it using the Report Phishing button" },
+      { id: "opt-d", label: "Forward it to a colleague to check" },
     ],
-    correctOptionId: "opt-b",
+    correctOptionId: "opt-c",
     explanationAfterAnswer:
-      "Sick leave is tracked separately from paid vacation. There is no annual cap, though employees should follow standard notification procedures.",
-    learningGoal: "Differentiate sick leave from vacation entitlements",
+      "Security will never ask for your password via email. Report suspicious emails immediately using the Report Phishing button — do not click links or reply.",
+    learningGoal: "Apply correct phishing response behavior under pressure",
     difficulty: "medium",
   },
   {

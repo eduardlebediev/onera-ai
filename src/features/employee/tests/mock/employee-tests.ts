@@ -37,13 +37,13 @@ export interface EmployeeAssignedTest {
 const mockCurrentEmployeeAssignments: EmployeeAssignmentRecord[] = [
   {
     testId: "test-1",
-    status: "completed",
-    deadline: "2026-06-05",
+    status: "not_started",
+    deadline: "2026-06-15",
     estimatedMinutes: 15,
     required: true,
-    progressPercent: 100,
-    score: 80,
-    passed: true,
+    progressPercent: 0,
+    score: null,
+    passed: null,
   },
   {
     testId: "test-2",

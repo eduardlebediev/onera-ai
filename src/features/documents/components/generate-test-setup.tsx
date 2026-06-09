@@ -1,7 +1,16 @@
 "use client"
 
-import { AlertTriangle, ArrowLeft, CheckCircle2, FileText, RotateCcw, Sparkles } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 
 import { type DocumentStatus, type MockDocumentDetail } from "@/data/mock/documents"
@@ -41,6 +50,7 @@ const STATUS_BADGE_CLASSES: Record<DocumentStatus, string> = {
 }
 
 export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
+  const router = useRouter()
   const isGeneratable = canGenerateTest(document)
   const defaultTopics = useMemo(() => getDefaultSelectedTopics(document), [document])
   const defaultChunkIds = useMemo(
@@ -52,6 +62,7 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   const [settings, setSettings] = useState<GenerateTestSettings>(defaultSettings)
   const [selectedTopics, setSelectedTopics] = useState<string[]>(defaultTopics)
   const [selectedChunkIds, setSelectedChunkIds] = useState<string[]>(defaultChunkIds)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const canPreview = isGeneratable && selectedChunkIds.length > 0 && selectedTopics.length > 0
 
@@ -118,18 +129,27 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
     setSelectedChunkIds(defaultChunkIds)
   }, [defaultChunkIds, defaultSettings, defaultTopics])
 
+  const handleGeneratePreview = useCallback(() => {
+    if (!canPreview || isGenerating) return
+
+    setIsGenerating(true)
+    window.setTimeout(() => {
+      router.push(`/admin/tests/review?documentId=${encodeURIComponent(document.id)}`)
+    }, 700)
+  }, [canPreview, document.id, isGenerating, router])
+
   return (
     <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="typography-h1">Generate Test Setup</h1>
           <p className="mt-1 typography-p text-muted-foreground">
-            Configure assessment settings from the selected document.
+            Configure test settings from the selected document topics and source chunks.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" className="h-10 rounded-xl">
-            <Link href={`/documents/${document.id}`}>
+            <Link href={`/admin/documents/${document.id}`}>
               <ArrowLeft className="mr-2 size-4" />
               Back to Document
             </Link>
@@ -145,22 +165,18 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
             Reset
           </Button>
           <Button
-            asChild={canPreview}
-            disabled={!canPreview}
+            type="button"
+            disabled={!canPreview || isGenerating}
             className="h-10 rounded-xl bg-foreground text-background"
             title={canPreview ? undefined : getGenerateBlockReason(document)}
+            onClick={handleGeneratePreview}
           >
-            {canPreview ? (
-              <Link href={`/tests/review?documentId=${encodeURIComponent(document.id)}`}>
-                <Sparkles className="mr-2 size-4" />
-                Generate Test Preview
-              </Link>
+            {isGenerating ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
-              <>
-                <Sparkles className="mr-2 size-4" />
-                Generate Test Preview
-              </>
+              <Sparkles className="mr-2 size-4" />
             )}
+            {isGenerating ? "Generating preview..." : "Generate Test Preview"}
           </Button>
         </div>
       </div>
@@ -169,6 +185,12 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
           <p>{getGenerateBlockReason(document)}</p>
+        </div>
+      )}
+
+      {isGeneratable && (selectedTopics.length === 0 || selectedChunkIds.length === 0) && (
+        <div className="mb-6 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+          Select at least one topic and one source chunk to generate a test preview.
         </div>
       )}
 
@@ -199,7 +221,6 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
             settings={settings}
             selectedTopicsCount={selectedTopics.length}
             selectedChunksCount={selectedChunkIds.length}
-            canPreview={canPreview}
           />
         </div>
       </div>

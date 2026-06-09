@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Sparkles } from "lucide-react"
+import { FileText, Loader2, Sparkles } from "lucide-react"
 
 import {
   FollowUpAnswerFeedback,
@@ -27,14 +27,19 @@ export function FollowUpQuestionCard({
   const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>()
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
 
   function handleSubmit() {
-    if (!selectedOptionId) return
+    if (!selectedOptionId || isChecking) return
 
-    const correct = selectedOptionId === followUp.correctOptionId
-    setIsCorrect(correct)
-    setIsSubmitted(true)
-    onComplete(followUp.topic, correct)
+    setIsChecking(true)
+    window.setTimeout(() => {
+      const correct = selectedOptionId === followUp.correctOptionId
+      setIsCorrect(correct)
+      setIsSubmitted(true)
+      onComplete(followUp.topic, correct)
+      setIsChecking(false)
+    }, 600)
   }
 
   function handleTryAnother() {
@@ -110,8 +115,20 @@ export function FollowUpQuestionCard({
             })}
           </div>
 
-          <Button type="button" size="sm" disabled={!selectedOptionId} onClick={handleSubmit}>
-            Submit answer
+          <Button
+            type="button"
+            size="sm"
+            disabled={!selectedOptionId || isChecking}
+            onClick={handleSubmit}
+          >
+            {isChecking ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              "Submit answer"
+            )}
           </Button>
         </>
       )}

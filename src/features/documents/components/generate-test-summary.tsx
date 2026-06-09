@@ -1,11 +1,9 @@
 "use client"
 
-import { BarChart3, Clock, FileText, Globe, Info, List, Sparkles, Tag } from "lucide-react"
-import Link from "next/link"
+import { BarChart3, Clock, FileText, Globe, Info, List, Tag } from "lucide-react"
 import React from "react"
 
 import { type MockDocumentDetail } from "@/data/mock/documents"
-import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card"
 import { type GenerateTestSettings } from "./generate-test-model"
 
@@ -14,7 +12,6 @@ interface GenerateTestSummaryProps {
   settings: GenerateTestSettings
   selectedTopicsCount: number
   selectedChunksCount: number
-  canPreview: boolean
 }
 
 function toCapitalizedLabel(value: string): string {
@@ -30,10 +27,7 @@ export function GenerateTestSummary({
   settings,
   selectedTopicsCount,
   selectedChunksCount,
-  canPreview,
 }: GenerateTestSummaryProps) {
-  const reviewHref = `/tests/review?documentId=${encodeURIComponent(document.id)}`
-
   return (
     <Card className="shadow-sm">
       <CardHeader className="border-b border-border/50 px-6 py-5">
@@ -96,23 +90,9 @@ export function GenerateTestSummary({
         </div>
       </CardContent>
       <CardFooter className="px-6 pb-6 pt-0">
-        <Button
-          asChild={canPreview}
-          disabled={!canPreview}
-          className="h-11 w-full rounded-xl bg-foreground text-background"
-        >
-          {canPreview ? (
-            <Link href={reviewHref}>
-              <Sparkles className="mr-2 size-4" />
-              Generate Test Preview
-            </Link>
-          ) : (
-            <>
-              <Sparkles className="mr-2 size-4" />
-              Generate Test Preview
-            </>
-          )}
-        </Button>
+        <p className="w-full text-center typography-small text-muted-foreground">
+          Use Generate Test Preview above when your topics and chunks are selected.
+        </p>
       </CardFooter>
     </Card>
   )

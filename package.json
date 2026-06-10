@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "embed:demo-chunks": "NODE_OPTIONS='--conditions=react-server' tsx scripts/embed-demo-chunks.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
+    "openai": "^6.42.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
@@ -44,6 +46,7 @@
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   },
   "lint-staged": {

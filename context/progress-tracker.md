@@ -21,7 +21,6 @@ Admin document
 
 ## Next Up
 
-- Embedding Script for Demo Chunks
 - AI Generate Test from Document Chunks
 - Connect Generate Test Setup to AI
 - Save Published Tests and Questions to Supabase
@@ -31,6 +30,7 @@ Admin document
 
 ## Completed
 
+- Feature Spec 22: Embedding Script for Demo Document Chunks
 - Feature Spec 21: Supabase pgvector Backend Foundation (squashed migration, org-scoping, service-role client)
 - Feature Spec 20: Role-Based Route Structure and Employee Dashboard
 - Feature Spec 19: Clickable Demo Polish

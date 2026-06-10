@@ -258,7 +258,7 @@ Fields:
 - `organization_members.role` controls access within an organization:
   - admin can manage documents, tests, assignments, and analytics;
   - employee can only see assigned tests and personal results.
-- Internal backend jobs (embedding generation, RAG retrieval, admin mutations before auth policies land) use a server-only Supabase service-role client — never exposed to the browser.
+- Internal backend jobs (embedding generation, RAG retrieval, admin mutations before auth policies land) use a server-only Supabase admin client with `SUPABASE_SECRET_KEY` (`sb_secret_...`) — never exposed to the browser.
 - User-scoped reads/writes use the SSR server client with the publishable/anon key and RLS.
 - Employees must not access other employees' attempts, answers, or analytics.
 - Admin-only mutations must be checked server-side.

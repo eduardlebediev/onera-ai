@@ -4,6 +4,35 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 22: Embedding Script for Demo Document Chunks
+
+Added a server-side embedding script that fills demo `document_chunks.embedding` values and verifies pgvector retrieval.
+
+- Created `context/feature-specs/22-embedding-script-demo-chunks.md`.
+- Installed `openai` and dev dependency `tsx`.
+- Added `embed:demo-chunks` npm script with `NODE_OPTIONS='--conditions=react-server'` so the existing `server-only` admin helper can be imported from a standalone Node script.
+- Extended `src/lib/supabase/types.ts` with minimal `document_chunks` table types and `match_document_chunks` RPC types.
+- Added `scripts/embed-demo-chunks.ts`:
+  - Loads `.env.local` via `@next/env`.
+  - Validates `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `OPENAI_API_KEY`.
+  - Uses `createAdminClient()` from `src/lib/supabase/admin.ts`.
+  - Fetches chunks where `embedding IS NULL`.
+  - Builds embedding input from title, topic, and content.
+  - Calls OpenAI `text-embedding-3-small` and updates `document_chunks.embedding`.
+  - Merges `metadata.embedding_model` and `metadata.embedded_at` without overwriting unrelated metadata.
+  - Runs verification queries for phishing email and P1 incident escalation via `match_document_chunks`.
+- `src/lib/supabase/admin.ts` already had `import "server-only";` — no change required.
+- `.env.example` already documented `OPENAI_API_KEY`.
+- Updated `context/architecture.md` to document server-only admin access via `SUPABASE_SECRET_KEY`.
+- Decisions 029 and 030 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run build`, and `npm run embed:demo-chunks` pass.
+- Runtime verification: embedded 10 demo chunks; phishing query top result was Phishing Response; P1 incident query returned Severity Levels / Incident Triage in top matches.
+
+### Post-Review Fix Pass
+
+- Replaced deprecated `SUPABASE_SERVICE_ROLE_KEY` with `SUPABASE_SECRET_KEY` (`sb_secret_...`) for server-only admin access in `src/lib/supabase/admin.ts`, `scripts/embed-demo-chunks.ts`, and `.env.example`.
+- Decision 030 recorded in `context/decisions.md`.
+
 ## Feature Spec 21: Supabase Backend Foundation
 
 Added the first backend foundation for the RAG demo slice without changing mock frontend behavior.

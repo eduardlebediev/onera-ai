@@ -47,6 +47,18 @@ function toStatusLabel(status: ReviewStatus): string {
   return status.replace(/_/g, " ")
 }
 
+function getCorrectAnswerTexts(question: ReviewQuestion): string[] {
+  if (question.correctAnswers && question.correctAnswers.length > 0) {
+    return question.correctAnswers
+  }
+
+  return [question.correctAnswer]
+}
+
+function isCorrectOption(option: string, question: ReviewQuestion): boolean {
+  return getCorrectAnswerTexts(question).includes(option)
+}
+
 export function ReviewQuestionDetail({
   question,
   questionNumber,
@@ -101,12 +113,15 @@ export function ReviewQuestionDetail({
       questionText: resolvedText,
       options: resolvedOptions,
       correctAnswer: resolvedCorrect,
+      correctAnswers: [resolvedCorrect],
       explanation: editExplanation.trim() || question.explanation,
     })
     setIsEditing(false)
   }
 
-  const correctAnswerIndex = question.options.indexOf(question.correctAnswer)
+  const correctAnswerIndices = question.options
+    .map((option, index) => (isCorrectOption(option, question) ? index : -1))
+    .filter((index) => index >= 0)
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -227,7 +242,7 @@ export function ReviewQuestionDetail({
                       )
                     })
                   : question.options.map((option, index) => {
-                      const isCorrect = option === question.correctAnswer
+                      const isCorrect = isCorrectOption(option, question)
                       const letter = String.fromCharCode(65 + index)
 
                       return (
@@ -337,8 +352,21 @@ export function ReviewQuestionDetail({
           <div className="space-y-8">
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">Correct Answer</h4>
-              <div className="flex size-8 items-center justify-center rounded-full border border-green-200 bg-green-50 text-sm font-medium text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400">
-                {correctAnswerIndex >= 0 ? String.fromCharCode(65 + correctAnswerIndex) : "?"}
+              <div className="flex flex-wrap gap-2">
+                {correctAnswerIndices.length > 0 ? (
+                  correctAnswerIndices.map((index) => (
+                    <div
+                      key={index}
+                      className="flex size-8 items-center justify-center rounded-full border border-green-200 bg-green-50 text-sm font-medium text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400"
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex size-8 items-center justify-center rounded-full border border-green-200 bg-green-50 text-sm font-medium text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400">
+                    ?
+                  </div>
+                )}
               </div>
             </div>
 

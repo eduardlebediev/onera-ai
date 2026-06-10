@@ -4,6 +4,32 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 24: Connect Generate Test Page to Real AI API
+
+Connected the admin generate-test page to the real AI generation API with temporary draft handoff to the review page.
+
+- Added demo document ID resolution between mock ids (`doc-1`, `doc-4`) and seeded Supabase UUIDs for Security Guidelines and Customer Support Escalation Guide.
+- Added `src/features/tests/lib/generated-test-api-client.ts` — browser client for `POST /api/admin/generate-test` with friendly error handling.
+- Added `src/features/tests/lib/generated-test-session.ts` — stores generated draft in `sessionStorage` under `ontera.generatedTestDraft`.
+- Added `src/features/tests/lib/generated-test-mapper.ts` — maps API response to existing `MockTestReviewData` / `ReviewQuestion` shape.
+- Added `src/features/tests/types/generated-test.ts` for stored draft typing.
+- Updated `generate-test-setup.tsx` — real API call, loading/disabled states, error UI with mock preview fallback, navigation to review with `source=ai` query params.
+- Updated `test-review-page.tsx` — loads AI draft from session storage with mock fallback; shows draft review copy.
+- Updated `review-question-detail.tsx` — supports multiple correct answers and source chunk labels.
+- Extended `ReviewQuestion` with optional `correctAnswers`; `MockTestReviewData` with optional `description`.
+- Question count form bounds aligned to API (`3`–`10`).
+- Decision 032 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Run-scoped review session keys (`ontera-review-{documentId}-{generationRunId}`) and run-scoped AI question ids prevent draft state leaking across generations.
+- `clearReviewSessionsForDocument()` runs when a new AI draft is saved.
+- `StoredGeneratedTestDraftSchema` validates session storage before use.
+- `useResolvedReviewData` hydrates review/publish data client-side via `useSyncExternalStore` (server fallback mock, client reads session).
+- Publish route and page load AI draft review state the same way as the review page.
+- `review-question-detail.tsx` supports multiple correct answers; edit save syncs `correctAnswers`.
+
 ## Feature Spec 23: AI Generate Test API from Retrieved Document Chunks
 
 Added a backend-only API endpoint that generates grounded employee knowledge test drafts from retrieved document chunks.

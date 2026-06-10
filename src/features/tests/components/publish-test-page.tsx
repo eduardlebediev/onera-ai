@@ -17,7 +17,7 @@ import {
   resolvePublishedTestId,
   type PublishTestContext,
 } from "@/features/tests/lib/publish-test-model"
-import { mergeReviewSession } from "@/features/tests/lib/review-session"
+import { useResolvedReviewData } from "@/features/tests/lib/use-resolved-review-data"
 import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { Button } from "@/shared/ui/button"
@@ -26,19 +26,31 @@ import { Card, CardContent } from "@/shared/ui/card"
 interface PublishTestPageProps {
   document: MockDocumentDetail
   reviewData: MockTestReviewData
+  documentId: string
 }
 
-export function PublishTestPage({ document, reviewData: initialReviewData }: PublishTestPageProps) {
+export function PublishTestPage({
+  document,
+  reviewData: initialReviewData,
+  documentId,
+}: PublishTestPageProps) {
   const [published, setPublished] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
-  const [reviewData] = useState(() => ({
-    ...initialReviewData,
-    questions:
-      typeof window !== "undefined"
-        ? mergeReviewSession(document.id, initialReviewData.questions)
-        : initialReviewData.questions,
-  }))
+
+  const {
+    reviewData: resolvedReviewData,
+    questions,
+    isHydrated,
+  } = useResolvedReviewData(documentId, initialReviewData)
+
+  const reviewData = useMemo(
+    () => ({
+      ...resolvedReviewData,
+      questions,
+    }),
+    [resolvedReviewData, questions]
+  )
 
   const context = useMemo<PublishTestContext>(
     () => buildPublishContext(document, reviewData),
@@ -59,7 +71,7 @@ export function PublishTestPage({ document, reviewData: initialReviewData }: Pub
   }
 
   const handlePublish = () => {
-    if (!canPublish || isPublishing) return
+    if (!canPublish || isPublishing || !isHydrated) return
 
     setIsPublishing(true)
     window.setTimeout(() => {
@@ -115,7 +127,7 @@ export function PublishTestPage({ document, reviewData: initialReviewData }: Pub
               <Button
                 type="button"
                 className="w-full bg-foreground text-background"
-                disabled={!canPublish || isPublishing}
+                disabled={!canPublish || isPublishing || !isHydrated}
                 onClick={handlePublish}
               >
                 {isPublishing ? (
@@ -127,7 +139,7 @@ export function PublishTestPage({ document, reviewData: initialReviewData }: Pub
               </Button>
 
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/admin/tests/review?documentId=${encodeURIComponent(document.id)}`}>
+                <Link href={`/admin/tests/review?documentId=${encodeURIComponent(documentId)}`}>
                   Back to Review
                 </Link>
               </Button>

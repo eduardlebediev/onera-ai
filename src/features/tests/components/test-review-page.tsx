@@ -5,19 +5,17 @@ import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
 
 import type { DocumentStatus } from "@/data/mock/documents"
-import type {
-  MockTestReviewData,
-  ReviewQuestion,
-  ReviewStatus,
-} from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
 import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
 import { saveReviewSession } from "@/features/tests/lib/review-session"
+import { useResolvedReviewData } from "@/features/tests/lib/use-resolved-review-data"
 import {
   ReviewFilterBar,
   type ReviewStatusFilter,
 } from "@/features/tests/components/review-filter-bar"
 import { ReviewQuestionDetail } from "@/features/tests/components/review-question-detail"
 import { ReviewQuestionList } from "@/features/tests/components/review-question-list"
+import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 
@@ -35,16 +33,33 @@ function countByStatus(questions: ReviewQuestion[], status: ReviewStatus): numbe
 export function TestReviewPage({
   sourceDocumentTitle,
   sourceDocumentStatus,
-  reviewData,
+  reviewData: fallbackReviewData,
   documentId,
 }: TestReviewPageProps) {
-  const [questions, setQuestions] = useState<ReviewQuestion[]>(reviewData.questions)
+  const {
+    reviewData,
+    questions: resolvedQuestions,
+    isAiDraft,
+    generationRunId,
+    isHydrated,
+  } = useResolvedReviewData(documentId, fallbackReviewData)
+
+  const [questionsOverride, setQuestionsOverride] = useState<ReviewQuestion[] | null>(null)
+  const questions = questionsOverride ?? resolvedQuestions
+
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(
-    questions.length > 0 ? questions[0].id : null
+    fallbackReviewData.questions.length > 0 ? fallbackReviewData.questions[0].id : null
   )
   const [statusFilter, setStatusFilter] = useState<ReviewStatusFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [topicFilter, setTopicFilter] = useState("all")
+
+  const updateQuestions = (updater: (current: ReviewQuestion[]) => ReviewQuestion[]) => {
+    setQuestionsOverride((previous) => {
+      const base = previous ?? resolvedQuestions
+      return updater(base)
+    })
+  }
 
   const totalQuestions = questions.length
   const approvedQuestions = useMemo(() => countByStatus(questions, "approved"), [questions])
@@ -64,20 +79,22 @@ export function TestReviewPage({
     })
   }, [questions, statusFilter, searchQuery, topicFilter])
 
-  const selectedQuestionIndex = useMemo(
-    () => questions.findIndex((q) => q.id === selectedQuestionId),
-    [questions, selectedQuestionId]
-  )
+  const selectedQuestionIndex = useMemo(() => {
+    const index = questions.findIndex((q) => q.id === selectedQuestionId)
+    if (index !== -1) return index
+    return questions.length > 0 ? 0 : -1
+  }, [questions, selectedQuestionId])
   const selectedQuestion = selectedQuestionIndex !== -1 ? questions[selectedQuestionIndex] : null
 
   const canPublish = approvedQuestions > 0
 
   useEffect(() => {
-    saveReviewSession(documentId, questions)
-  }, [documentId, questions])
+    if (!isHydrated) return
+    saveReviewSession(documentId, questions, generationRunId)
+  }, [documentId, generationRunId, isHydrated, questions])
 
   const handleContinueToPublish = () => {
-    saveReviewSession(documentId, questions)
+    saveReviewSession(documentId, questions, generationRunId)
   }
 
   const handleStatusFilterChange = (tab: ReviewStatusFilter) => {
@@ -87,13 +104,13 @@ export function TestReviewPage({
   }
 
   const handleSetStatus = (questionId: string, status: ReviewStatus) => {
-    setQuestions((prev) =>
+    updateQuestions((prev) =>
       prev.map((question) => (question.id === questionId ? { ...question, status } : question))
     )
   }
 
   const handleSaveEdit = (questionId: string, patch: Partial<ReviewQuestion>) => {
-    setQuestions((prev) =>
+    updateQuestions((prev) =>
       prev.map((question) =>
         question.id === questionId ? { ...question, ...patch, status: "edited" } : question
       )
@@ -130,8 +147,13 @@ export function TestReviewPage({
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-foreground">Test Review</h1>
               <p className="mt-1 text-base text-muted-foreground">{reviewData.testTitle}</p>
+              {reviewData.description ? (
+                <p className="mt-1 text-sm text-muted-foreground">{reviewData.description}</p>
+              ) : null}
               <p className="mt-1 text-sm text-muted-foreground">
-                AI-generated questions stay in review until an admin approves them.
+                {isAiDraft
+                  ? "AI-generated draft. Review before publishing."
+                  : "AI-generated questions stay in review until an admin approves them."}
               </p>
             </div>
 

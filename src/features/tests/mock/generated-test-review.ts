@@ -9,6 +9,8 @@ export interface ReviewQuestion {
   questionText: string
   options: string[]
   correctAnswer: string
+  /** When multiple options are correct (e.g. AI multiple_choice). */
+  correctAnswers?: string[]
   explanation: string
   topic: string
   sourceChunkReference: string
@@ -21,6 +23,7 @@ export interface ReviewQuestion {
 
 export interface MockTestReviewData {
   testTitle: string
+  description?: string
   difficulty: ReviewDifficulty
   targetRole: string
   questionCount: number

@@ -1,4 +1,8 @@
 import { mockDocuments } from "@/data/mock/documents"
+import {
+  resolveMockDocumentByRouteId,
+  resolveReviewDocumentRouteId,
+} from "@/features/documents/lib/demo-document-ids"
 import { TestReviewPage } from "@/features/tests/components/test-review-page"
 import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
 
@@ -11,7 +15,8 @@ export default async function TestReviewRoute({ searchParams }: TestReviewRouteP
   const defaultDocument =
     mockDocuments.find((document) => document.chunks.length > 0) ?? mockDocuments[0]
   const sourceDocument =
-    mockDocuments.find((document) => document.id === documentId) ?? defaultDocument
+    (documentId ? resolveMockDocumentByRouteId(documentId) : undefined) ?? defaultDocument
+  const reviewDocumentId = documentId ? resolveReviewDocumentRouteId(documentId) : sourceDocument.id
   const reviewData = getMockTestReviewData(sourceDocument)
 
   return (
@@ -19,7 +24,7 @@ export default async function TestReviewRoute({ searchParams }: TestReviewRouteP
       sourceDocumentTitle={sourceDocument.title}
       sourceDocumentStatus={sourceDocument.status}
       reviewData={reviewData}
-      documentId={sourceDocument.id}
+      documentId={reviewDocumentId}
     />
   )
 }

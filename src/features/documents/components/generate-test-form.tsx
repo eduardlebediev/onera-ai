@@ -111,16 +111,16 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
             <span className="typography-small font-medium text-foreground">Question Count</span>
             <Input
               type="number"
-              min={1}
-              max={20}
+              min={3}
+              max={10}
               value={settings.questionCount}
               onChange={(event) =>
                 onSettingsChange({
                   questionCount: parseNumericInput(
                     event.target.value,
                     settings.questionCount,
-                    1,
-                    20
+                    3,
+                    10
                   ),
                 })
               }

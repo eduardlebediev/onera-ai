@@ -1,5 +1,9 @@
 # Decisions
 
+## 032 — Generate Test page uses real AI API with temporary draft handoff
+
+The admin generate-test page calls `POST /api/admin/generate-test` to create a real AI-generated draft from retrieved document chunks. The draft is stored in `sessionStorage` (`ontera.generatedTestDraft`) and consumed by review and publish pages. Review edits use run-scoped session keys when `generationRunId` is present. Generated tests are not persisted to `tests` / `test_questions`; admin review remains required before publishing.
+
 ## 031 — AI test generation uses retrieved document chunks as grounded context
 
 AI-generated test drafts are created only after retrieving embedded document chunks through the `match_document_chunks` RPC. The generation endpoint uses structured output validation and requires each generated question to reference a source chunk. Generated questions are returned as a draft and are not automatically published.

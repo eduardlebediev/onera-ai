@@ -14,6 +14,13 @@ import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 
 import { type DocumentStatus, type MockDocumentDetail } from "@/data/mock/documents"
+import {
+  hasApiBackedDocument,
+  resolveApiDocumentId,
+  resolveReviewDocumentRouteId,
+} from "@/features/documents/lib/demo-document-ids"
+import { generateTestFromDocument } from "@/features/tests/lib/generated-test-api-client"
+import { saveGeneratedTestDraft } from "@/features/tests/lib/generated-test-session"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -33,6 +40,7 @@ import { TopicSelector } from "./topic-selector"
 
 interface GenerateTestSetupProps {
   document: MockDocumentDetail
+  routeDocumentId: string
 }
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
@@ -49,9 +57,10 @@ const STATUS_BADGE_CLASSES: Record<DocumentStatus, string> = {
   uploaded: "bg-muted text-muted-foreground hover:bg-muted",
 }
 
-export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
+export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSetupProps) {
   const router = useRouter()
   const isGeneratable = canGenerateTest(document)
+  const canCallApi = hasApiBackedDocument(routeDocumentId)
   const defaultTopics = useMemo(() => getDefaultSelectedTopics(document), [document])
   const defaultChunkIds = useMemo(
     () => getDefaultSelectedChunkIds(document, defaultTopics),
@@ -63,8 +72,10 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   const [selectedTopics, setSelectedTopics] = useState<string[]>(defaultTopics)
   const [selectedChunkIds, setSelectedChunkIds] = useState<string[]>(defaultChunkIds)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   const canPreview = isGeneratable && selectedChunkIds.length > 0 && selectedTopics.length > 0
+  const reviewDocumentId = resolveReviewDocumentRouteId(routeDocumentId)
 
   const handleSettingsChange = useCallback((updates: Partial<GenerateTestSettings>) => {
     setSettings((currentSettings) => ({ ...currentSettings, ...updates }))
@@ -103,10 +114,8 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
       setSelectedChunkIds(nextChunkIds)
 
       if (isRemoving) {
-        // Prune topics that no longer have any selected chunks
         setSelectedTopics(deriveTopicsFromChunks(document, nextChunkIds))
       } else if (chunk && !selectedTopics.includes(chunk.topic)) {
-        // Add the new chunk's topic if not already present
         setSelectedTopics((currentTopics) => [...currentTopics, chunk.topic])
       }
     },
@@ -127,16 +136,64 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
     setSettings(defaultSettings)
     setSelectedTopics(defaultTopics)
     setSelectedChunkIds(defaultChunkIds)
+    setGenerationError(null)
   }, [defaultChunkIds, defaultSettings, defaultTopics])
 
-  const handleGeneratePreview = useCallback(() => {
+  const handleMockPreview = useCallback(() => {
+    router.push(`/admin/tests/review?documentId=${encodeURIComponent(reviewDocumentId)}`)
+  }, [reviewDocumentId, router])
+
+  const handleGeneratePreview = useCallback(async () => {
     if (!canPreview || isGenerating) return
 
+    setGenerationError(null)
+
+    const apiDocumentId = resolveApiDocumentId(routeDocumentId)
+
+    if (!apiDocumentId) {
+      handleMockPreview()
+      return
+    }
+
     setIsGenerating(true)
-    window.setTimeout(() => {
-      router.push(`/admin/tests/review?documentId=${encodeURIComponent(document.id)}`)
-    }, 700)
-  }, [canPreview, document.id, isGenerating, router])
+
+    try {
+      const response = await generateTestFromDocument({
+        documentId: apiDocumentId,
+        questionCount: settings.questionCount,
+        difficulty: settings.difficulty,
+        language: settings.language,
+        targetRole: settings.targetRole,
+      })
+
+      saveGeneratedTestDraft(response)
+
+      const reviewQuery = new URLSearchParams({
+        source: "ai",
+        documentId: apiDocumentId,
+        runId: response.generationRunId,
+      })
+
+      router.push(`/admin/tests/review?${reviewQuery.toString()}`)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not generate the test draft. Please check that this document has embedded chunks and try again."
+      setGenerationError(message)
+      setIsGenerating(false)
+    }
+  }, [
+    canPreview,
+    handleMockPreview,
+    isGenerating,
+    routeDocumentId,
+    router,
+    settings.difficulty,
+    settings.language,
+    settings.questionCount,
+    settings.targetRole,
+  ])
 
   return (
     <div className="page-shell-narrow">
@@ -146,6 +203,11 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
           <p className="mt-1 typography-p text-muted-foreground">
             Configure test settings from the selected document topics and source chunks.
           </p>
+          {canCallApi ? (
+            <p className="mt-1 typography-small text-muted-foreground">
+              AI-generated draft. Review before publishing.
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" className="h-10 rounded-xl">
@@ -169,17 +231,29 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
             disabled={!canPreview || isGenerating}
             className="h-10 rounded-xl bg-foreground text-background"
             title={canPreview ? undefined : getGenerateBlockReason(document)}
-            onClick={handleGeneratePreview}
+            onClick={() => handleGeneratePreview()}
           >
             {isGenerating ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
               <Sparkles className="mr-2 size-4" />
             )}
-            {isGenerating ? "Generating preview..." : "Generate Test Preview"}
+            {isGenerating ? "Generating test draft..." : "Generate Test Preview"}
           </Button>
         </div>
       </div>
+
+      {generationError ? (
+        <div className="mb-6 space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
+            <p>{generationError}</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={handleMockPreview}>
+            Continue with mock preview
+          </Button>
+        </div>
+      ) : null}
 
       {!isGeneratable && (
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
@@ -228,7 +302,7 @@ export function GenerateTestSetup({ document }: GenerateTestSetupProps) {
   )
 }
 
-function DocumentSourceSummary({ document }: GenerateTestSetupProps) {
+function DocumentSourceSummary({ document }: { document: MockDocumentDetail }) {
   return (
     <Card className="shadow-sm">
       <CardContent className="p-6">

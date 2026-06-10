@@ -160,6 +160,12 @@ export const GeneratedTestResponseSchema = z.object({
 
 export type GeneratedTestResponse = z.infer<typeof GeneratedTestResponseSchema>
 
+export const StoredGeneratedTestDraftSchema = GeneratedTestResponseSchema.extend({
+  createdAt: z.string(),
+})
+
+export type StoredGeneratedTestDraftValidated = z.infer<typeof StoredGeneratedTestDraftSchema>
+
 export function validateDraftAgainstRetrievedChunks(
   draft: GeneratedTestDraft,
   retrievedChunkIds: Set<string>,

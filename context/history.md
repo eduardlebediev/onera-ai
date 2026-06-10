@@ -4,6 +4,68 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 21: Supabase Backend Foundation
+
+Added the first backend foundation for the RAG demo slice without changing mock frontend behavior.
+
+- Created `context/feature-specs/21-supabase-pgvector-backend-foundation.md`.
+- Added `.env.example` with `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `OPENAI_API_KEY`.
+- Added Supabase helpers in `src/lib/supabase/`:
+  - `client.ts` — browser client via `createBrowserClient`
+  - `server.ts` — server client via `createServerClient` + Next.js cookies
+  - `types.ts` — placeholder `Database` type (TODO: generate from Supabase)
+- Added `supabase/config.toml` and migration `00001_initial_schema.sql`:
+  - Extensions: `pgcrypto`, `vector` (extensions schema)
+  - Tables: organizations, profiles, organization_members, documents, document_chunks, tests, test_questions, test_assignments, test_attempts, test_answers, ai_generation_runs
+  - `document_chunks.embedding` as `extensions.vector(1536)` with HNSW cosine index
+  - `updated_at` trigger on all tables with `updated_at`
+  - RLS enabled on all public tables (restrictive — no broad policies)
+  - `match_document_chunks` RPC for cosine similarity search
+- Added `supabase/seed.sql` with demo org, auth users, profiles, members, 2 documents, 10 chunks (embeddings null).
+- Applied migration to remote Supabase via MCP; seeded org/documents/chunks remotely (auth user seed blocked by MCP — run `supabase db reset` locally or seed auth users via dashboard SQL when needed).
+- `@supabase/supabase-js` and `@supabase/ssr` were already in `package.json`.
+- Supabase CLI is not installed locally — migration files created manually.
+- Client helpers use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` and retain `NEXT_PUBLIC_SUPABASE_ANON_KEY` as a compatibility fallback.
+- Validation: `npm run lint`, `npm run typecheck`, and `npm run format:check` pass.
+- Decision 027 recorded in `context/decisions.md`.
+
+### Post-Review Fix Pass
+
+- Secured `set_updated_at` with `set search_path = ''` in the squashed initial migration.
+- Added missing RLS table comments on remote DB via follow-up migration.
+- Hardened `supabase/seed.sql`: org/chunks always seed; auth block wrapped in exception handler with required token columns; profiles/members/documents use conditional inserts.
+- Extracted shared env helpers to `src/lib/supabase/env.ts`.
+- Documented `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.example`; `NEXT_PUBLIC_SUPABASE_ANON_KEY` remains a code-level compatibility fallback only.
+
+### Org-Scoping and Service-Role Fix Pass
+
+- Added `src/lib/supabase/admin.ts` — server-only service-role client using `SUPABASE_SERVICE_ROLE_KEY` and `@supabase/supabase-js`.
+- Documented `SUPABASE_SERVICE_ROLE_KEY` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.example`.
+- Strengthened schema with composite `(id, organization_id)` uniqueness and org-scoped composite foreign keys; `test_assignments.user_id` and `test_attempts.user_id` are `NOT NULL`.
+- Folded org-scoping changes into the squashed `00001_initial_schema.sql` migration.
+- Updated `context/architecture.md` for `organization_members.role`, `test_questions` / `test_answers`, and `tests.source_document_id`.
+- Decision 028 recorded in `context/decisions.md`.
+
+### Migration Cleanup
+
+- Squashed backend foundation migrations into a single fresh-database migration: `supabase/migrations/00001_initial_schema.sql`.
+- Removed old timestamped migration files.
+- Kept final schema in direct `CREATE TABLE` statements with `pgcrypto` and `vector` in the `extensions` schema.
+- Changed nullable `SET NULL` source links (`source_document_id`, `source_chunk_id`, `assignment_id`) to simple single-column foreign keys while keeping required org-scoped cascade relationships composite.
+- Added the required `import "server-only"` guard to `src/lib/supabase/admin.ts`.
+- Installed `server-only` package for the admin client import guard.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Remote DB Synchronization
+
+- User-approved destructive reset of the remote demo project's `public` schema via Supabase MCP `execute_sql`.
+- Reapplied `supabase/migrations/00001_initial_schema.sql` and `supabase/seed.sql` on the remote database.
+- Verified remote state: 11 public tables, RLS enabled on all, `pgcrypto` and `vector` in `extensions`, HNSW cosine index on `document_chunks.embedding`, `set_updated_at()` with `search_path = ''`, `match_document_chunks()` as `SECURITY INVOKER`.
+- Confirmed nullable source links use single-column FKs (`source_document_id`, `source_chunk_id`, `assignment_id`); old composite nullable FKs removed.
+- Seed counts on remote: 1 organization, 2 documents, 10 document chunks; profiles and organization_members seeded when auth user block succeeds.
+- Aligned `supabase_migrations.schema_migrations` to a single `00001` / `initial_schema` record.
+- Supabase advisors: expected `RLS enabled no policy` INFO notices only; no unexpected `SECURITY DEFINER` warnings from this migration.
+
 ## Feature Spec 20: Role-Based Route Structure and Employee Dashboard
 
 Refactored the clickable MVP into role-based URLs and added an employee dashboard.

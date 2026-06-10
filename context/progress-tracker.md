@@ -19,13 +19,9 @@ Admin document
 
 ## In Progress
 
-- Supabase pgvector Backend Foundation
-
 ## Next Up
 
-- Demo Seed Data: Organization, Users, Documents, Chunks
 - Embedding Script for Demo Chunks
-- `match_document_chunks` RPC
 - AI Generate Test from Document Chunks
 - Connect Generate Test Setup to AI
 - Save Published Tests and Questions to Supabase
@@ -35,6 +31,7 @@ Admin document
 
 ## Completed
 
+- Feature Spec 21: Supabase pgvector Backend Foundation (squashed migration, org-scoping, service-role client)
 - Feature Spec 20: Role-Based Route Structure and Employee Dashboard
 - Feature Spec 19: Clickable Demo Polish
 - Feature Spec 17: Follow-up Question Flow

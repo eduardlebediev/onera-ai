@@ -1,5 +1,13 @@
 # Decisions
 
+## 028 — Squash backend foundation into a single initial migration
+
+Express the backend foundation as one fresh-database migration (`supabase/migrations/00001_initial_schema.sql`) instead of iterative timestamped migrations. Final schema uses direct `CREATE TABLE` statements; `pgcrypto` and `vector` live in the `extensions` schema; nullable source links use single-column `ON DELETE SET NULL` foreign keys while required org-scoped relationships stay composite with `ON DELETE CASCADE`.
+
+## 027 — Supabase backend foundation with restrictive RLS and server-only admin access
+
+Keep RLS enabled on public Supabase tables by default. User-scoped app access goes through `@supabase/ssr` clients with `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; internal RAG/embedding jobs use a server-only service-role client and must never expose that key to the browser. Organization ownership is enforced with composite foreign keys for required cascade relationships; nullable source links use single-column `ON DELETE SET NULL` foreign keys to avoid nulling required `organization_id`.
+
 ## 026 — Role-based route groups with global demo navbar
 
 Admin routes live under `src/app/(admin)/admin/...` (`/admin/dashboard`, `/admin/documents`, `/admin/tests`, etc.). Employee routes live under `src/app/(employee)/employee/...` (`/employee/dashboard`, `/employee/tests`, take/result). Route groups are organizational only. The global `TopNavbar` and `RoleProvider` remain in the root layout; nav links and the role switcher navigate to `/admin/...` or `/employee/...` dashboards. No auth middleware or legacy redirects. Orphan stub routes (`/analytics`, `/employees`, `/progress`, `/my-tests`) were removed.

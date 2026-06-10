@@ -78,11 +78,26 @@ Application user profile linked to Supabase Auth.
 Fields:
 
 - id
-- name
 - email
-- role — admin | employee
+- full_name
+- avatar_url
 - created_at
 - updated_at
+
+Organization role lives in `organization_members.role`, not on `profiles`.
+
+### organization_members
+
+Membership and role within an organization.
+
+Fields:
+
+- organization_id
+- user_id
+- role — admin | employee
+- status — invited | active | disabled
+- department
+- job_title
 
 ### documents
 
@@ -120,6 +135,8 @@ Test metadata.
 Fields:
 
 - id
+- organization_id
+- source_document_id
 - title
 - description
 - difficulty — easy | medium | hard
@@ -127,23 +144,14 @@ Fields:
 - question_count
 - passing_score
 - language — en | de
-- status — draft | published | archived
+- status — draft | review | published | archived
 - created_by
 - created_at
 - updated_at
 
-### test_documents
+MVP foundation uses `tests.source_document_id` for the primary source document. A separate `test_documents` join table is not part of the current backend schema.
 
-Many-to-many relation between tests and source documents.
-
-Fields:
-
-- id
-- test_id
-- document_id
-- created_at
-
-### questions
+### test_questions
 
 Questions belonging to a test.
 
@@ -153,7 +161,7 @@ Fields:
 - test_id
 - source_chunk_id
 - question_text
-- type — single_choice | multiple_choice | true_false | open_question
+- question_type — single_choice | multiple_choice | true_false | open_question
 - options
 - correct_answer
 - explanation
@@ -169,8 +177,9 @@ Individual test assignments for employees.
 Fields:
 
 - id
+- organization_id
 - test_id
-- user_id
+- user_id — required for MVP individual assignments
 - assigned_by
 - status — not_started | in_progress | completed | failed
 - deadline
@@ -184,8 +193,9 @@ Employee test attempts.
 Fields:
 
 - id
+- organization_id
 - test_id
-- user_id
+- user_id — required for MVP individual attempts
 - assignment_id
 - score
 - passed
@@ -194,7 +204,7 @@ Fields:
 - completed_at
 - created_at
 
-### answers
+### test_answers
 
 Employee answers to test questions.
 
@@ -243,13 +253,16 @@ Fields:
 ## Auth and Access Model
 
 - Users authenticate through Supabase Auth or temporary demo auth during early MVP development.
-- Application-specific user data lives in profiles.
-- profiles.role controls access:
+- Application-specific user data lives in `profiles`.
+- Organization membership and role live in `organization_members`.
+- `organization_members.role` controls access within an organization:
   - admin can manage documents, tests, assignments, and analytics;
   - employee can only see assigned tests and personal results.
+- Internal backend jobs (embedding generation, RAG retrieval, admin mutations before auth policies land) use a server-only Supabase service-role client — never exposed to the browser.
+- User-scoped reads/writes use the SSR server client with the publishable/anon key and RLS.
 - Employees must not access other employees' attempts, answers, or analytics.
 - Admin-only mutations must be checked server-side.
-- If Supabase Auth is enabled, use Row Level Security where practical.
+- RLS is enabled on all public tables; policies will be added in later specs.
 
 ---
 
@@ -284,7 +297,7 @@ text Selected document(s) → document chunks → semantic retrieval with pgvect
 1. AI-generated questions must stay in draft state until reviewed and published by an admin.
 2. Each document chunk must belong to one document.
 3. Document chunk embeddings are stored in document_chunks.embedding using Supabase pgvector.
-4. A test can use multiple documents through test_documents.
+4. MVP tests reference a primary source document through `tests.source_document_id`.
 5. A question should reference source_chunk_id when generated from document context.
 6. Employees can only complete assigned tests.
 7. Test attempts must belong to one user, one test, and preferably one assignment.

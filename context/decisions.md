@@ -1,5 +1,9 @@
 # Decisions
 
+## 033 — Reviewed AI drafts persist as published tests
+
+Reviewed AI-generated drafts are persisted only after admin review. The save flow writes one row to `tests` and approved questions to `test_questions`, derives `organization_id` from the source document, updates `ai_generation_runs.test_id`, and redirects to the saved test detail page. Employee attempts/results remain out of scope for the demo slice.
+
 ## 032 — Generate Test page uses real AI API with temporary draft handoff
 
 The admin generate-test page calls `POST /api/admin/generate-test` to create a real AI-generated draft from retrieved document chunks. The draft is stored in `sessionStorage` (`ontera.generatedTestDraft`) and consumed by review and publish pages. Review edits use run-scoped session keys when `generationRunId` is present. Generated tests are not persisted to `tests` / `test_questions`; admin review remains required before publishing.

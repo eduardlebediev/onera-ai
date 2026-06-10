@@ -59,6 +59,12 @@ export function getApprovedQuestions(reviewData: MockTestReviewData): ReviewQues
   return reviewData.questions.filter((question) => question.status === "approved")
 }
 
+export function getPublishableQuestions(reviewData: MockTestReviewData): ReviewQuestion[] {
+  return reviewData.questions.filter(
+    (question) => question.status === "approved" || question.status === "edited"
+  )
+}
+
 export function getPublishReadinessChecks(context: PublishTestContext): PublishReadinessCheck[] {
   const { reviewData, approvedCount, needsReviewCount } = context
   const hasSourceDocument = Boolean(context.sourceDocumentTitle)

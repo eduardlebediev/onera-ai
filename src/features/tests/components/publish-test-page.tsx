@@ -2,15 +2,26 @@
 
 import { Rocket, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 
 import { PublishApprovedQuestions } from "@/features/tests/components/publish-approved-questions"
 import { PublishReadinessCard } from "@/features/tests/components/publish-readiness-card"
 import { PublishSuccessState } from "@/features/tests/components/publish-success-state"
 import { PublishTestSummary } from "@/features/tests/components/publish-test-summary"
+import { mapReviewedDraftToPublishRequest } from "@/features/tests/lib/generated-test-mapper"
+import {
+  loadGeneratedTestDraft,
+  clearGeneratedTestDraft,
+} from "@/features/tests/lib/generated-test-session"
+import {
+  PUBLISH_GENERATED_TEST_ERROR_MESSAGE,
+  publishGeneratedTest,
+} from "@/features/tests/lib/publish-generated-test-api-client"
 import {
   buildPublishContext,
   getApprovedQuestions,
+  getPublishableQuestions,
   getPublishBlockReason,
   getPublishReadinessChecks,
   isPublishReady,
@@ -34,13 +45,17 @@ export function PublishTestPage({
   reviewData: initialReviewData,
   documentId,
 }: PublishTestPageProps) {
+  const router = useRouter()
   const [published, setPublished] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
+  const [savedTestId, setSavedTestId] = useState<string | null>(null)
 
   const {
     reviewData: resolvedReviewData,
     questions,
+    isAiDraft,
     isHydrated,
   } = useResolvedReviewData(documentId, initialReviewData)
 
@@ -64,16 +79,48 @@ export function PublishTestPage({
     [canPublish, readinessChecks]
   )
   const approvedQuestions = useMemo(() => getApprovedQuestions(reviewData), [reviewData])
-  const publishedTestId = useMemo(() => resolvePublishedTestId(document.id), [document.id])
+  const questionsToPublish = useMemo(
+    () => (isAiDraft ? getPublishableQuestions(reviewData) : approvedQuestions),
+    [approvedQuestions, isAiDraft, reviewData]
+  )
+  const publishedTestId = useMemo(
+    () => savedTestId ?? resolvePublishedTestId(document.id),
+    [document.id, savedTestId]
+  )
 
   const handleSaveDraft = () => {
     setDraftSaved(true)
   }
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!canPublish || isPublishing || !isHydrated) return
 
+    setPublishError(null)
     setIsPublishing(true)
+
+    if (isAiDraft) {
+      const storedDraft = loadGeneratedTestDraft()
+
+      if (!storedDraft) {
+        setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
+        setIsPublishing(false)
+        return
+      }
+
+      try {
+        const publishInput = mapReviewedDraftToPublishRequest(storedDraft, questions)
+        const result = await publishGeneratedTest(publishInput)
+        clearGeneratedTestDraft()
+        setSavedTestId(result.testId)
+        router.push(result.redirectTo)
+        return
+      } catch {
+        setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
+        setIsPublishing(false)
+        return
+      }
+    }
+
     window.setTimeout(() => {
       setPublished(true)
       setIsPublishing(false)
@@ -110,11 +157,19 @@ export function PublishTestPage({
         </Card>
       ) : null}
 
+      {publishError ? (
+        <Card className="mb-2 border-destructive/30 bg-destructive/5">
+          <CardContent className="py-3">
+            <p className="typography-small text-destructive">{publishError}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         <div className="space-y-2 lg:col-span-2">
           <PublishTestSummary context={context} isReady={canPublish} />
           <PublishApprovedQuestions
-            questions={approvedQuestions}
+            questions={questionsToPublish}
             rejectedCount={context.rejectedCount}
           />
         </div>
@@ -135,7 +190,11 @@ export function PublishTestPage({
                 ) : (
                   <Rocket className="mr-2 size-4" />
                 )}
-                {isPublishing ? "Publishing..." : "Publish Test"}
+                {isPublishing
+                  ? isAiDraft
+                    ? "Saving generated test..."
+                    : "Publishing..."
+                  : "Publish Test"}
               </Button>
 
               <Button asChild variant="outline" className="w-full">

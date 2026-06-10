@@ -11,6 +11,9 @@ import type {
   ReviewQuestion,
 } from "@/features/tests/mock/generated-test-review"
 
+let cachedClientSnapshot: { key: string; state: ResolvedReviewState } | null = null
+let cachedServerSnapshot: { key: string; state: ResolvedReviewState } | null = null
+
 export interface ResolvedReviewState {
   reviewData: MockTestReviewData
   questions: ReviewQuestion[]
@@ -23,13 +26,51 @@ function getServerState(
   documentId: string,
   fallbackReviewData: MockTestReviewData
 ): ResolvedReviewState {
-  return {
+  const cacheKey = JSON.stringify({
+    documentId,
+    testTitle: fallbackReviewData.testTitle,
+    questionIds: fallbackReviewData.questions.map((question) => question.id),
+  })
+
+  if (cachedServerSnapshot?.key === cacheKey) {
+    return cachedServerSnapshot.state
+  }
+
+  const state = {
     reviewData: fallbackReviewData,
     questions: fallbackReviewData.questions,
     isAiDraft: false,
     generationRunId: null,
     isHydrated: false,
   }
+
+  cachedServerSnapshot = { key: cacheKey, state }
+
+  return state
+}
+
+function buildClientCacheKey(
+  documentId: string,
+  fallbackReviewData: MockTestReviewData,
+  state: ResolvedReviewState
+): string {
+  return JSON.stringify({
+    documentId,
+    isAiDraft: state.isAiDraft,
+    generationRunId: state.generationRunId,
+    title: state.reviewData.testTitle,
+    passingScore: state.reviewData.passingScore,
+    questionStates: state.questions.map((question) => ({
+      id: question.id,
+      status: question.status,
+      questionText: question.questionText,
+      options: question.options,
+      correctAnswer: question.correctAnswer,
+      correctAnswers: question.correctAnswers,
+      explanation: question.explanation,
+    })),
+    fallbackQuestionIds: fallbackReviewData.questions.map((question) => question.id),
+  })
 }
 
 function buildResolvedState(
@@ -42,23 +83,42 @@ function buildResolvedState(
   if (stored && stored.document.id === apiDocumentId) {
     const mappedReviewData = mapStoredDraftToReviewData(stored)
     const runId = stored.generationRunId
-
-    return {
+    const mergedQuestions = mergeReviewSession(documentId, mappedReviewData.questions, runId)
+    const state = {
       reviewData: mappedReviewData,
-      questions: mergeReviewSession(documentId, mappedReviewData.questions, runId),
+      questions: mergedQuestions,
       isAiDraft: true,
       generationRunId: runId,
       isHydrated: true,
     }
+    const cacheKey = buildClientCacheKey(documentId, fallbackReviewData, state)
+
+    if (cachedClientSnapshot?.key === cacheKey) {
+      return cachedClientSnapshot.state
+    }
+
+    cachedClientSnapshot = { key: cacheKey, state }
+
+    return state
   }
 
-  return {
+  const mergedQuestions = mergeReviewSession(documentId, fallbackReviewData.questions)
+  const state = {
     reviewData: fallbackReviewData,
-    questions: mergeReviewSession(documentId, fallbackReviewData.questions),
+    questions: mergedQuestions,
     isAiDraft: false,
     generationRunId: null,
     isHydrated: true,
   }
+  const cacheKey = buildClientCacheKey(documentId, fallbackReviewData, state)
+
+  if (cachedClientSnapshot?.key === cacheKey) {
+    return cachedClientSnapshot.state
+  }
+
+  cachedClientSnapshot = { key: cacheKey, state }
+
+  return state
 }
 
 export function useResolvedReviewData(

@@ -101,6 +101,111 @@ export type Database = {
         }
         Relationships: []
       }
+      tests: {
+        Row: {
+          id: string
+          organization_id: string
+          source_document_id: string | null
+          title: string
+          description: string | null
+          status: string
+          difficulty: string
+          language: string
+          target_role: string | null
+          question_count: number | null
+          passing_score: number
+          created_by: string | null
+          published_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          source_document_id?: string | null
+          title: string
+          description?: string | null
+          status?: string
+          difficulty?: string
+          language?: string
+          target_role?: string | null
+          question_count?: number | null
+          passing_score?: number
+          created_by?: string | null
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          source_document_id?: string | null
+          title?: string
+          description?: string | null
+          status?: string
+          difficulty?: string
+          language?: string
+          target_role?: string | null
+          question_count?: number | null
+          passing_score?: number
+          created_by?: string | null
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_questions: {
+        Row: {
+          id: string
+          organization_id: string
+          test_id: string
+          source_chunk_id: string | null
+          question_text: string
+          question_type: string
+          options: Json
+          correct_answer: Json
+          explanation: string | null
+          topic: string | null
+          difficulty: string | null
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          test_id: string
+          source_chunk_id?: string | null
+          question_text: string
+          question_type?: string
+          options?: Json
+          correct_answer?: Json
+          explanation?: string | null
+          topic?: string | null
+          difficulty?: string | null
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          test_id?: string
+          source_chunk_id?: string | null
+          question_text?: string
+          question_type?: string
+          options?: Json
+          correct_answer?: Json
+          explanation?: string | null
+          topic?: string | null
+          difficulty?: string | null
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           id: string

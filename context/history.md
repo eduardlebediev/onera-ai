@@ -4,6 +4,30 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 25: Save Reviewed Generated Test to Supabase
+
+Persisted reviewed AI-generated test drafts from the publish page into Supabase `tests` and `test_questions`, completing the first backend-backed test creation flow.
+
+- Added `src/features/tests/schemas/publish-generated-test-schema.ts` — Zod request/response validation for publish payload, question option rules, and approved-question requirements.
+- Added `POST /api/admin/tests/publish-generated` at `src/app/api/admin/tests/publish-generated/route.ts` — server-only route using admin Supabase client; derives `organization_id` from `documents`; inserts published test and non-rejected questions; updates `ai_generation_runs.test_id` and merges `output_summary` best-effort.
+- Added `src/features/tests/lib/publish-generated-test-api-client.ts` — browser client with friendly error handling.
+- Extended `src/features/tests/lib/generated-test-mapper.ts` with `mapReviewedDraftToPublishRequest()` — merges stored AI draft with reviewed question state, preserving option IDs and applying edits.
+- Extended `src/lib/supabase/types.ts` with `tests` and `test_questions` table types.
+- Updated `src/features/tests/components/publish-test-page.tsx` — AI drafts call real publish API with loading/error states, clear `ontera.generatedTestDraft` on success, redirect to saved test; mock fallback unchanged.
+- Added `src/features/tests/lib/supabase-test-detail.ts` — server-only fetch helper for saved tests and questions.
+- Added `src/features/tests/components/saved-test-detail-page.tsx` — minimal Supabase-backed test detail view.
+- Updated `src/app/(admin)/admin/tests/[id]/page.tsx` — mock IDs first, then Supabase UUID fallback.
+- Decision 033 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Publish API validates `sourceChunkId` against `document_chunks` for the selected document and organization; invalid references return `422`.
+- `generationRunId` is validated against `document_id` and `organization_id` before save; post-save update is scoped the same way.
+- Test detail route returns `notFound()` for non-UUID ids before calling Supabase.
+- Added `getPublishableQuestions()`; AI publish preview shows approved and edited questions that will be saved.
+- Cached `useResolvedReviewData` snapshots for `useSyncExternalStore` to fix React infinite-loop console error on review/publish pages.
+
 ## Feature Spec 24: Connect Generate Test Page to Real AI API
 
 Connected the admin generate-test page to the real AI generation API with temporary draft handoff to the review page.

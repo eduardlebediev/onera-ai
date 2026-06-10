@@ -21,14 +21,14 @@ Admin document
 
 ## Next Up
 
-- Save Reviewed Generated Test to Supabase
-- Save Published Tests and Questions to Supabase
 - Presentation Demo Polish
+- Optional: Persist Test Assignments
 
 ## Open Questions
 
 ## Completed
 
+- Feature Spec 25: Save Reviewed Generated Test to Supabase
 - Feature Spec 24: Connect Generate Test Page to Real AI API
 - Feature Spec 23: AI Generate Test API from Retrieved Document Chunks
 - Feature Spec 22: Embedding Script for Demo Document Chunks

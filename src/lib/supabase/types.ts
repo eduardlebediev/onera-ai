@@ -5,6 +5,102 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      documents: {
+        Row: {
+          id: string
+          organization_id: string
+          title: string
+          description: string | null
+          source_type: string
+          file_name: string | null
+          file_url: string | null
+          extracted_text: string | null
+          status: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          title: string
+          description?: string | null
+          source_type?: string
+          file_name?: string | null
+          file_url?: string | null
+          extracted_text?: string | null
+          status?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          title?: string
+          description?: string | null
+          source_type?: string
+          file_name?: string | null
+          file_url?: string | null
+          extracted_text?: string | null
+          status?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_generation_runs: {
+        Row: {
+          id: string
+          organization_id: string
+          document_id: string | null
+          test_id: string | null
+          status: string
+          model: string | null
+          embedding_model: string | null
+          input_config: Json
+          retrieved_chunk_ids: string[]
+          output_summary: Json
+          error_message: string | null
+          created_by: string | null
+          created_at: string
+          completed_at: string | null
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          document_id?: string | null
+          test_id?: string | null
+          status?: string
+          model?: string | null
+          embedding_model?: string | null
+          input_config?: Json
+          retrieved_chunk_ids?: string[]
+          output_summary?: Json
+          error_message?: string | null
+          created_by?: string | null
+          created_at?: string
+          completed_at?: string | null
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          document_id?: string | null
+          test_id?: string | null
+          status?: string
+          model?: string | null
+          embedding_model?: string | null
+          input_config?: Json
+          retrieved_chunk_ids?: string[]
+          output_summary?: Json
+          error_message?: string | null
+          created_by?: string | null
+          created_at?: string
+          completed_at?: string | null
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           id: string

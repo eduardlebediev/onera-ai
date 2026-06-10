@@ -4,6 +4,34 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 23: AI Generate Test API from Retrieved Document Chunks
+
+Added a backend-only API endpoint that generates grounded employee knowledge test drafts from retrieved document chunks.
+
+- Created `context/feature-specs/23-ai-generate-test-api-from-retrieved-chunks.md`.
+- Installed `ai`, `@ai-sdk/openai`, and `zod`.
+- Extended `src/lib/supabase/types.ts` with `documents` and `ai_generation_runs` table types.
+- Added `src/features/tests/schemas/generated-test-schema.ts` with request, draft, response, LLM output, and post-validation helpers.
+- Added `src/features/tests/lib/generate-test-prompt.ts` for grounded prompt and retrieval query construction.
+- Added `src/features/tests/lib/retrieve-document-context.ts` for document lookup, pgvector retrieval via `match_document_chunks`, and chunk-index fallback.
+- Added `POST /api/admin/generate-test` at `src/app/api/admin/generate-test/route.ts`:
+  - Validates request input with Zod.
+  - Creates and updates `ai_generation_runs` for pending, completed, and failed states.
+  - Retrieves embedded chunks before calling OpenAI structured generation with `gpt-4.1-mini`.
+  - Returns draft JSON without saving to `tests` or `test_questions`.
+- Decision 031 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+- Manual curl verification for Security Guidelines document returns HTTP 200 with 5 grounded questions and valid `sourceChunkId` references.
+- No frontend integration in this spec; mock UI remains unchanged.
+
+### Post-Review Fix Pass
+
+- Classified AI SDK structured-output parse/validation failures as `422` invalid generated output instead of provider/server failures.
+- Normalized returned draft metadata (`difficulty`, `language`, `targetRole`, `passingScore`) from trusted request/default values instead of model output.
+- Derived `sourceChunkTitle` from retrieved chunk metadata for valid source chunk references.
+- Fixed the LLM output schema so all OpenAI response-format properties are required (`passingScore` no longer uses a Zod default in the LLM schema).
+- Validation and curl re-test pass after the runtime schema fix.
+
 ## Feature Spec 22: Embedding Script for Demo Document Chunks
 
 Added a server-side embedding script that fills demo `document_chunks.embedding` values and verifies pgvector retrieval.

@@ -21,8 +21,8 @@ Admin document
 
 ## Next Up
 
-- AI Generate Test from Document Chunks
-- Connect Generate Test Setup to AI
+- Connect Generate Test Page to Real AI API
+- Save Reviewed Generated Test to Supabase
 - Save Published Tests and Questions to Supabase
 - Presentation Demo Polish
 
@@ -30,6 +30,7 @@ Admin document
 
 ## Completed
 
+- Feature Spec 23: AI Generate Test API from Retrieved Document Chunks
 - Feature Spec 22: Embedding Script for Demo Document Chunks
 - Feature Spec 21: Supabase pgvector Backend Foundation (squashed migration, org-scoping, service-role client)
 - Feature Spec 20: Role-Based Route Structure and Employee Dashboard

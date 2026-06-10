@@ -1,5 +1,9 @@
 # Decisions
 
+## 031 — AI test generation uses retrieved document chunks as grounded context
+
+AI-generated test drafts are created only after retrieving embedded document chunks through the `match_document_chunks` RPC. The generation endpoint uses structured output validation and requires each generated question to reference a source chunk. Generated questions are returned as a draft and are not automatically published.
+
 ## 030 — Use SUPABASE_SECRET_KEY for server-only admin access
 
 Server-side Supabase admin access uses `SUPABASE_SECRET_KEY` (`sb_secret_...`) from Dashboard → Settings → API Keys. Never expose this key through `NEXT_PUBLIC_*` env vars or import the admin client in client components. Prefer the new publishable/secret API keys over legacy `anon` / `service_role` JWT keys.

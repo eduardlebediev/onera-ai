@@ -4,6 +4,28 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 26: Backend Data Integration for Admin Documents and Tests
+
+Replaced mock-first data usage on admin documents and tests pages with Supabase-backed reads while preserving mock fallback for demo ids and offline recovery.
+
+- Added `src/features/documents/lib/supabase-documents.ts` — server-only list and detail fetch helpers; maps `documents` and `document_chunks` to existing `MockDocumentDetail` shape for reuse of current UI components.
+- Added `src/features/tests/lib/supabase-tests.ts` — server-only tests list fetch with source document title join; maps rows to `ResolvedMockTest` for the tests table and KPI section.
+- Added `src/features/documents/components/backend-fallback-banner.tsx` — user-facing fallback copy when Supabase is empty or unavailable.
+- Updated `src/app/(admin)/admin/documents/page.tsx` — Supabase-first documents list with mock fallback on empty/error.
+- Updated `src/app/(admin)/admin/documents/[id]/page.tsx` — Supabase detail for UUID/mapped ids; mock fallback for known demo ids.
+- Updated `src/app/(admin)/admin/documents/[id]/generate-test/page.tsx` — loads Supabase document detail for API-backed UUID routes before mock fallback.
+- Updated `src/features/documents/components/generate-test-setup.tsx` — back navigation uses route document id for UUID/mock route consistency.
+- Updated `src/app/(admin)/admin/tests/page.tsx` — Supabase-first tests list including saved generated tests; mock fallback on empty/error.
+- Updated `src/features/tests/components/tests-list-page.tsx` — optional fallback banner slot.
+- Updated `src/app/(admin)/admin/tests/[id]/page.tsx` — safe Supabase error handling before `notFound()`.
+- Updated `src/features/tests/lib/supabase-test-detail.ts` — returns `null` on fetch errors instead of throwing.
+- Marked `/admin/documents` and `/admin/tests` as `force-dynamic` so Supabase list data is fetched per request, not baked in at build time.
+- Extended `MockDocumentDetail` with optional `extractedText`; mapped `documents.extracted_text` in `supabase-documents.ts`.
+- Updated `document-detail.tsx` to prefer full `extractedText` in preview and Full Extracted Text tab, with chunk-based fallback for mock docs.
+- Updated `supabase/seed.sql` to aggregate demo chunk content into `documents.extracted_text`; applied on remote demo DB via MCP.
+- Decision 037 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 25: Save Reviewed Generated Test to Supabase
 
 Persisted reviewed AI-generated test drafts from the publish page into Supabase `tests` and `test_questions`, completing the first backend-backed test creation flow.

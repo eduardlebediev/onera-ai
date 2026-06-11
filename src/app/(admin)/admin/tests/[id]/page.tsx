@@ -23,7 +23,14 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
     notFound()
   }
 
-  const savedTest = await getSavedTestDetailById(id)
+  let savedTest = null
+
+  try {
+    savedTest = await getSavedTestDetailById(id)
+  } catch (error) {
+    console.error(`Failed to load saved test ${id} from Supabase:`, error)
+    notFound()
+  }
 
   if (!savedTest) {
     notFound()

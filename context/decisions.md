@@ -1,5 +1,13 @@
 # Decisions
 
+## 038 — Full document text lives in extracted_text; chunks stay for RAG
+
+`documents.extracted_text` stores the complete assembled document content for display. `document_chunks` remain the source for topics, generate-test selection, and pgvector retrieval. Demo seed data hydrates `extracted_text` from ordered chunks; the document detail UI prefers `extractedText` when present and falls back to chunk rendering for mock-only documents.
+
+## 037 — Admin documents and tests use Supabase as primary source
+
+Admin documents and tests pages now read from Supabase first. Mock data remains as fallback/dev fixture for old demo ids and offline demo recovery, but Supabase-backed documents, saved tests, and test questions are the primary source for admin core pages.
+
 ## 033 — Reviewed AI drafts persist as published tests
 
 Reviewed AI-generated drafts are persisted only after admin review. The save flow writes one row to `tests` and approved questions to `test_questions`, derives `organization_id` from the source document, updates `ai_generation_runs.test_id`, and redirects to the saved test detail page. Employee attempts/results remain out of scope for the demo slice.

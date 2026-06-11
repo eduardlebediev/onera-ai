@@ -27,9 +27,10 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
 
 interface TestsListPageProps {
   tests: ResolvedMockTest[]
+  banner?: React.ReactNode
 }
 
-export function TestsListPage({ tests }: TestsListPageProps) {
+export function TestsListPage({ tests, banner }: TestsListPageProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
 
   const visibleTests = useMemo(() => {
@@ -39,6 +40,7 @@ export function TestsListPage({ tests }: TestsListPageProps) {
 
   return (
     <div className="page-shell">
+      {banner}
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="typography-h2">Tests</h2>

@@ -79,7 +79,8 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     .maybeSingle()
 
   if (testError) {
-    throw new Error(`Failed to fetch saved test: ${testError.message}`)
+    console.error(`Failed to fetch saved test: ${testError.message}`)
+    return null
   }
 
   if (!test) {
@@ -95,7 +96,8 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     .order("order_index", { ascending: true })
 
   if (questionsError) {
-    throw new Error(`Failed to fetch saved test questions: ${questionsError.message}`)
+    console.error(`Failed to fetch saved test questions: ${questionsError.message}`)
+    return null
   }
 
   let sourceDocumentTitle: string | null = null
@@ -108,7 +110,8 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
       .maybeSingle()
 
     if (documentError) {
-      throw new Error(`Failed to fetch source document: ${documentError.message}`)
+      console.error(`Failed to fetch source document: ${documentError.message}`)
+      return null
     }
 
     sourceDocumentTitle = document?.title ?? null

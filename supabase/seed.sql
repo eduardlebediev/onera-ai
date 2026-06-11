@@ -328,3 +328,15 @@ values
     null
   )
 on conflict (id) do nothing;
+
+update public.documents as d
+set extracted_text = aggregated.full_text
+from (
+  select
+    dc.document_id,
+    string_agg(dc.content, E'\n\n' order by dc.chunk_index) as full_text
+  from public.document_chunks as dc
+  group by dc.document_id
+) as aggregated
+where d.id = aggregated.document_id
+  and d.source_type = 'demo';

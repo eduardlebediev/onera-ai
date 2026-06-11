@@ -198,7 +198,11 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {document.chunks.length > 0 ? (
+                  {document.extractedText ? (
+                    <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                      <p className="line-clamp-6 whitespace-pre-wrap">{document.extractedText}</p>
+                    </div>
+                  ) : document.chunks.length > 0 ? (
                     <>
                       <div className="space-y-4 rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
                         {document.chunks.slice(0, 2).map((chunk) => (
@@ -335,7 +339,11 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
               </div>
             </CardHeader>
             <CardContent>
-              {document.chunks.length > 0 ? (
+              {document.extractedText ? (
+                <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {document.extractedText}
+                </div>
+              ) : document.chunks.length > 0 ? (
                 <div className="space-y-6">
                   {document.chunks.map((chunk, index) => (
                     <div key={chunk.id}>

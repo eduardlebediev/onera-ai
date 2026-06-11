@@ -30,6 +30,8 @@ export interface MockDocumentDetail {
   fileSizeMb: number
   description: string
   uploadedAt: string
+  /** Full document text when available from backend extraction. */
+  extractedText?: string
   /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]

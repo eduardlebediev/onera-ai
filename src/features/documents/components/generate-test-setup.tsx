@@ -211,7 +211,7 @@ export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSet
         </div>
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" className="h-10 rounded-xl">
-            <Link href={`/admin/documents/${document.id}`}>
+            <Link href={`/admin/documents/${routeDocumentId}`}>
               <ArrowLeft className="mr-2 size-4" />
               Back to Document
             </Link>

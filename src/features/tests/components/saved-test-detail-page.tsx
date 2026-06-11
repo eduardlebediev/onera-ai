@@ -1,15 +1,16 @@
 import Link from "next/link"
 
 import { TestAssignmentsSection } from "@/features/tests/components/test-assignments-section"
+import { TestResultsSection } from "@/features/tests/components/test-results-section"
 import {
   formatAssignmentDeadline,
   formatAssignmentStatus,
 } from "@/features/tests/lib/assign-employees-model"
-import type {
-  SupabaseAssignedEmployee,
-  SupabaseAssignmentSummary,
-} from "@/features/tests/lib/supabase-assignments"
+import type { SupabaseAssignmentSummary } from "@/features/tests/lib/supabase-assignments"
 import type { SavedTestDetail } from "@/features/tests/lib/supabase-test-detail"
+import type { SupabaseEmployeeProgress } from "@/features/tests/lib/supabase-test-progress"
+import type { TestResultsSummary } from "@/features/tests/mock/tests"
+import { formatTestDate } from "@/features/tests/lib/test-format"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
@@ -17,11 +18,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 interface SavedTestDetailPageProps {
   test: SavedTestDetail
   assignmentSummary?: SupabaseAssignmentSummary
-  assignedEmployees?: SupabaseAssignedEmployee[]
+  assignedEmployees?: SupabaseEmployeeProgress[]
+  results?: TestResultsSummary | null
 }
 
 function formatLanguage(language: string): string {
   return language === "de" ? "German" : "English"
+}
+
+function formatAttemptStatus(status: SupabaseEmployeeProgress["attemptStatus"]): string {
+  if (!status) return "—"
+
+  switch (status) {
+    case "in_progress":
+      return "In progress"
+    case "completed":
+      return "Completed"
+    case "abandoned":
+      return "Abandoned"
+    default:
+      return "—"
+  }
 }
 
 function getCorrectOptionTexts(question: SavedTestDetail["questions"][number]): string[] {
@@ -32,11 +49,23 @@ function getCorrectOptionTexts(question: SavedTestDetail["questions"][number]): 
     .filter((text): text is string => Boolean(text))
 }
 
+function emptyResults(): TestResultsSummary {
+  return {
+    averageScore: 0,
+    passRate: 0,
+    weakTopics: [],
+    recentAttempts: [],
+  }
+}
+
 export function SavedTestDetailPage({
   test,
   assignmentSummary,
   assignedEmployees = [],
+  results,
 }: SavedTestDetailPageProps) {
+  const resultsSummary = results ?? emptyResults()
+
   return (
     <div className="page-shell-narrow">
       <div className="mb-6 space-y-4">
@@ -59,9 +88,14 @@ export function SavedTestDetailPage({
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {test.status === "published" ? (
-              <Button asChild>
-                <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
-              </Button>
+              <>
+                <Button asChild>
+                  <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="#results">View results</Link>
+                </Button>
+              </>
             ) : null}
             <Button asChild variant="outline">
               <Link href="/admin/tests">Back to Tests</Link>
@@ -139,6 +173,8 @@ export function SavedTestDetailPage({
               </Card>
             )
           })}
+
+          <TestResultsSection results={resultsSummary} id="results" />
         </div>
 
         <div className="space-y-2">
@@ -166,11 +202,32 @@ export function SavedTestDetailPage({
                         <p className="text-sm font-medium text-foreground">{employee.name}</p>
                         <p className="typography-small text-muted-foreground">{employee.email}</p>
                       </div>
-                      <Badge variant="outline">{formatAssignmentStatus(employee.status)}</Badge>
+                      <Badge variant="outline">
+                        {formatAssignmentStatus(employee.assignmentStatus)}
+                      </Badge>
                     </div>
-                    <p className="mt-2 typography-small text-muted-foreground">
-                      Deadline: {formatAssignmentDeadline(employee.deadline ?? "")}
-                    </p>
+                    <div className="mt-2 grid gap-1 typography-small text-muted-foreground">
+                      <p>
+                        <span className="font-medium text-foreground">Score:</span>{" "}
+                        {employee.score !== null ? `${employee.score}%` : "—"}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Result:</span>{" "}
+                        {employee.resultLabel}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Attempt:</span>{" "}
+                        {formatAttemptStatus(employee.attemptStatus)}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Completed:</span>{" "}
+                        {employee.completedAt ? formatTestDate(employee.completedAt) : "—"}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Deadline:</span>{" "}
+                        {formatAssignmentDeadline(employee.deadline ?? "")}
+                      </p>
+                    </div>
                   </div>
                 ))
               ) : (

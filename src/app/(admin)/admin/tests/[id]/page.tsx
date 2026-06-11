@@ -5,6 +5,7 @@ import { SavedTestDetailPage } from "@/features/tests/components/saved-test-deta
 import { TestDetailPage } from "@/features/tests/components/test-detail-page"
 import { getSupabaseAssignmentSummaryByTestId } from "@/features/tests/lib/supabase-assignments"
 import { getSavedTestDetailById } from "@/features/tests/lib/supabase-test-detail"
+import { getSupabaseTestProgress } from "@/features/tests/lib/supabase-test-progress"
 import { getResolvedMockTestById } from "@/features/tests/lib/test-source-document"
 import { mockTests } from "@/features/tests/mock/tests"
 
@@ -37,13 +38,36 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
     notFound()
   }
 
-  const assignments = await getSupabaseAssignmentSummaryByTestId(savedTest.id)
+  const [assignments, progress] = await Promise.all([
+    getSupabaseAssignmentSummaryByTestId(savedTest.id),
+    getSupabaseTestProgress(savedTest.id).catch((error) => {
+      console.error(`Failed to load test progress for ${savedTest.id}:`, error)
+      return null
+    }),
+  ])
+
+  const assignedEmployees =
+    progress?.employees ??
+    assignments.employees.map((employee) => ({
+      assignmentId: employee.assignmentId,
+      userId: employee.userId,
+      name: employee.name,
+      email: employee.email,
+      assignmentStatus: employee.status,
+      deadline: employee.deadline,
+      attemptStatus: null,
+      score: null,
+      passed: null,
+      completedAt: null,
+      resultLabel: "—",
+    }))
 
   return (
     <SavedTestDetailPage
       test={savedTest}
       assignmentSummary={assignments.summary}
-      assignedEmployees={assignments.employees}
+      assignedEmployees={assignedEmployees}
+      results={progress?.results}
     />
   )
 }

@@ -4,6 +4,26 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 29: Admin Progress and Results from Supabase
+
+Replaced mock admin progress/result data with Supabase-backed assignment and attempt reads for the admin dashboard and UUID test detail pages, while preserving mock fallback for demo ids and empty/error Supabase states.
+
+- Added `context/feature-specs/29-admin-progress-and-results-from-supabase.md`.
+- Added `src/features/analytics/lib/supabase-admin-dashboard.ts` — server-only dashboard KPIs, test performance rows, weekly completions, and recent attempts from `tests`, `test_assignments`, `test_attempts`, `test_answers`, and `profiles`.
+- Added `src/features/tests/lib/supabase-test-progress.ts` — server-only per-test employee progress, results summary, weak topics, and recent attempts.
+- Added `src/features/analytics/components/recent-attempts-card.tsx` — dashboard recent attempts card.
+- Updated `src/app/(admin)/admin/dashboard/page.tsx` — Supabase-first dashboard with mock fallback and `BackendFallbackBanner`.
+- Updated `src/features/analytics/components/admin-dashboard.tsx` — optional recent attempts section.
+- Updated `src/app/(admin)/admin/tests/[id]/page.tsx` — loads test progress for UUID saved tests.
+- Updated `src/features/tests/components/saved-test-detail-page.tsx` — employee score/result/completed fields and `TestResultsSection` for weak topics and recent attempts.
+- Decision 042 recorded in `context/decisions.md`.
+
+### Post-Review Fix Pass
+
+- Restored missing `Feature Spec 28` entry in `context/progress-tracker.md`.
+- Fixed weak-topic correctness on test detail to aggregate from persisted `test_answers` per topic instead of dividing wrong answers by question count.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 28: Employee Test Taking and Attempt Persistence
 
 Replaced mock/sessionStorage employee test-taking for Supabase UUID assigned tests with persisted `test_attempts` and `test_answers`, while preserving mock fallback for old demo test ids.

@@ -5,9 +5,11 @@ import type {
   MockTest,
   WeeklyCompletion,
 } from "@/data/mock/admin-dashboard"
+import type { AdminDashboardRecentAttempt } from "@/features/analytics/lib/supabase-admin-dashboard"
 import { AiDraftsList } from "@/features/analytics/components/ai-drafts-list"
 import { DashboardHeader } from "@/features/analytics/components/dashboard-header"
 import { KpiCards } from "@/features/analytics/components/kpi-cards"
+import { RecentAttemptsCard } from "@/features/analytics/components/recent-attempts-card"
 import { TestCompletionsChart } from "@/features/analytics/components/test-completions-chart"
 import { TestPerformanceTable } from "@/features/analytics/components/test-performance-table"
 import { RecentDocumentsCard } from "@/features/analytics/components/recent-documents-card"
@@ -18,6 +20,7 @@ interface AdminDashboardProps {
   recentDocuments: MockDocument[]
   testPerformance: MockTest[]
   weeklyCompletions: WeeklyCompletion[]
+  recentAttempts?: AdminDashboardRecentAttempt[]
 }
 
 export function AdminDashboard({
@@ -26,6 +29,7 @@ export function AdminDashboard({
   recentDocuments,
   testPerformance,
   weeklyCompletions,
+  recentAttempts = [],
 }: AdminDashboardProps) {
   return (
     <>
@@ -39,6 +43,8 @@ export function AdminDashboard({
 
         <TestPerformanceTable tests={testPerformance} />
         <TestCompletionsChart data={weeklyCompletions} />
+
+        <RecentAttemptsCard attempts={recentAttempts} />
       </div>
     </>
   )

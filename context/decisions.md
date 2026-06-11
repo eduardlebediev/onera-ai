@@ -1,5 +1,9 @@
 # Decisions
 
+## 042 — Admin progress reads assignments and attempts from Supabase
+
+Admin progress and result views use `test_assignments`, `test_attempts`, and `test_answers` as the source of truth for backend-backed tests. The dashboard and test detail pages show real completion status, scores, recent attempts, and simple weak topics where available. Mock analytics remain fallback only until auth/RLS and full reporting are implemented.
+
 ## 041 — Completed employee assignments are not retakeable
 
 Supabase-backed employee test-taking allows start/submit only while `test_assignments.status` is `not_started` or `in_progress`. Completed or failed assignments cannot reopen the take flow or create new attempts until a future retake spec explicitly adds that behavior.

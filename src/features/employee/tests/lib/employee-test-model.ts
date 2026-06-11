@@ -33,7 +33,8 @@ export function isEmployeeTestFinished(test: EmployeeAssignedTest): boolean {
 
 export function isEmployeeTestOverdue(test: EmployeeAssignedTest): boolean {
   if (isEmployeeTestFinished(test)) return false
-  return getDaysUntilDeadline(test.deadline) < 0
+  const daysUntilDeadline = getDaysUntilDeadline(test.deadline)
+  return daysUntilDeadline !== null && daysUntilDeadline < 0
 }
 
 export function getEmployeeTestDisplayStatus(

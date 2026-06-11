@@ -9,7 +9,7 @@ export const CURRENT_EMPLOYEE_ID = "emp-6"
 export interface EmployeeAssignmentRecord {
   testId: string
   status: TestAssignmentStatus
-  deadline: string
+  deadline: string | null
   estimatedMinutes: number
   required: boolean
   progressPercent: number
@@ -18,6 +18,7 @@ export interface EmployeeAssignmentRecord {
 }
 
 export interface EmployeeAssignedTest {
+  assignmentId?: string
   id: string
   title: string
   description: string
@@ -26,7 +27,7 @@ export interface EmployeeAssignedTest {
   difficulty: TestDifficulty
   questionCount: number
   passingScore: number
-  deadline: string
+  deadline: string | null
   estimatedMinutes: number
   score: number | null
   passed: boolean | null

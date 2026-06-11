@@ -27,6 +27,7 @@ export interface TestAssignmentsSummary {
   completed: number
   inProgress: number
   notStarted: number
+  failed?: number
 }
 
 export interface TestWeakTopic {

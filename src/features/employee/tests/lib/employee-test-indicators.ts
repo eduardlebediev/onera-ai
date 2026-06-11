@@ -20,7 +20,7 @@ export interface EmployeeTestPriorityIndicator {
 function isDueSoon(test: EmployeeAssignedTest): boolean {
   if (isEmployeeTestFinished(test)) return false
   const days = getDaysUntilDeadline(test.deadline)
-  return days >= 0 && days <= 3
+  return days !== null && days >= 0 && days <= 3
 }
 
 export function getEmployeeTestPriorityIndicators(

@@ -158,28 +158,34 @@ export function AssignEmployeeList({
               {employees.length > 0 ? (
                 employees.map((employee) => {
                   const isSelected = selectedEmployeeIds.includes(employee.id)
+                  const isSelectable = employee.assignmentStatus === "not_assigned"
 
                   return (
                     <TableRow
                       key={employee.id}
                       className={cn(
-                        "cursor-pointer transition-colors",
+                        "transition-colors",
+                        isSelectable ? "cursor-pointer" : "cursor-not-allowed opacity-75",
                         isSelected && "bg-primary/5 hover:bg-primary/10"
                       )}
-                      onClick={() => onToggleEmployee(employee.id)}
+                      onClick={() => {
+                        if (isSelectable) onToggleEmployee(employee.id)
+                      }}
                     >
                       <TableCell className="px-4">
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation()
-                            onToggleEmployee(employee.id)
+                            if (isSelectable) onToggleEmployee(employee.id)
                           }}
+                          disabled={!isSelectable}
                           className={cn(
                             "flex size-5 items-center justify-center rounded border transition-colors",
                             isSelected
                               ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-background"
+                              : "border-border bg-background",
+                            !isSelectable && "cursor-not-allowed bg-muted"
                           )}
                           aria-pressed={isSelected}
                           aria-label={`${isSelected ? "Deselect" : "Select"} ${employee.name}`}

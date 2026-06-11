@@ -4,6 +4,21 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 27: Real Test Assignments
+
+Connected admin assignment and employee assigned-test visibility through Supabase `test_assignments`, while preserving mock fallback for existing demo IDs and empty/offline data.
+
+- Added `src/features/tests/lib/supabase-assignments.ts` — server-only helpers for loading UUID-backed assignment page data, active employee members, assignment summaries, assigned employee lists, and duplicate-aware assignment creation.
+- Added `src/app/api/admin/tests/[id]/assign/route.ts` — validates UUID route ids and request bodies, derives organization from the test, requires published tests, validates selected users as active employee members, and creates/skips `not_started` assignments.
+- Added `src/features/employee/tests/lib/supabase-employee-assignments.ts` — server-only demo employee assignment loader using seeded employee `b0000000-0000-4000-8000-000000000002`, mapped into the existing employee dashboard/tests UI model.
+- Extended `src/lib/supabase/types.ts` with `profiles`, `organization_members`, and `test_assignments`.
+- Updated `src/app/(admin)/admin/tests/[id]/assign/page.tsx` — mock IDs still use the local mock flow; Supabase UUIDs load real tests, assignable employees, and existing assignments.
+- Updated `src/features/tests/components/assign-employees-page.tsx` and `assign-employee-list.tsx` — accepts server-fed employees/assignments, prevents selecting already-assigned employees, calls the real assign API for Supabase tests, and keeps mock assignment behavior for mock tests.
+- Updated `src/app/(admin)/admin/tests/[id]/page.tsx` and `saved-test-detail-page.tsx` — saved test details show assignment counts, failed count, assigned employees, and an Assign to Employees action for published Supabase tests.
+- Updated `src/app/(employee)/employee/dashboard/page.tsx` and `src/app/(employee)/employee/tests/page.tsx` — both pages read Supabase assignments first and fall back to existing mock assignments when Supabase returns empty or fails.
+- Updated employee deadline formatting/model helpers so assignments without deadlines display safely and do not appear overdue.
+- Decision 039 recorded in `context/decisions.md`.
+
 ## Feature Spec 26: Backend Data Integration for Admin Documents and Tests
 
 Replaced mock-first data usage on admin documents and tests pages with Supabase-backed reads while preserving mock fallback for demo ids and offline recovery.

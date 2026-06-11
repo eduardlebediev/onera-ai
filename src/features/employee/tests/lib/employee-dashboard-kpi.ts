@@ -26,7 +26,7 @@ const DUE_SOON_DAYS = 7
 function isEmployeeTestDueSoon(test: EmployeeAssignedTest): boolean {
   if (isEmployeeTestFinished(test)) return false
   const daysUntil = getDaysUntilDeadline(test.deadline)
-  return daysUntil >= 0 && daysUntil <= DUE_SOON_DAYS
+  return daysUntil !== null && daysUntil >= 0 && daysUntil <= DUE_SOON_DAYS
 }
 
 export function getEmployeeDashboardKpiStats(

@@ -35,6 +35,7 @@ export function TestAssignmentsSection({
           <AssignmentStat label="Completed" value={assignments.completed} />
           <AssignmentStat label="In Progress" value={assignments.inProgress} />
           <AssignmentStat label="Not Started" value={assignments.notStarted} />
+          <AssignmentStat label="Failed" value={assignments.failed ?? 0} />
         </div>
         {testStatus === "published" ? (
           <Button asChild className="w-full">

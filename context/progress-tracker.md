@@ -22,7 +22,6 @@ The next step is to turn the mock-based admin and employee flows into real backe
 
 ## Next Up
 
-- Feature Spec 27: Real Test Assignments
 - Feature Spec 28: Employee Test Taking and Attempt Persistence
 - Feature Spec 29: Admin Progress and Results from Supabase
 - Feature Spec 30: Invite-only Auth and RLS Policies
@@ -31,6 +30,7 @@ The next step is to turn the mock-based admin and employee flows into real backe
 
 ## Completed
 
+- Feature Spec 27: Real Test Assignments
 - Feature Spec 26: Backend Data Integration for Admin Documents and Tests
 - Feature Spec 25: Save Reviewed Generated Test to Supabase
 - Feature Spec 24: Connect Generate Test Page to Real AI API

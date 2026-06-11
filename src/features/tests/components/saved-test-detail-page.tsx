@@ -1,5 +1,14 @@
 import Link from "next/link"
 
+import { TestAssignmentsSection } from "@/features/tests/components/test-assignments-section"
+import {
+  formatAssignmentDeadline,
+  formatAssignmentStatus,
+} from "@/features/tests/lib/assign-employees-model"
+import type {
+  SupabaseAssignedEmployee,
+  SupabaseAssignmentSummary,
+} from "@/features/tests/lib/supabase-assignments"
 import type { SavedTestDetail } from "@/features/tests/lib/supabase-test-detail"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
@@ -7,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
 interface SavedTestDetailPageProps {
   test: SavedTestDetail
+  assignmentSummary?: SupabaseAssignmentSummary
+  assignedEmployees?: SupabaseAssignedEmployee[]
 }
 
 function formatLanguage(language: string): string {
@@ -21,7 +32,11 @@ function getCorrectOptionTexts(question: SavedTestDetail["questions"][number]): 
     .filter((text): text is string => Boolean(text))
 }
 
-export function SavedTestDetailPage({ test }: SavedTestDetailPageProps) {
+export function SavedTestDetailPage({
+  test,
+  assignmentSummary,
+  assignedEmployees = [],
+}: SavedTestDetailPageProps) {
   return (
     <div className="page-shell-narrow">
       <div className="mb-6 space-y-4">
@@ -42,9 +57,16 @@ export function SavedTestDetailPage({ test }: SavedTestDetailPageProps) {
             </div>
           </div>
 
-          <Button asChild variant="outline">
-            <Link href="/admin/tests">Back to Tests</Link>
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {test.status === "published" ? (
+              <Button asChild>
+                <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
+              </Button>
+            ) : null}
+            <Button asChild variant="outline">
+              <Link href="/admin/tests">Back to Tests</Link>
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -75,47 +97,88 @@ export function SavedTestDetailPage({ test }: SavedTestDetailPageProps) {
         </Card>
       </div>
 
-      <div className="space-y-2">
-        {test.questions.map((question, index) => {
-          const correctTexts = getCorrectOptionTexts(question)
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+        <div className="space-y-2 lg:col-span-2">
+          {test.questions.map((question, index) => {
+            const correctTexts = getCorrectOptionTexts(question)
 
-          return (
-            <Card key={question.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  Question {index + 1}
-                  {question.topic ? (
-                    <span className="ml-2 text-sm font-normal text-muted-foreground">
-                      · {question.topic}
-                    </span>
+            return (
+              <Card key={question.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">
+                    Question {index + 1}
+                    {question.topic ? (
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        · {question.topic}
+                      </span>
+                    ) : null}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <p className="font-medium">{question.questionText}</p>
+                  <ul className="space-y-1">
+                    {question.options.map((option) => (
+                      <li
+                        key={option.id}
+                        className={
+                          correctTexts.includes(option.text)
+                            ? "font-medium text-emerald-700 dark:text-emerald-300"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {option.text}
+                      </li>
+                    ))}
+                  </ul>
+                  {question.explanation ? (
+                    <p>
+                      <span className="font-medium">Explanation:</span> {question.explanation}
+                    </p>
                   ) : null}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <p className="font-medium">{question.questionText}</p>
-                <ul className="space-y-1">
-                  {question.options.map((option) => (
-                    <li
-                      key={option.id}
-                      className={
-                        correctTexts.includes(option.text)
-                          ? "font-medium text-emerald-700 dark:text-emerald-300"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {option.text}
-                    </li>
-                  ))}
-                </ul>
-                {question.explanation ? (
-                  <p>
-                    <span className="font-medium">Explanation:</span> {question.explanation}
-                  </p>
-                ) : null}
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+
+        <div className="space-y-2">
+          {assignmentSummary ? (
+            <TestAssignmentsSection
+              assignments={assignmentSummary}
+              testId={test.id}
+              testStatus={test.status === "published" ? "published" : "draft"}
+            />
+          ) : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Assigned Employees</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {assignedEmployees.length > 0 ? (
+                assignedEmployees.map((employee) => (
+                  <div
+                    key={employee.assignmentId}
+                    className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{employee.name}</p>
+                        <p className="typography-small text-muted-foreground">{employee.email}</p>
+                      </div>
+                      <Badge variant="outline">{formatAssignmentStatus(employee.status)}</Badge>
+                    </div>
+                    <p className="mt-2 typography-small text-muted-foreground">
+                      Deadline: {formatAssignmentDeadline(employee.deadline ?? "")}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="typography-small text-muted-foreground">No employees assigned yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

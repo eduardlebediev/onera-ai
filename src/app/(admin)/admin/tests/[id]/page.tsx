@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { SavedTestDetailPage } from "@/features/tests/components/saved-test-detail-page"
 import { TestDetailPage } from "@/features/tests/components/test-detail-page"
+import { getSupabaseAssignmentSummaryByTestId } from "@/features/tests/lib/supabase-assignments"
 import { getSavedTestDetailById } from "@/features/tests/lib/supabase-test-detail"
 import { getResolvedMockTestById } from "@/features/tests/lib/test-source-document"
 import { mockTests } from "@/features/tests/mock/tests"
@@ -36,5 +37,13 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
     notFound()
   }
 
-  return <SavedTestDetailPage test={savedTest} />
+  const assignments = await getSupabaseAssignmentSummaryByTestId(savedTest.id)
+
+  return (
+    <SavedTestDetailPage
+      test={savedTest}
+      assignmentSummary={assignments.summary}
+      assignedEmployees={assignments.employees}
+    />
+  )
 }

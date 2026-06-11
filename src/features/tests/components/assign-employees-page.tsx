@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2 } from "lucide-react"
+import { AlertCircle, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
@@ -23,6 +23,7 @@ import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document
 import {
   mockEmployees,
   mockTestEmployeeAssignments,
+  type MockEmployee,
   type TestEmployeeAssignment,
 } from "@/features/tests/mock/employees"
 import { Button } from "@/shared/ui/button"
@@ -30,6 +31,9 @@ import { Card, CardContent } from "@/shared/ui/card"
 
 interface AssignEmployeesPageProps {
   test: ResolvedMockTest
+  employees?: MockEmployee[]
+  initialAssignments?: TestEmployeeAssignment[]
+  source?: "mock" | "supabase"
 }
 
 interface SuccessState {
@@ -37,19 +41,23 @@ interface SuccessState {
   deadline: string
 }
 
-export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
-  const [assignments, setAssignments] = useState<TestEmployeeAssignment[]>(
-    mockTestEmployeeAssignments
-  )
+export function AssignEmployeesPage({
+  test,
+  employees = mockEmployees,
+  initialAssignments = mockTestEmployeeAssignments,
+  source = "mock",
+}: AssignEmployeesPageProps) {
+  const [assignments, setAssignments] = useState<TestEmployeeAssignment[]>(initialAssignments)
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([])
   const [filter, setFilter] = useState<EmployeeFilter>("all")
   const [settings, setSettings] = useState<AssignmentSettings>(getDefaultAssignmentSettings())
   const [successState, setSuccessState] = useState<SuccessState | null>(null)
   const [isAssigning, setIsAssigning] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const employeesWithStatus = useMemo(
-    () => enrichEmployeesWithAssignmentStatus(mockEmployees, assignments, test.id),
-    [assignments, test.id]
+    () => enrichEmployeesWithAssignmentStatus(employees, assignments, test.id),
+    [assignments, employees, test.id]
   )
 
   const visibleEmployees = useMemo(
@@ -63,6 +71,9 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
   )
 
   const handleToggleEmployee = (employeeId: string) => {
+    const employee = employeesWithStatus.find((item) => item.id === employeeId)
+    if (employee?.assignmentStatus !== "not_assigned") return
+
     setSelectedEmployeeIds((current) =>
       current.includes(employeeId)
         ? current.filter((id) => id !== employeeId)
@@ -71,7 +82,9 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
   }
 
   const handleSelectAllVisible = () => {
-    const visibleIds = visibleEmployees.map((employee) => employee.id)
+    const visibleIds = visibleEmployees
+      .filter((employee) => employee.assignmentStatus === "not_assigned")
+      .map((employee) => employee.id)
     setSelectedEmployeeIds((current) => Array.from(new Set([...current, ...visibleIds])))
   }
 
@@ -80,10 +93,56 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
     setSelectedEmployeeIds((current) => current.filter((id) => !visibleIds.has(id)))
   }
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!canConfirmAssignment(selectedEmployeeIds.length, settings.deadline) || isAssigning) return
 
     setIsAssigning(true)
+    setErrorMessage(null)
+
+    if (source === "supabase") {
+      try {
+        const response = await fetch(`/api/admin/tests/${test.id}/assign`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userIds: selectedEmployeeIds,
+            deadline: new Date(`${settings.deadline}T00:00:00.000Z`).toISOString(),
+          }),
+        })
+
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string
+          created?: Array<{ userId: string; status: TestEmployeeAssignment["status"] }>
+        } | null
+
+        if (!response.ok) {
+          throw new Error(payload?.error ?? "Failed to assign test")
+        }
+
+        const createdAssignments = payload?.created ?? []
+
+        setAssignments((current) => [
+          ...current,
+          ...createdAssignments.map((assignment) => ({
+            testId: test.id,
+            employeeId: assignment.userId,
+            status: assignment.status,
+          })),
+        ])
+        setSuccessState({
+          assignedCount: createdAssignments.length,
+          deadline: settings.deadline,
+        })
+        setSelectedEmployeeIds([])
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "Failed to assign test")
+      } finally {
+        setIsAssigning(false)
+      }
+
+      return
+    }
+
     window.setTimeout(() => {
       setAssignments((current) => {
         const next = [...current]
@@ -117,6 +176,7 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
     setSuccessState(null)
     setSelectedEmployeeIds([])
     setSettings(getDefaultAssignmentSettings())
+    setErrorMessage(null)
   }
 
   if (successState) {
@@ -219,6 +279,12 @@ export function AssignEmployeesPage({ test }: AssignEmployeesPageProps) {
               isAssigning={isAssigning}
               onAssign={handleAssign}
             />
+            {errorMessage ? (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5">
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <p className="typography-small text-destructive">{errorMessage}</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -5,6 +5,81 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          full_name: string | null
+          avatar_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          full_name?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organization_members: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string | null
+          invited_email: string | null
+          role: string
+          status: string
+          department: string | null
+          job_title: string | null
+          invited_by: string | null
+          invited_at: string | null
+          accepted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id?: string | null
+          invited_email?: string | null
+          role: string
+          status?: string
+          department?: string | null
+          job_title?: string | null
+          invited_by?: string | null
+          invited_at?: string | null
+          accepted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string | null
+          invited_email?: string | null
+          role?: string
+          status?: string
+          department?: string | null
+          job_title?: string | null
+          invited_by?: string | null
+          invited_at?: string | null
+          accepted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           id: string
@@ -201,6 +276,42 @@ export type Database = {
           topic?: string | null
           difficulty?: string | null
           order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_assignments: {
+        Row: {
+          id: string
+          organization_id: string
+          test_id: string
+          user_id: string
+          assigned_by: string | null
+          status: string
+          deadline: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          test_id: string
+          user_id: string
+          assigned_by?: string | null
+          status?: string
+          deadline?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          test_id?: string
+          user_id?: string
+          assigned_by?: string | null
+          status?: string
+          deadline?: string | null
           created_at?: string
           updated_at?: string
         }

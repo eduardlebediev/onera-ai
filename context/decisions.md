@@ -1,5 +1,9 @@
 # Decisions
 
+## 039 — Test assignments use Supabase as source of truth
+
+Published tests are assigned to employees through `test_assignments`. Assignable employees come from active `organization_members` with role `employee`, joined with `profiles`. Employee dashboard and employee tests pages read Supabase assignments first, while mock assignments remain only as fallback/dev fixture until auth and attempt persistence are implemented.
+
 ## 038 — Full document text lives in extracted_text; chunks stay for RAG
 
 `documents.extracted_text` stores the complete assembled document content for display. `document_chunks` remain the source for topics, generate-test selection, and pgvector retrieval. Demo seed data hydrates `extracted_text` from ordered chunks; the document detail UI prefers `extractedText` when present and falls back to chunk rendering for mock-only documents.

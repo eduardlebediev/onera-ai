@@ -2,15 +2,9 @@
 
 ## Current Priority
 
-Build a backend-backed RAG demo slice.
+Replace mock core flows with Supabase-backed data.
 
-This project has moved beyond the mock-only clickable prototype phase. The frontend prototype remains useful, but the next implementation work should focus on proving the core AI value:
-
-Internal documents become employee knowledge tests through document chunking, vector search, and AI-generated reviewable questions.
-
-## Presentation Must-Have
-
-The presentation must clearly demonstrate:
+The first AI/RAG vertical slice is complete:
 
 ```txt
 Document
@@ -20,9 +14,9 @@ Document
 → AI-generated questions
 → Admin review
 → Publish test
-→ Employee takes test
-→ Result/feedback
 ```
+
+The next step is to turn the mock-based admin and employee flows into real backend-backed features.
 
 ## Technical Direction
 
@@ -47,11 +41,11 @@ First admin is created manually or seeded
 → Employee joins the organization
 → Role is resolved from organization membership
 
-For the demo, auth can stay minimal. Do not spend presentation time on complex auth UI unless the RAG flow is already working.
+Auth can stay minimal for now. Do not spend time on complex auth UI until the core backend flows are stable.
 
 ## Backend Schema Direction
 
-Use a production-shaped schema, but implement only the necessary demo slice first.
+Use a production-shaped schema, but implement only what the current milestone needs.
 
 Core tables:
 
@@ -74,63 +68,31 @@ Optional later tables:
 - follow_up_questions
 - follow_up_answers
 
-### Important Naming Decision
+### Naming
 
 Use tests, not quizzes.
 
-The product is an enterprise employee knowledge testing platform. "Test" sounds more appropriate than "Quiz".
-
-Use:
-
-- tests
-- test_questions
-- test_assignments
-- test_attempts
-- test_answers
-
-Do not introduce new quiz\_\* tables.
-
 ## Implementation Order
 
-1. **Supabase pgvector Backend Foundation**
+### Completed (AI/RAG vertical slice)
 
-   Set up Supabase environment, server/client helpers, migrations folder, initial schema, and pgvector support.
+1. **Supabase pgvector Backend Foundation** — schema, RLS, RPC, seed data
+2. **Demo Seed Data** — org, users, documents, chunks
+3. **Embedding Script** — OpenAI embeddings for demo chunks
+4. **Vector Search RPC** — `match_document_chunks` pgvector search
+5. **AI Generate Test API** — structured draft from retrieved chunks
+6. **Connect Generate Test Setup** — frontend calls real API, draft handoff to review
+7. **Save Published Test** — reviewed draft persists to `tests` and `test_questions`
 
-2. **Demo Seed Data**
+### Next Up
 
-   Seed one demo organization, one admin, one employee, one or two documents, and realistic document chunks.
+8. **Backend Data Integration for Admin Documents and Tests** — `/admin/documents` and `/admin/tests` read from Supabase instead of mock data
+9. **Real Test Assignments** — assign published tests to employees, employee sees real assignments
+10. **Employee Test Taking and Attempt Persistence** — take real saved tests, persist answers and results
+11. **Admin Progress and Results from Supabase** — real completion stats, scores, weak topics
+12. **Invite-only Auth and RLS Policies** — login, route protection, org-scoped policies
 
-3. **Embedding Script**
-
-   Generate embeddings for demo chunks and store them in `document_chunks.embedding`.
-
-4. **Vector Search RPC**
-
-   Create `match_document_chunks` RPC to retrieve relevant chunks for a document/query using pgvector similarity search.
-
-5. **AI Generate Test API**
-
-   Create an API endpoint or server action that:
-   - receives documentId + generation settings
-   - retrieves relevant chunks
-   - calls the LLM
-   - validates structured questions
-   - returns a draft test
-   - logs the generation run
-
-6. **Connect Generate Test Setup**
-
-   Connect `/admin/documents/[id]/generate-test` to the real AI generation flow.
-
-7. **Save Published Test**
-
-   Save reviewed/published generated tests and questions to Supabase.
-
-8. **Demo Polish**
-
-   Make the presentation flow clear, stable, and explainable.
-
-## Out of Scope for This Phase
+## Out of Scope for Now
 
 Do not spend time on:
 
@@ -142,8 +104,6 @@ Do not spend time on:
 - real PDF upload
 - PDF parsing
 - advanced analytics
-
-These can be described as next-phase work.
 
 ## AI Safety / Product Rule
 

@@ -4,9 +4,9 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-Build a backend-backed RAG demo slice for Ontera AI that proves internal documents can be chunked, embedded, retrieved with pgvector, and used by AI to generate reviewable employee knowledge tests.
+Replace mock core flows with Supabase-backed data.
 
-The current phase is presentation-focused. The goal is not to build a complete production backend, but to implement the smallest useful vertical slice:
+The first AI/RAG vertical slice is complete:
 
 Admin document
 → document chunks
@@ -15,14 +15,18 @@ Admin document
 → AI-generated test draft
 → admin review
 → publish test
-→ employee demo flow.
+
+The next step is to turn the mock-based admin and employee flows into real backend-backed features.
 
 ## In Progress
 
 ## Next Up
 
-- Presentation Demo Polish
-- Optional: Persist Test Assignments
+- Feature Spec 26: Backend Data Integration for Admin Documents and Tests
+- Feature Spec 27: Real Test Assignments
+- Feature Spec 28: Employee Test Taking and Attempt Persistence
+- Feature Spec 29: Admin Progress and Results from Supabase
+- Feature Spec 30: Invite-only Auth and RLS Policies
 
 ## Open Questions
 

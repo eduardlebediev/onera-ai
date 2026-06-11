@@ -2,15 +2,23 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 import { TestProgressPanel } from "@/features/employee/tests/components/test-progress-panel"
 import { TestQuestionCard } from "@/features/employee/tests/components/test-question-card"
 import {
+  startEmployeeTestAttempt,
+  submitEmployeeTestAttempt,
+} from "@/features/employee/tests/lib/employee-attempt-api-client"
+import {
+  getSupabaseTestTakingProgress,
   getTestTakingProgress,
   isQuestionAnswered,
+  isSupabaseQuestionAnswered,
+  isSupabaseTakeableTest,
   type EmployeeTakeableTest,
+  type SupabaseTestTakingAnswers,
   type TestTakingAnswers,
 } from "@/features/employee/tests/lib/test-taking-state"
 import { saveTakeSession } from "@/features/employee/tests/lib/take-session"
@@ -24,38 +32,107 @@ interface TestTakingPageProps {
 export function TestTakingPage({ test }: TestTakingPageProps) {
   const router = useRouter()
   const startedAtRef = useRef(Date.now())
+  const isSupabase = isSupabaseTakeableTest(test)
+
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [answers, setAnswers] = useState<TestTakingAnswers>({})
+  const [mockAnswers, setMockAnswers] = useState<TestTakingAnswers>({})
+  const [supabaseAnswers, setSupabaseAnswers] = useState<SupabaseTestTakingAnswers>({})
+  const [attemptId, setAttemptId] = useState<string | null>(null)
+  const [isStartingAttempt, setIsStartingAttempt] = useState(isSupabase)
+  const [startAttemptError, setStartAttemptError] = useState<string | null>(null)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isSupabase) return
+
+    let cancelled = false
+
+    async function ensureAttemptStarted() {
+      setIsStartingAttempt(true)
+      setStartAttemptError(null)
+
+      try {
+        const result = await startEmployeeTestAttempt(test.id)
+        if (!cancelled) {
+          setAttemptId(result.attemptId)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStartAttemptError(
+            error instanceof Error ? error.message : "Could not start the test attempt."
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setIsStartingAttempt(false)
+        }
+      }
+    }
+
+    void ensureAttemptStarted()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isSupabase, test.id])
 
   const questions = test.questions
   const totalQuestions = questions.length
   const currentQuestion = questions[currentIndex]
   const isFirstQuestion = currentIndex === 0
   const isLastQuestion = currentIndex === totalQuestions - 1
-  const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined
-  const hasCurrentAnswer = currentQuestion ? isQuestionAnswered(answers, currentQuestion.id) : false
 
-  const progress = useMemo(() => getTestTakingProgress(questions, answers), [questions, answers])
+  const hasCurrentAnswer = currentQuestion
+    ? isSupabase
+      ? isSupabaseQuestionAnswered(supabaseAnswers, currentQuestion.id)
+      : isQuestionAnswered(mockAnswers, currentQuestion.id)
+    : false
+
+  const progress = useMemo(() => {
+    if (isSupabase && isSupabaseTakeableTest(test)) {
+      return getSupabaseTestTakingProgress(test.questions, supabaseAnswers)
+    }
+
+    if (!isSupabaseTakeableTest(test)) {
+      return getTestTakingProgress(test.questions, mockAnswers)
+    }
+
+    return { answeredCount: 0, unansweredCount: totalQuestions, completionPercent: 0 }
+  }, [isSupabase, test, supabaseAnswers, mockAnswers, totalQuestions])
 
   const questionStates = useMemo(
     () =>
       questions.map((question, index) => {
         if (index === currentIndex) return "current" as const
-        if (isQuestionAnswered(answers, question.id)) return "answered" as const
+        const answered = isSupabase
+          ? isSupabaseQuestionAnswered(supabaseAnswers, question.id)
+          : isQuestionAnswered(mockAnswers, question.id)
+        if (answered) return "answered" as const
         return "unanswered" as const
       }),
-    [questions, answers, currentIndex]
+    [questions, currentIndex, isSupabase, supabaseAnswers, mockAnswers]
   )
 
-  function handleSelectAnswer(answer: string) {
+  function handleSelectMockAnswer(answer: string) {
     if (!currentQuestion) return
-    setAnswers((previous) => ({
+    setMockAnswers((previous) => ({
       ...previous,
       [currentQuestion.id]: answer,
     }))
     setShowIncompleteWarning(false)
+    setSubmitError(null)
+  }
+
+  function handleSelectSupabaseOptionIds(optionIds: string[]) {
+    if (!currentQuestion) return
+    setSupabaseAnswers((previous) => ({
+      ...previous,
+      [currentQuestion.id]: optionIds,
+    }))
+    setShowIncompleteWarning(false)
+    setSubmitError(null)
   }
 
   function handlePrevious() {
@@ -82,18 +159,48 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
       return
     }
 
-    submitTest()
+    void submitTest()
   }
 
-  function submitTest() {
+  async function submitTest() {
     if (isSubmitting) return
 
     setIsSubmitting(true)
+    setSubmitError(null)
+
+    if (isSupabase) {
+      if (!attemptId) {
+        setSubmitError("Test attempt is not ready yet. Please wait and try again.")
+        setIsSubmitting(false)
+        return
+      }
+
+      try {
+        const payload = {
+          attemptId,
+          answers: isSupabaseTakeableTest(test)
+            ? test.questions.map((question) => ({
+                questionId: question.id,
+                selectedOptionIds: supabaseAnswers[question.id] ?? [],
+              }))
+            : [],
+        }
+
+        const result = await submitEmployeeTestAttempt(test.id, payload)
+        router.push(result.redirectTo)
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : "Failed to submit test.")
+        setIsSubmitting(false)
+      }
+
+      return
+    }
+
     const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 60000))
 
     window.setTimeout(() => {
       saveTakeSession(test.id, {
-        answers,
+        answers: mockAnswers,
         submittedAt: new Date().toISOString(),
         timeSpentMinutes: elapsedMinutes,
       })
@@ -103,6 +210,40 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
 
   if (!currentQuestion) {
     return null
+  }
+
+  if (isSupabase && isStartingAttempt) {
+    return (
+      <div className="page-shell">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+          <Loader2 className="size-8 animate-spin text-primary" />
+          <p className="typography-p text-muted-foreground">Starting your test attempt...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isSupabase && startAttemptError) {
+    return (
+      <div className="page-shell">
+        <div className="space-y-4">
+          <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+            <Link href="/employee/tests">
+              <ArrowLeft className="size-4" />
+              Back to My Tests
+            </Link>
+          </Button>
+          <Card>
+            <CardContent className="space-y-4 p-6">
+              <p className="text-sm font-medium text-destructive">{startAttemptError}</p>
+              <Button type="button" variant="outline" onClick={() => window.location.reload()}>
+                Try again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -124,13 +265,25 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
-          <TestQuestionCard
-            question={currentQuestion}
-            questionNumber={currentIndex + 1}
-            totalQuestions={totalQuestions}
-            selectedAnswer={currentAnswer}
-            onSelectAnswer={handleSelectAnswer}
-          />
+          {isSupabaseTakeableTest(test) ? (
+            <TestQuestionCard
+              mode="supabase"
+              question={test.questions[currentIndex]}
+              questionNumber={currentIndex + 1}
+              totalQuestions={totalQuestions}
+              selectedOptionIds={supabaseAnswers[currentQuestion.id] ?? []}
+              onSelectOptionIds={handleSelectSupabaseOptionIds}
+            />
+          ) : (
+            <TestQuestionCard
+              mode="mock"
+              question={test.questions[currentIndex]}
+              questionNumber={currentIndex + 1}
+              totalQuestions={totalQuestions}
+              selectedAnswer={mockAnswers[currentQuestion.id]}
+              onSelectAnswer={handleSelectMockAnswer}
+            />
+          )}
 
           <div className="lg:hidden">
             <TestProgressPanel
@@ -142,6 +295,14 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
               onNavigateToQuestion={handleNavigateToQuestion}
             />
           </div>
+
+          {submitError ? (
+            <Card className="border-red-200 bg-red-50 dark:border-red-900/30 dark:bg-red-900/20">
+              <CardContent className="p-4">
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">{submitError}</p>
+              </CardContent>
+            </Card>
+          ) : null}
 
           {showIncompleteWarning ? (
             <Card className="border-amber-200 bg-amber-50 dark:border-amber-900/30 dark:bg-amber-900/20">
@@ -168,7 +329,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                   >
                     Keep reviewing
                   </Button>
-                  <Button type="button" onClick={submitTest} disabled={isSubmitting}>
+                  <Button type="button" onClick={() => void submitTest()} disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />

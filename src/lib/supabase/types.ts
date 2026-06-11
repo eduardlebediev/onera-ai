@@ -317,6 +317,87 @@ export type Database = {
         }
         Relationships: []
       }
+      test_attempts: {
+        Row: {
+          id: string
+          organization_id: string
+          test_id: string
+          user_id: string
+          assignment_id: string | null
+          status: string
+          score: number | null
+          passed: boolean | null
+          ai_feedback: string | null
+          started_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          test_id: string
+          user_id: string
+          assignment_id?: string | null
+          status?: string
+          score?: number | null
+          passed?: boolean | null
+          ai_feedback?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          test_id?: string
+          user_id?: string
+          assignment_id?: string | null
+          status?: string
+          score?: number | null
+          passed?: boolean | null
+          ai_feedback?: string | null
+          started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_answers: {
+        Row: {
+          id: string
+          organization_id: string
+          attempt_id: string
+          question_id: string
+          user_answer: Json
+          is_correct: boolean | null
+          ai_explanation: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          attempt_id: string
+          question_id: string
+          user_answer?: Json
+          is_correct?: boolean | null
+          ai_explanation?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          attempt_id?: string
+          question_id?: string
+          user_answer?: Json
+          is_correct?: boolean | null
+          ai_explanation?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           id: string

@@ -108,6 +108,10 @@ export function filterEmployeeTests(
 
 export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestAction {
   const displayStatus = getEmployeeTestDisplayStatus(test)
+  const resultHref =
+    test.latestAttemptId != null
+      ? `/employee/tests/${test.id}/result?attemptId=${test.latestAttemptId}`
+      : `/employee/tests/${test.id}/result`
 
   if (displayStatus === "not_started" || displayStatus === "overdue") {
     return {
@@ -128,14 +132,14 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
   if (test.status === "failed") {
     return {
       label: "Review",
-      href: `/employee/tests/${test.id}/result`,
+      href: resultHref,
       variant: "outline",
     }
   }
 
   return {
     label: "View Results",
-    href: `/employee/tests/${test.id}/result`,
+    href: resultHref,
     variant: "outline",
   }
 }

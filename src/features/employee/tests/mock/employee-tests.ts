@@ -19,6 +19,7 @@ export interface EmployeeAssignmentRecord {
 
 export interface EmployeeAssignedTest {
   assignmentId?: string
+  latestAttemptId?: string
   id: string
   title: string
   description: string

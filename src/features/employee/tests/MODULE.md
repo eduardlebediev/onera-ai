@@ -10,6 +10,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 - feature-specific mock data
 - feature-specific types
 - feature-specific helpers
+- Supabase-backed attempt persistence for UUID assigned tests
 
 ## Does Not Contain
 
@@ -22,22 +23,20 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 ## Conventions
 
 - Keep feature-specific logic colocated here.
-- Use mock data until backend integration is planned.
+- Supabase UUID assigned tests use server-only helpers and employee API routes for attempts/answers.
+- Mock test ids (`test-1`, etc.) keep local sessionStorage take/result fallback.
 - Reuse admin test metadata from `src/features/tests/mock/tests.ts` where appropriate.
-- Test-taking uses local client state only; questions resolve from `mockTests`.
-- Test results use colocated mock attempt records in `mock/test-results.ts`; no state is passed from the take flow.
-- Follow-up questions use colocated mock records in `mock/follow-up-questions.ts`, keyed by original incorrect question id; completion state is local client state only and drives weak-topic status badges.
 - Avoid generic file names for domain logic.
 
 ## Related Routes
 
 - `/employee/dashboard` — employee home with KPIs, next test, feedback, and learning focus
 - `/employee/tests`
-- `/employee/tests/[id]/take` — mock test-taking flow with local state
-- `/employee/tests/[id]/result` — mock result page with score, answer review, weak topics, AI feedback, and inline follow-up questions for incorrect answers
+- `/employee/tests/[id]/take` — Supabase UUID tests use persisted attempts; mock ids use local state
+- `/employee/tests/[id]/result` — persisted results via `?attemptId=` for Supabase tests; mock/sessionStorage fallback otherwise
 
 ## Future Boundaries
 
 - Supabase integration should load assignments for the authenticated employee only.
-- Backend persistence for attempts and answers belongs in a future attempts slice.
+- Auth and RLS will replace the hardcoded demo employee id.
 - Backend persistence should not be mixed directly into UI components.

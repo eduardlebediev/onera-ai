@@ -1,10 +1,26 @@
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeSafeQuestion } from "@/features/employee/tests/lib/supabase-employee-tests"
 import type { TestQuestion } from "@/features/tests/mock/tests"
 
 export type TestTakingAnswers = Record<string, string>
+export type SupabaseTestTakingAnswers = Record<string, string[]>
 
-export interface EmployeeTakeableTest extends EmployeeAssignedTest {
+export type MockEmployeeTakeableTest = EmployeeAssignedTest & {
+  source?: "mock"
   questions: TestQuestion[]
+}
+
+export type SupabaseEmployeeTakeableTest = EmployeeAssignedTest & {
+  source: "supabase"
+  questions: EmployeeSafeQuestion[]
+}
+
+export type EmployeeTakeableTest = MockEmployeeTakeableTest | SupabaseEmployeeTakeableTest
+
+export function isSupabaseTakeableTest(
+  test: EmployeeTakeableTest
+): test is SupabaseEmployeeTakeableTest {
+  return test.source === "supabase"
 }
 
 export interface TestTakingProgress {
@@ -23,6 +39,33 @@ export interface LocalTestScore {
 export function isQuestionAnswered(answers: TestTakingAnswers, questionId: string): boolean {
   const answer = answers[questionId]
   return typeof answer === "string" && answer.length > 0
+}
+
+export function isSupabaseQuestionAnswered(
+  answers: SupabaseTestTakingAnswers,
+  questionId: string
+): boolean {
+  const answer = answers[questionId]
+  return Array.isArray(answer) && answer.length > 0
+}
+
+export function getSupabaseTestTakingProgress(
+  questions: EmployeeSafeQuestion[],
+  answers: SupabaseTestTakingAnswers
+): TestTakingProgress {
+  const answeredCount = questions.filter((question) =>
+    isSupabaseQuestionAnswered(answers, question.id)
+  ).length
+  const totalQuestions = questions.length
+  const unansweredCount = totalQuestions - answeredCount
+  const completionPercent =
+    totalQuestions === 0 ? 0 : Math.round((answeredCount / totalQuestions) * 100)
+
+  return {
+    answeredCount,
+    unansweredCount,
+    completionPercent,
+  }
 }
 
 export function getTestTakingProgress(

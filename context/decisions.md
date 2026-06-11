@@ -1,5 +1,13 @@
 # Decisions
 
+## 041 — Completed employee assignments are not retakeable
+
+Supabase-backed employee test-taking allows start/submit only while `test_assignments.status` is `not_started` or `in_progress`. Completed or failed assignments cannot reopen the take flow or create new attempts until a future retake spec explicitly adds that behavior.
+
+## 040 — Employee attempts and answers persist in Supabase
+
+Employee test-taking for Supabase-backed assigned tests uses `test_attempts` and `test_answers` as the source of truth. The server validates assignment ownership, calculates score from `test_questions.correct_answer`, saves answers, completes the attempt, and updates assignment status. Mock/local employee flows remain fallback only for old mock tests until auth and RLS are implemented.
+
 ## 039 — Test assignments use Supabase as source of truth
 
 Published tests are assigned to employees through `test_assignments`. Assignable employees come from active `organization_members` with role `employee`, joined with `profiles`. Employee dashboard and employee tests pages read Supabase assignments first, while mock assignments remain only as fallback/dev fixture until auth and attempt persistence are implemented.

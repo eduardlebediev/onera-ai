@@ -1,0 +1,257 @@
+import "server-only"
+
+import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
+import type { TestAssignmentStatus } from "@/features/tests/mock/employees"
+import type { TestDifficulty } from "@/features/tests/mock/tests"
+import { createAdminClient } from "@/lib/supabase/admin"
+import type { Json } from "@/lib/supabase/types"
+
+import { DEMO_EMPLOYEE_ID } from "./supabase-employee-assignments"
+
+export type EmployeeSafeQuestionOption = {
+  id: string
+  text: string
+}
+
+export type EmployeeSafeQuestion = {
+  id: string
+  questionText: string
+  questionType: "single_choice" | "multiple_choice" | "true_false"
+  options: EmployeeSafeQuestionOption[]
+  topic: string
+  sourceChunkReference: string
+}
+
+type AssignmentRow = {
+  id: string
+  test_id: string
+  status: string
+  deadline: string | null
+}
+
+type TestRow = {
+  id: string
+  organization_id: string
+  source_document_id: string | null
+  title: string
+  description: string | null
+  difficulty: string
+  question_count: number | null
+  passing_score: number
+  status: string
+}
+
+type QuestionRow = {
+  id: string
+  question_text: string
+  question_type: string
+  options: Json
+  topic: string | null
+  order_index: number
+  source_chunk_id: string | null
+}
+
+function mapAssignmentStatus(status: string): TestAssignmentStatus {
+  if (
+    status === "not_started" ||
+    status === "in_progress" ||
+    status === "completed" ||
+    status === "failed"
+  ) {
+    return status
+  }
+
+  return "not_started"
+}
+
+function mapDifficulty(difficulty: string): TestDifficulty {
+  if (difficulty === "easy" || difficulty === "medium" || difficulty === "hard") {
+    return difficulty
+  }
+
+  return "medium"
+}
+
+function parseOptions(value: Json): EmployeeSafeQuestionOption[] {
+  if (!Array.isArray(value)) return []
+
+  return value.flatMap((item) => {
+    if (
+      typeof item === "object" &&
+      item !== null &&
+      "id" in item &&
+      "text" in item &&
+      typeof item.id === "string" &&
+      typeof item.text === "string"
+    ) {
+      return [{ id: item.id, text: item.text }]
+    }
+
+    return []
+  })
+}
+
+function mapQuestionType(questionType: string): EmployeeSafeQuestion["questionType"] {
+  if (
+    questionType === "single_choice" ||
+    questionType === "multiple_choice" ||
+    questionType === "true_false"
+  ) {
+    return questionType
+  }
+
+  return "single_choice"
+}
+
+function getEstimatedMinutes(questionCount: number): number {
+  return Math.max(5, questionCount * 2)
+}
+
+function getProgressPercent(status: TestAssignmentStatus): number {
+  if (status === "completed" || status === "failed") return 100
+  if (status === "in_progress") return 25
+  return 0
+}
+
+export function isAssignmentTakeable(status: string): boolean {
+  return status === "not_started" || status === "in_progress"
+}
+
+async function getAssignmentForUserAndTest(
+  userId: string,
+  testId: string
+): Promise<AssignmentRow | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("test_assignments")
+    .select("id, test_id, status, deadline")
+    .eq("user_id", userId)
+    .eq("test_id", testId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch assignment: ${error.message}`)
+  }
+
+  return data as AssignmentRow | null
+}
+
+async function getTestRow(testId: string): Promise<TestRow | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("tests")
+    .select(
+      "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, status"
+    )
+    .eq("id", testId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch test: ${error.message}`)
+  }
+
+  return data as TestRow | null
+}
+
+async function getSourceDocumentTitle(documentId: string | null): Promise<string> {
+  if (!documentId) return "Unknown document"
+
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select("title")
+    .eq("id", documentId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch source document: ${error.message}`)
+  }
+
+  return data?.title ?? "Unknown document"
+}
+
+async function getSafeQuestionsForTest(testId: string): Promise<EmployeeSafeQuestion[]> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("test_questions")
+    .select("id, question_text, question_type, options, topic, order_index, source_chunk_id")
+    .eq("test_id", testId)
+    .order("order_index", { ascending: true })
+
+  if (error) {
+    throw new Error(`Failed to fetch test questions: ${error.message}`)
+  }
+
+  return ((data ?? []) as QuestionRow[]).map((question) => ({
+    id: question.id,
+    questionText: question.question_text,
+    questionType: mapQuestionType(question.question_type),
+    options: parseOptions(question.options),
+    topic: question.topic ?? "General",
+    sourceChunkReference: question.source_chunk_id
+      ? `Chunk (${question.source_chunk_id.slice(0, 8)}…)`
+      : "Source document",
+  }))
+}
+
+export async function getSupabaseEmployeeTakeableTest(
+  testId: string,
+  userId = DEMO_EMPLOYEE_ID
+): Promise<SupabaseEmployeeTakeableTest | null> {
+  const assignment = await getAssignmentForUserAndTest(userId, testId)
+  if (!assignment || !isAssignmentTakeable(assignment.status)) return null
+
+  const test = await getTestRow(testId)
+  if (!test || test.status !== "published") return null
+
+  const questions = await getSafeQuestionsForTest(testId)
+  if (questions.length === 0) return null
+
+  const sourceDocument = await getSourceDocumentTitle(test.source_document_id)
+  const status = mapAssignmentStatus(assignment.status)
+  const questionCount = test.question_count ?? questions.length
+
+  return {
+    source: "supabase",
+    assignmentId: assignment.id,
+    id: test.id,
+    title: test.title,
+    description: test.description ?? "",
+    status,
+    sourceDocument,
+    difficulty: mapDifficulty(test.difficulty),
+    questionCount,
+    passingScore: test.passing_score,
+    deadline: assignment.deadline,
+    estimatedMinutes: getEstimatedMinutes(questionCount),
+    score: null,
+    passed: null,
+    required: true,
+    progressPercent: getProgressPercent(status),
+    questions,
+  }
+}
+
+export async function getAssignmentForDemoEmployee(
+  testId: string,
+  userId = DEMO_EMPLOYEE_ID
+): Promise<(AssignmentRow & { organization_id: string }) | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("test_assignments")
+    .select("id, test_id, status, deadline, organization_id")
+    .eq("user_id", userId)
+    .eq("test_id", testId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch assignment: ${error.message}`)
+  }
+
+  return data as (AssignmentRow & { organization_id: string }) | null
+}

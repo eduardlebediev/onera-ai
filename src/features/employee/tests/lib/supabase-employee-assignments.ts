@@ -5,6 +5,8 @@ import type { TestAssignmentStatus, MockEmployee } from "@/features/tests/mock/e
 import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { createAdminClient } from "@/lib/supabase/admin"
 
+import { getLatestCompletedAttemptIdForAssignment } from "./supabase-employee-attempts"
+
 // TODO: Replace hardcoded demo employee with authenticated user after auth spec.
 export const DEMO_EMPLOYEE_ID = "b0000000-0000-4000-8000-000000000002"
 
@@ -191,35 +193,57 @@ export async function getSupabaseEmployeeAssignments(
   )
   const documentsById = await getDocumentsById(documentIds)
 
+  const testsWithAttempts = await Promise.all(
+    assignments
+      .flatMap((assignment) => {
+        const test = testsById.get(assignment.test_id)
+        if (!test) return []
+
+        return [{ assignment, test }]
+      })
+      .map(async ({ assignment, test }) => {
+        const status = mapAssignmentStatus(assignment.status)
+        const questionCount = test.question_count ?? 0
+        const sourceDocument = test.source_document_id
+          ? documentsById.get(test.source_document_id)
+          : null
+
+        let score: number | null = null
+        let passed: boolean | null = null
+        let latestAttemptId: string | undefined
+
+        if (status === "completed" || status === "failed") {
+          const latestAttempt = await getLatestCompletedAttemptIdForAssignment(userId, test.id)
+          if (latestAttempt) {
+            score = latestAttempt.score
+            passed = latestAttempt.passed
+            latestAttemptId = latestAttempt.attemptId
+          }
+        }
+
+        return {
+          assignmentId: assignment.id,
+          latestAttemptId,
+          id: test.id,
+          title: test.title,
+          description: test.description ?? "",
+          status,
+          sourceDocument: sourceDocument?.title ?? "Unknown document",
+          difficulty: mapDifficulty(test.difficulty),
+          questionCount,
+          passingScore: test.passing_score,
+          deadline: assignment.deadline,
+          estimatedMinutes: getEstimatedMinutes(questionCount),
+          score,
+          passed,
+          required: true,
+          progressPercent: getProgressPercent(status),
+        } satisfies EmployeeAssignedTest
+      })
+  )
+
   return {
     employee,
-    tests: assignments.flatMap((assignment) => {
-      const test = testsById.get(assignment.test_id)
-      if (!test) return []
-
-      const status = mapAssignmentStatus(assignment.status)
-      const questionCount = test.question_count ?? 0
-      const sourceDocument = test.source_document_id
-        ? documentsById.get(test.source_document_id)
-        : null
-
-      return {
-        assignmentId: assignment.id,
-        id: test.id,
-        title: test.title,
-        description: test.description ?? "",
-        status,
-        sourceDocument: sourceDocument?.title ?? "Unknown document",
-        difficulty: mapDifficulty(test.difficulty),
-        questionCount,
-        passingScore: test.passing_score,
-        deadline: assignment.deadline,
-        estimatedMinutes: getEstimatedMinutes(questionCount),
-        score: null,
-        passed: null,
-        required: true,
-        progressPercent: getProgressPercent(status),
-      } satisfies EmployeeAssignedTest
-    }),
+    tests: testsWithAttempts,
   }
 }

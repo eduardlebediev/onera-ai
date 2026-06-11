@@ -4,6 +4,34 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 28: Employee Test Taking and Attempt Persistence
+
+Replaced mock/sessionStorage employee test-taking for Supabase UUID assigned tests with persisted `test_attempts` and `test_answers`, while preserving mock fallback for old demo test ids.
+
+- Added `src/features/employee/tests/lib/supabase-employee-tests.ts` — server-only assignment verification and sanitized question loading without `correct_answer`.
+- Added `src/features/employee/tests/lib/supabase-employee-attempts.ts` — start/reuse active attempts, server-side scoring, answer persistence, assignment status updates, and persisted result assembly.
+- Added `src/features/employee/tests/lib/employee-attempt-api-client.ts` — browser client for start/submit employee attempt APIs.
+- Added `src/features/employee/tests/schemas/submit-attempt-schema.ts` — Zod request/response validation for submit flow.
+- Added `POST /api/employee/tests/[id]/start` and `POST /api/employee/tests/[id]/submit` route handlers.
+- Extended `src/lib/supabase/types.ts` with `test_attempts` and `test_answers`.
+- Updated `src/features/employee/tests/lib/supabase-employee-assignments.ts` — joins latest completed attempt metadata for score, pass/fail, and result links.
+- Updated `src/features/employee/tests/lib/test-taking-state.ts` — mock vs Supabase takeable test unions and Supabase option-id answer progress helpers.
+- Updated `src/app/(employee)/employee/tests/[id]/take/page.tsx` — UUID tests load Supabase take payload; mock ids keep existing flow.
+- Updated `src/features/employee/tests/components/test-taking-page.tsx` — starts attempt on load for Supabase tests, submits to API, redirects to persisted result URL.
+- Updated `src/features/employee/tests/components/test-question-card.tsx` — supports mock text answers and Supabase option-id selection including multiple choice.
+- Updated `src/app/(employee)/employee/tests/[id]/result/page.tsx` — reads persisted results when `attemptId` query param is present.
+- Updated `src/features/employee/tests/lib/employee-test-model.ts` — completed/failed Supabase tests link with `?attemptId=`.
+- Decision 040 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Relaxed submit schema `selectedOptionIds` to `z.string().min(1)` so AI/publish option ids like `opt-a` validate correctly (not UUIDs).
+- Blocked retakes for `completed`/`failed` assignments in take loading and start-attempt API (`409`).
+- Hardened submit: reject duplicate answer rows, complete attempt with `status = in_progress` guard, rollback answers on race loss, idempotent redirect for already-completed attempts.
+- Fixed Supabase “Submit anyway” by allowing empty answer arrays and sending all question ids with `[]` for unanswered questions.
+- Handled duplicate start-attempt race by re-fetching active attempt after insert failure.
+
 ## Feature Spec 27: Real Test Assignments
 
 Connected admin assignment and employee assigned-test visibility through Supabase `test_assignments`, while preserving mock fallback for existing demo IDs and empty/offline data.

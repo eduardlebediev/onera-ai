@@ -4,6 +4,36 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 30: Invite-only Auth and RLS Policies
+
+Added invite-only Supabase Auth with organization membership roles, route protection, API authorization, and RLS policies. Replaced hardcoded demo employee identity and mock role switcher with authenticated user context.
+
+- Added `context/feature-specs/30-invite-only-auth-and-rls-policies.md`.
+- Added `context/auth-demo-setup.md` — local demo user setup and verification queries.
+- Added `supabase/migrations/00002_auth_rls_policies.sql` — organization-scoped RLS policies and helper functions.
+- Added `src/features/auth/lib/current-user.ts` — resolve auth user, profile, and active membership.
+- Added `src/features/auth/lib/require-auth.ts` — layout guards and API auth helpers with org verification.
+- Added `src/features/auth/actions/login.ts` and `src/features/auth/components/login-form.tsx`.
+- Added `src/middleware.ts` — Supabase SSR session refresh.
+- Added `/login`, `/access-denied`, and `POST /auth/logout`.
+- Added `src/shared/components/app-shell.tsx` — authenticated shell with role-aware navbar.
+- Updated admin/employee layouts — require role membership; wrap content in `AppShell`.
+- Updated `src/shared/ui/top-navbar.tsx` — authenticated user menu with sign out; removed mock role switcher.
+- Removed `src/shared/lib/role-context.tsx`.
+- Updated employee Supabase libs and pages — use authenticated `userId` instead of hardcoded demo employee id.
+- Updated admin APIs (`generate-test`, `publish-generated`, `assign`) and employee APIs (`start`, `submit`) — enforce membership and organization ownership.
+- Decision 043 recorded in `context/decisions.md`.
+
+### Post-Review Fix Pass
+
+- Applied `00002_auth_rls_policies.sql` to remote Supabase — RLS was enabled from `00001` but policies were missing, blocking authenticated reads of `profiles` and `organization_members`.
+- Switched RLS helper functions to `security definer` with `auth.uid()` checks to avoid recursion on `organization_members` policies.
+- Removed employee direct SELECT on `test_questions` so `correct_answer` is not exposed via the Data API.
+- Removed mock assignment fallback for authenticated employee routes; Supabase-backed flows always use the signed-in user and organization.
+- Threaded `organizationId` through employee start/submit/result helpers and API routes for org-scoped assignment verification.
+- Added `context/auth-demo-setup.md` with migration requirement and demo credential placeholders.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 29: Admin Progress and Results from Supabase
 
 Replaced mock admin progress/result data with Supabase-backed assignment and attempt reads for the admin dashboard and UUID test detail pages, while preserving mock fallback for demo ids and empty/error Supabase states.

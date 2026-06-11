@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { AuthError, requireEmployeeApiUser } from "@/features/auth/lib/require-auth"
 import {
   StartAttemptError,
   startEmployeeTestAttempt,
@@ -15,15 +16,19 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST(_request: Request, { params }: StartAttemptRouteContext) {
-  // TODO: Replace hardcoded demo employee with authenticated user after auth spec.
   try {
+    const employee = await requireEmployeeApiUser()
     const { id } = await params
 
     if (!isUuid(id)) {
       return jsonError("Invalid test id", 400)
     }
 
-    const result = await startEmployeeTestAttempt(id)
+    const result = await startEmployeeTestAttempt(
+      id,
+      employee.userId,
+      employee.membership.organizationId
+    )
 
     if (!result) {
       return jsonError("Test not found or not assigned", 404)
@@ -31,6 +36,10 @@ export async function POST(_request: Request, { params }: StartAttemptRouteConte
 
     return NextResponse.json(result)
   } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonError(error.message, error.status)
+    }
+
     if (error instanceof StartAttemptError) {
       if (error.code === "assignment_finished") {
         return jsonError(error.message, 409)

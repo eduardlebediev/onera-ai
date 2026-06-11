@@ -1,49 +1,112 @@
 # Ontera AI
 
-**Ontera AI** is an AI-powered employee knowledge assessment platform that turns internal company documentation into dynamic quizzes, personalized feedback, and learning progress dashboards.
+**Ontera AI** is an AI-powered employee knowledge assessment platform that turns internal company documentation into reviewable tests, personalized feedback, and learning progress dashboards.
 
-The project helps teams verify whether employees understand internal processes, policies, product knowledge, or technical documentation — without manually creating training tests from scratch.
+The project helps teams verify whether employees understand internal processes, policies, and technical documentation — without manually creating training tests from scratch.
 
-## Overview
+## Current Status
 
-Companies often store important knowledge across PDFs, internal wikis, onboarding guides, and process documents. Ontera AI transforms that documentation into structured knowledge checks.
+Backend-backed MVP. Core AI/RAG vertical slice is complete:
 
-Admins can upload documents, generate AI-based quizzes, review questions before publishing, assign tests to employees, and track learning progress through analytics dashboards.
-
-Employees can complete assigned tests, receive instant results, and get AI-generated feedback based on their weak topics.
-
-## Core Features
-
-- Document upload and text extraction
-- AI-generated quiz creation from internal documentation
-- Human review before publishing AI-generated questions
-- Employee test-taking flow
-- Score calculation and result overview
-- Personalized AI feedback after each attempt
-- Admin analytics for weak topics and team progress
-- Source-based question generation using document chunks
-- Planned support for vector search with Supabase pgvector
-
-## MVP Flow
-
-Admin uploads document
-→ AI extracts topics
-→ Admin generates quiz
-→ Admin reviews and publishes questions
-→ Admin assigns quiz to employee
-→ Employee completes quiz
-→ AI generates feedback
-→ Admin reviews analytics
+```
+Document → Chunks → Embeddings → pgvector retrieval
+→ AI-generated draft → Admin review → Published test
+→ Assignments → Employee attempt → Score/result
+```
 
 ## Tech Stack
 
-- Framework: Next.js
+- Framework: Next.js 16 (App Router)
 - Language: TypeScript
-- Styling: Tailwind CSS
-- UI: shadcn/ui
-- Backend: Supabase
-- Database: PostgreSQL
-- Auth: Supabase Auth
-- Storage: Supabase Storage
-- Vector Search: Supabase pgvector
-- AI: OpenAI / compatible LLM provider
+- Styling: Tailwind CSS v4
+- UI: shadcn/ui + Radix primitives
+- Database: Supabase PostgreSQL + pgvector
+- Auth: Supabase Auth (invite-only, no public registration)
+- AI: Vercel AI SDK + OpenAI (gpt-4.1-mini, text-embedding-3-small)
+- Validation: Zod
+- Charts: Recharts
+
+## Implemented Features
+
+**AI/RAG Generation:**
+
+- Document chunking and storage in Supabase
+- OpenAI embeddings for semantic search
+- pgvector similarity search (`match_document_chunks` RPC)
+- AI-generated structured test drafts from retrieved chunks
+- Admin review and edit before publishing
+
+**Admin Flow:**
+
+- Dashboard with real KPI metrics (tests, assignments, scores)
+- Document list and detail (Supabase-backed)
+- Test generation, review, publish
+- Test assignment to employees
+- Test detail with assignment progress and scores
+- Weak topics derived from incorrect answers
+
+**Employee Flow:**
+
+- Dashboard with assigned tests
+- Test-taking (Supabase-backed with persisted attempts)
+- Server-side scoring (single/multiple choice, true/false)
+- Result page with score, answers, weak topics
+
+**Backend Foundation:**
+
+- Org-scoped schema with composite foreign keys
+- RLS enabled (policies for MVP flows)
+- Server-only admin client for privileged operations
+- Auth-ready profiles and organization_members
+
+## Setup
+
+### 1. Environment Variables
+
+```bash
+cp .env.example .env.local
+```
+
+Required:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SECRET_KEY=
+OPENAI_API_KEY=
+```
+
+### 2. Database
+
+Migrations are in `supabase/migrations/`. Apply via Supabase MCP or SQL editor:
+
+```sql
+-- Run all files in supabase/migrations/ in order
+```
+
+Seed data:
+
+```sql
+-- Run supabase/seed.sql
+```
+
+### 3. Generate Embeddings
+
+```bash
+npm run embed:demo-chunks
+```
+
+### 4. Start Dev Server
+
+```bash
+npm run dev
+```
+
+## Demo Credentials
+
+| Role     | Email                     | Password             |
+| -------- | ------------------------- | -------------------- |
+| Admin    | `admin@demo.ontera.ai`    | `demo-only-password` |
+| Employee | `employee@demo.ontera.ai` | `demo-only-password` |
+
+These users are created by `supabase/seed.sql`.

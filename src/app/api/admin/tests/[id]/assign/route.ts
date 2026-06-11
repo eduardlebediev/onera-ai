@@ -2,6 +2,11 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import {
+  AuthError,
+  requireAdminApiUser,
+  verifyTestInOrganization,
+} from "@/features/auth/lib/require-auth"
 import { createSupabaseTestAssignments } from "@/features/tests/lib/supabase-assignments"
 
 const AssignTestRequestSchema = z.object({
@@ -18,12 +23,18 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST(request: Request, { params }: AssignTestRouteContext) {
-  // TODO: Enforce real admin authorization before production.
   try {
+    const admin = await requireAdminApiUser()
     const { id } = await params
 
     if (!isUuid(id)) {
       return jsonError("Invalid test id", 400)
+    }
+
+    const testInOrg = await verifyTestInOrganization(id, admin.membership.organizationId)
+
+    if (!testInOrg) {
+      return jsonError("Test not found", 404)
     }
 
     let body: unknown
@@ -51,6 +62,10 @@ export async function POST(request: Request, { params }: AssignTestRouteContext)
       return jsonError("Test not found", 404)
     }
 
+    if (result.test.organizationId !== admin.membership.organizationId) {
+      return jsonError("Forbidden", 403)
+    }
+
     if (result.test.status !== "published") {
       return jsonError("Only published tests can be assigned", 409)
     }
@@ -65,6 +80,10 @@ export async function POST(request: Request, { params }: AssignTestRouteContext)
       skipped: result.skipped,
     })
   } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonError(error.message, error.status)
+    }
+
     console.error("Assign test API error:", error)
     return jsonError("Internal server error", 500)
   }

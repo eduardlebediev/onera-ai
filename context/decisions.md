@@ -1,5 +1,13 @@
 # Decisions
 
+## 044 — RLS membership helpers use security definer to avoid policy recursion
+
+Organization-scoped RLS checks (`is_active_org_admin`, `is_active_org_member`, assignment helpers) run as `security definer` functions that still gate on `auth.uid()`. This avoids infinite recursion when policies on `organization_members` need to read `organization_members`, while keeping authorization tied to the current authenticated user.
+
+## 043 — Ontera AI uses invite-only access with organization membership roles
+
+Ontera AI does not support public registration. Authenticated users must have an active `organization_members` row. The application role is resolved from `organization_members.role`, not from `profiles` or `user_metadata`. Admin routes require admin membership, employee routes require employee membership, and Supabase RLS policies protect organization-scoped data.
+
 ## 042 — Admin progress reads assignments and attempts from Supabase
 
 Admin progress and result views use `test_assignments`, `test_attempts`, and `test_answers` as the source of truth for backend-backed tests. The dashboard and test detail pages show real completion status, scores, recent attempts, and simple weak topics where available. Mock analytics remain fallback only until auth/RLS and full reporting are implemented.

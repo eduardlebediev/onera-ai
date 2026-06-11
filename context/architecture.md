@@ -6,7 +6,7 @@
 | ------------- | ------------------------------------------------- | -------------------------------------------------------------- |
 | Framework     | Next.js App Router + TypeScript                   | Full-stack application framework                               |
 | UI            | React + Tailwind CSS + shadcn/ui                  | Dashboard interface and reusable UI components                 |
-| Auth          | Supabase Auth or temporary demo auth              | User identity, admin/employee role access                      |
+| Auth          | Supabase Auth (invite-only)                       | User identity, admin/employee role access                      |
 | Database      | Supabase Postgres                                 | Stores users, documents, tests, assignments, attempts, answers |
 | Vector Search | Supabase pgvector                                 | Stores document chunk embeddings for semantic search           |
 | File Storage  | Supabase Storage                                  | Stores uploaded source documents                               |
@@ -252,17 +252,21 @@ Fields:
 
 ## Auth and Access Model
 
-- Users authenticate through Supabase Auth or temporary demo auth during early MVP development.
+- Ontera AI is invite-only. No public registration or self sign-up.
+- Users authenticate through Supabase Auth (email/password for MVP).
 - Application-specific user data lives in `profiles`.
 - Organization membership and role live in `organization_members`.
 - `organization_members.role` controls access within an organization:
   - admin can manage documents, tests, assignments, and analytics;
   - employee can only see assigned tests and personal results.
-- Internal backend jobs (embedding generation, RAG retrieval, admin mutations before auth policies land) use a server-only Supabase admin client with `SUPABASE_SECRET_KEY` (`sb_secret_...`) — never exposed to the browser.
-- User-scoped reads/writes use the SSR server client with the publishable/anon key and RLS.
+- App role is resolved server-side via `getCurrentUser()` / `getAuthenticatedSession()` from auth user + active membership. Do not use `user_metadata` as role source.
+- `/admin/*` requires active admin membership; `/employee/*` requires active employee membership. Unauthenticated users redirect to `/login`.
+- Internal backend jobs (embedding generation, RAG retrieval, privileged mutations) use a server-only Supabase admin client with `SUPABASE_SECRET_KEY` (`sb_secret_...`) — never exposed to the browser.
+- User-scoped reads use the SSR server client with the publishable/anon key and RLS where practical.
 - Employees must not access other employees' attempts, answers, or analytics.
 - Admin-only mutations must be checked server-side.
-- RLS is enabled on all public tables; policies will be added in later specs.
+- RLS is enabled on all public tables with organization-scoped policies (`00002_auth_rls_policies.sql`). Employee take flow must not expose `correct_answer` before submit — use server helpers that strip answers.
+- Demo auth setup: see `context/auth-demo-setup.md`.
 
 ---
 

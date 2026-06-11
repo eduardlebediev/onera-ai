@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { AuthError, requireEmployeeApiUser } from "@/features/auth/lib/require-auth"
 import {
   SubmitAttemptError,
   submitEmployeeTestAttempt,
@@ -16,8 +17,8 @@ function jsonError(message: string, status: number) {
 }
 
 export async function POST(request: Request, { params }: SubmitAttemptRouteContext) {
-  // TODO: Replace hardcoded demo employee with authenticated user after auth spec.
   try {
+    const employee = await requireEmployeeApiUser()
     const { id } = await params
 
     if (!isUuid(id)) {
@@ -43,10 +44,16 @@ export async function POST(request: Request, { params }: SubmitAttemptRouteConte
       testId: id,
       attemptId: parsedRequest.data.attemptId,
       answers: parsedRequest.data.answers,
+      userId: employee.userId,
+      organizationId: employee.membership.organizationId,
     })
 
     return NextResponse.json(result)
   } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonError(error.message, error.status)
+    }
+
     if (error instanceof SubmitAttemptError) {
       switch (error.code) {
         case "not_found":

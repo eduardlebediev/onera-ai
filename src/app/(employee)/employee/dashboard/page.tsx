@@ -1,26 +1,55 @@
+import { getCurrentUser } from "@/features/auth/lib/current-user"
 import { EmployeeDashboard } from "@/features/employee/tests/components/employee-dashboard"
 import {
-  getCurrentEmployee,
-  getEmployeeAssignedTests,
-} from "@/features/employee/tests/mock/employee-tests"
-import { getSupabaseEmployeeAssignments } from "@/features/employee/tests/lib/supabase-employee-assignments"
+  getSupabaseEmployeeAssignments,
+  type SupabaseEmployeeAssignmentsResult,
+} from "@/features/employee/tests/lib/supabase-employee-assignments"
+import type { MockEmployee } from "@/features/tests/mock/employees"
 
 export const dynamic = "force-dynamic"
 
-export default async function EmployeeDashboardRoute() {
-  let employee = getCurrentEmployee()
-  let tests = getEmployeeAssignedTests()
+function buildEmployeeFallback(user: {
+  userId: string
+  email: string
+  profile: { fullName: string | null }
+}): MockEmployee {
+  return {
+    id: user.userId,
+    name: user.profile.fullName ?? user.email,
+    email: user.email,
+    role: "Employee",
+    department: "Unassigned",
+    completedTestsCount: 0,
+    averageScore: 0,
+    riskLevel: "on_track",
+  }
+}
 
+async function loadEmployeeDashboardData(
+  userId: string,
+  organizationId: string
+): Promise<SupabaseEmployeeAssignmentsResult | null> {
   try {
-    const result = await getSupabaseEmployeeAssignments()
-
-    if (result.tests.length > 0) {
-      employee = result.employee ?? employee
-      tests = result.tests
-    }
+    return await getSupabaseEmployeeAssignments(userId, organizationId)
   } catch (error) {
     console.error("Failed to load employee dashboard assignments from Supabase:", error)
+    return null
+  }
+}
+
+export default async function EmployeeDashboardRoute() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return null
   }
 
-  return <EmployeeDashboard employee={employee} tests={tests} />
+  const result = await loadEmployeeDashboardData(user.userId, user.membership.organizationId)
+
+  return (
+    <EmployeeDashboard
+      employee={result?.employee ?? buildEmployeeFallback(user)}
+      tests={result?.tests ?? []}
+    />
+  )
 }

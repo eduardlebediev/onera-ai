@@ -6,8 +6,6 @@ import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
-import { DEMO_EMPLOYEE_ID } from "./supabase-employee-assignments"
-
 export type EmployeeSafeQuestionOption = {
   id: string
   text: string
@@ -119,7 +117,8 @@ export function isAssignmentTakeable(status: string): boolean {
 
 async function getAssignmentForUserAndTest(
   userId: string,
-  testId: string
+  testId: string,
+  organizationId: string
 ): Promise<AssignmentRow | null> {
   const supabase = createAdminClient()
 
@@ -128,6 +127,7 @@ async function getAssignmentForUserAndTest(
     .select("id, test_id, status, deadline")
     .eq("user_id", userId)
     .eq("test_id", testId)
+    .eq("organization_id", organizationId)
     .maybeSingle()
 
   if (error) {
@@ -200,13 +200,14 @@ async function getSafeQuestionsForTest(testId: string): Promise<EmployeeSafeQues
 
 export async function getSupabaseEmployeeTakeableTest(
   testId: string,
-  userId = DEMO_EMPLOYEE_ID
+  userId: string,
+  organizationId: string
 ): Promise<SupabaseEmployeeTakeableTest | null> {
-  const assignment = await getAssignmentForUserAndTest(userId, testId)
+  const assignment = await getAssignmentForUserAndTest(userId, testId, organizationId)
   if (!assignment || !isAssignmentTakeable(assignment.status)) return null
 
   const test = await getTestRow(testId)
-  if (!test || test.status !== "published") return null
+  if (!test || test.status !== "published" || test.organization_id !== organizationId) return null
 
   const questions = await getSafeQuestionsForTest(testId)
   if (questions.length === 0) return null
@@ -236,9 +237,10 @@ export async function getSupabaseEmployeeTakeableTest(
   }
 }
 
-export async function getAssignmentForDemoEmployee(
+export async function getAssignmentForEmployee(
   testId: string,
-  userId = DEMO_EMPLOYEE_ID
+  userId: string,
+  organizationId: string
 ): Promise<(AssignmentRow & { organization_id: string }) | null> {
   const supabase = createAdminClient()
 
@@ -247,6 +249,7 @@ export async function getAssignmentForDemoEmployee(
     .select("id, test_id, status, deadline, organization_id")
     .eq("user_id", userId)
     .eq("test_id", testId)
+    .eq("organization_id", organizationId)
     .maybeSingle()
 
   if (error) {

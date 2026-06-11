@@ -7,9 +7,6 @@ import { createAdminClient } from "@/lib/supabase/admin"
 
 import { getLatestCompletedAttemptIdForAssignment } from "./supabase-employee-attempts"
 
-// TODO: Replace hardcoded demo employee with authenticated user after auth spec.
-export const DEMO_EMPLOYEE_ID = "b0000000-0000-4000-8000-000000000002"
-
 type AssignmentRow = {
   id: string
   test_id: string
@@ -81,31 +78,27 @@ function getProgressPercent(status: TestAssignmentStatus): number {
   return 0
 }
 
-async function getDemoEmployee(): Promise<MockEmployee | null> {
+async function getEmployeeProfile(userId: string): Promise<MockEmployee | null> {
   const supabase = createAdminClient()
 
   const [{ data: profile, error: profileError }, { data: member, error: memberError }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .eq("id", DEMO_EMPLOYEE_ID)
-        .maybeSingle(),
+      supabase.from("profiles").select("id, email, full_name").eq("id", userId).maybeSingle(),
       supabase
         .from("organization_members")
         .select("user_id, department, job_title")
-        .eq("user_id", DEMO_EMPLOYEE_ID)
+        .eq("user_id", userId)
         .eq("role", "employee")
         .eq("status", "active")
         .maybeSingle(),
     ])
 
   if (profileError) {
-    throw new Error(`Failed to fetch demo employee profile: ${profileError.message}`)
+    throw new Error(`Failed to fetch employee profile: ${profileError.message}`)
   }
 
   if (memberError) {
-    throw new Error(`Failed to fetch demo employee membership: ${memberError.message}`)
+    throw new Error(`Failed to fetch employee membership: ${memberError.message}`)
   }
 
   const profileRow = profile as ProfileRow | null
@@ -127,13 +120,14 @@ async function getDemoEmployee(): Promise<MockEmployee | null> {
   }
 }
 
-async function getAssignmentRows(userId: string): Promise<AssignmentRow[]> {
+async function getAssignmentRows(userId: string, organizationId: string): Promise<AssignmentRow[]> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from("test_assignments")
     .select("id, test_id, status, deadline, created_at")
     .eq("user_id", userId)
+    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -175,9 +169,13 @@ async function getDocumentsById(documentIds: string[]): Promise<Map<string, Docu
 }
 
 export async function getSupabaseEmployeeAssignments(
-  userId = DEMO_EMPLOYEE_ID
+  userId: string,
+  organizationId: string
 ): Promise<SupabaseEmployeeAssignmentsResult> {
-  const [employee, assignments] = await Promise.all([getDemoEmployee(), getAssignmentRows(userId)])
+  const [employee, assignments] = await Promise.all([
+    getEmployeeProfile(userId),
+    getAssignmentRows(userId, organizationId),
+  ])
 
   if (assignments.length === 0) {
     return { employee, tests: [] }
@@ -213,7 +211,11 @@ export async function getSupabaseEmployeeAssignments(
         let latestAttemptId: string | undefined
 
         if (status === "completed" || status === "failed") {
-          const latestAttempt = await getLatestCompletedAttemptIdForAssignment(userId, test.id)
+          const latestAttempt = await getLatestCompletedAttemptIdForAssignment(
+            userId,
+            test.id,
+            organizationId
+          )
           if (latestAttempt) {
             score = latestAttempt.score
             passed = latestAttempt.passed

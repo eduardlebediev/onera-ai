@@ -4,8 +4,7 @@ import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-resu
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
-import { DEMO_EMPLOYEE_ID } from "./supabase-employee-assignments"
-import { getAssignmentForDemoEmployee, isAssignmentTakeable } from "./supabase-employee-tests"
+import { getAssignmentForEmployee, isAssignmentTakeable } from "./supabase-employee-tests"
 
 export type StartAttemptResult = {
   attemptId: string
@@ -265,9 +264,10 @@ export class StartAttemptError extends Error {
 
 export async function startEmployeeTestAttempt(
   testId: string,
-  userId = DEMO_EMPLOYEE_ID
+  userId: string,
+  organizationId: string
 ): Promise<StartAttemptResult | null> {
-  const assignment = await getAssignmentForDemoEmployee(testId, userId)
+  const assignment = await getAssignmentForEmployee(testId, userId, organizationId)
   if (!assignment) return null
 
   if (!isAssignmentTakeable(assignment.status)) {
@@ -280,6 +280,7 @@ export async function startEmployeeTestAttempt(
     .from("tests")
     .select("id, organization_id, status")
     .eq("id", testId)
+    .eq("organization_id", organizationId)
     .maybeSingle()
 
   if (testError) {
@@ -351,16 +352,21 @@ export async function submitEmployeeTestAttempt(input: {
   testId: string
   attemptId: string
   answers: SubmitAnswerInput[]
-  userId?: string
+  userId: string
+  organizationId: string
 }): Promise<SubmitAttemptResult> {
-  const userId = input.userId ?? DEMO_EMPLOYEE_ID
+  const { userId, organizationId } = input
   const attempt = await getAttemptById(input.attemptId)
 
   if (!attempt) {
     throw new SubmitAttemptError("Attempt not found", "not_found")
   }
 
-  if (attempt.user_id !== userId || attempt.test_id !== input.testId) {
+  if (
+    attempt.user_id !== userId ||
+    attempt.test_id !== input.testId ||
+    attempt.organization_id !== organizationId
+  ) {
     throw new SubmitAttemptError("Attempt does not belong to this test", "forbidden")
   }
 
@@ -385,6 +391,7 @@ export async function submitEmployeeTestAttempt(input: {
       "id, question_text, question_type, options, correct_answer, explanation, topic, source_chunk_id"
     )
     .eq("test_id", input.testId)
+    .eq("organization_id", organizationId)
     .order("order_index", { ascending: true })
 
   if (questionsError) {
@@ -427,6 +434,7 @@ export async function submitEmployeeTestAttempt(input: {
     .from("tests")
     .select("passing_score")
     .eq("id", input.testId)
+    .eq("organization_id", organizationId)
     .maybeSingle()
 
   if (testMetaError || !testMeta) {
@@ -501,10 +509,16 @@ export async function submitEmployeeTestAttempt(input: {
 export async function getPersistedEmployeeTestResult(
   testId: string,
   attemptId: string,
-  userId = DEMO_EMPLOYEE_ID
+  userId: string,
+  organizationId: string
 ): Promise<EmployeeTestResult | null> {
   const attempt = await getAttemptById(attemptId)
-  if (!attempt || attempt.test_id !== testId || attempt.user_id !== userId) {
+  if (
+    !attempt ||
+    attempt.test_id !== testId ||
+    attempt.user_id !== userId ||
+    attempt.organization_id !== organizationId
+  ) {
     return null
   }
 
@@ -520,6 +534,7 @@ export async function getPersistedEmployeeTestResult(
         .from("tests")
         .select("id, title, description, passing_score, source_document_id")
         .eq("id", testId)
+        .eq("organization_id", organizationId)
         .maybeSingle(),
       supabase
         .from("test_answers")
@@ -543,6 +558,7 @@ export async function getPersistedEmployeeTestResult(
       "id, question_text, question_type, options, correct_answer, explanation, topic, source_chunk_id, order_index"
     )
     .eq("test_id", testId)
+    .eq("organization_id", organizationId)
     .order("order_index", { ascending: true })
 
   if (questionsError) {
@@ -625,7 +641,8 @@ export async function getPersistedEmployeeTestResult(
 
 export async function getLatestCompletedAttemptIdForAssignment(
   userId: string,
-  testId: string
+  testId: string,
+  organizationId: string
 ): Promise<{ attemptId: string; score: number; passed: boolean } | null> {
   const supabase = createAdminClient()
 
@@ -634,6 +651,7 @@ export async function getLatestCompletedAttemptIdForAssignment(
     .select("id, score, passed")
     .eq("user_id", userId)
     .eq("test_id", testId)
+    .eq("organization_id", organizationId)
     .eq("status", "completed")
     .order("completed_at", { ascending: false })
     .limit(1)

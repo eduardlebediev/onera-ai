@@ -1,9 +1,9 @@
-import { EmployeeTestResultLoader } from "@/features/employee/tests/components/employee-test-result-loader"
+import { getCurrentUser } from "@/features/auth/lib/current-user"
+import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { TestResultNotFound } from "@/features/employee/tests/components/test-result-not-found"
 import { TestResultPage } from "@/features/employee/tests/components/test-result-page"
 import { getPersistedEmployeeTestResult } from "@/features/employee/tests/lib/supabase-employee-attempts"
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
 
 export const dynamic = "force-dynamic"
 
@@ -14,10 +14,12 @@ interface EmployeeTestResultRouteProps {
 
 async function loadPersistedResult(
   testId: string,
-  attemptId: string
+  attemptId: string,
+  userId: string,
+  organizationId: string
 ): Promise<EmployeeTestResult | null> {
   try {
-    return await getPersistedEmployeeTestResult(testId, attemptId)
+    return await getPersistedEmployeeTestResult(testId, attemptId, userId, organizationId)
   } catch (error) {
     console.error("Failed to load persisted test result:", error)
     return null
@@ -30,16 +32,22 @@ export default async function EmployeeTestResultRoute({
 }: EmployeeTestResultRouteProps) {
   const { id } = await params
   const { attemptId } = await searchParams
+  const user = await getCurrentUser()
 
-  if (isUuid(id) && attemptId) {
-    const result = await loadPersistedResult(id, attemptId)
-
-    if (result) {
-      return <TestResultPage result={result} />
-    }
-
+  if (!user || !isUuid(id) || !attemptId) {
     return <TestResultNotFound />
   }
 
-  return <EmployeeTestResultLoader testId={id} />
+  const result = await loadPersistedResult(
+    id,
+    attemptId,
+    user.userId,
+    user.membership.organizationId
+  )
+
+  if (!result) {
+    return <TestResultNotFound />
+  }
+
+  return <TestResultPage result={result} />
 }

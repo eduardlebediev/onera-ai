@@ -1,10 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { ChevronDown, Menu } from "lucide-react"
+
+import type { AppRole } from "@/features/auth/lib/current-user"
 import { cn } from "@/lib/utils"
-import { useRole } from "@/shared/lib/role-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,35 +25,35 @@ const EMPLOYEE_LINKS = [
   { href: "/employee/tests", label: "My Tests" },
 ] as const
 
-const ADMIN_DASHBOARD = "/admin/dashboard"
-const EMPLOYEE_DASHBOARD = "/employee/dashboard"
+type TopNavbarProps = {
+  role: AppRole
+  userName: string
+  userTitle: string
+}
 
-export function TopNavbar() {
+export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const { role, setRole } = useRole()
 
   const links = role === "admin" ? ADMIN_LINKS : EMPLOYEE_LINKS
-  const dashboardHref = role === "admin" ? ADMIN_DASHBOARD : EMPLOYEE_DASHBOARD
-  const userName = role === "admin" ? "Administrator" : "Employee"
-  const userTitle = role === "admin" ? "System Administrator" : "Team Member"
-  const initials = role === "admin" ? "Ad" : "Em"
+  const dashboardHref = role === "admin" ? "/admin/dashboard" : "/employee/dashboard"
+  const initials =
+    userName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("")
+      .slice(0, 2) || "U"
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/")
-
-  function switchRole(nextRole: "admin" | "employee") {
-    setRole(nextRole)
-    router.push(nextRole === "admin" ? ADMIN_DASHBOARD : EMPLOYEE_DASHBOARD)
-  }
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
     <nav className="flex h-16 shrink-0 items-center gap-3 bg-foreground px-4 md:gap-6 md:px-8">
-      {/* Logo */}
       <Link href={dashboardHref} className="shrink-0">
         <Logo />
       </Link>
 
-      <div className="hidden md:flex items-center justify-center gap-0.5 flex-1">
+      <div className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -66,30 +67,27 @@ export function TopNavbar() {
           >
             {link.label}
             {isActive(link.href) && (
-              <span className="absolute bottom-0 left-3.5 right-3.5 h-[3px] rounded-t-full bg-primary" />
+              <span className="absolute right-3.5 bottom-0 left-3.5 h-[3px] rounded-t-full bg-primary" />
             )}
           </Link>
         ))}
       </div>
 
-      {/* Mobile spacer to push actions right */}
       <div className="flex-1 md:hidden" />
 
-      {/* Right side actions */}
-      <div className="flex items-center gap-1 md:gap-2 shrink-0">
-        {/* Mobile nav menu */}
+      <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="md:hidden w-8 h-8 flex items-center justify-center text-background/55 hover:text-background transition-colors rounded-md hover:bg-background/5 cursor-pointer bg-transparent border-0 outline-none"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-background/55 outline-none transition-colors hover:bg-background/5 hover:text-background md:hidden"
             aria-label="Open navigation menu"
           >
-            <Menu className="w-4.5 h-4.5" />
+            <Menu className="h-4.5 w-4.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
             {links.map((link) => (
               <DropdownMenuItem
                 key={link.href}
-                className={cn(isActive(link.href) && "text-primary font-medium")}
+                className={cn(isActive(link.href) && "font-medium text-primary")}
                 asChild
               >
                 <Link href={link.href}>{link.label}</Link>
@@ -98,30 +96,24 @@ export function TopNavbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Role switcher */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2.5 ml-1 pl-2 pr-1 py-1 rounded-md hover:bg-background/5 transition-colors text-background/90 hover:text-background cursor-pointer bg-transparent border-0 outline-none">
-            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-              <span className="text-primary text-[11px] font-semibold">{initials}</span>
+          <DropdownMenuTrigger className="ml-1 flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent py-1 pr-1 pl-2 text-background/90 outline-none transition-colors hover:bg-background/5 hover:text-background">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/20">
+              <span className="text-[11px] font-semibold text-primary">{initials}</span>
             </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-xs font-medium leading-tight">{userName}</p>
-              <p className="text-[10px] text-background/45 leading-tight">{userTitle}</p>
+            <div className="hidden text-left sm:block">
+              <p className="text-xs leading-tight font-medium">{userName}</p>
+              <p className="text-[10px] leading-tight text-background/45">{userTitle}</p>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-background/40 shrink-0" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-background/40" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem
-              onClick={() => switchRole("admin")}
-              className={cn(role === "admin" && "text-primary font-medium")}
-            >
-              Admin
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => switchRole("employee")}
-              className={cn(role === "employee" && "text-primary font-medium")}
-            >
-              Employee
+            <DropdownMenuItem asChild>
+              <form action="/auth/logout" method="post" className="w-full">
+                <button type="submit" className="w-full cursor-pointer text-left">
+                  Sign out
+                </button>
+              </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

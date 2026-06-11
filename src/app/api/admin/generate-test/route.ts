@@ -21,6 +21,11 @@ import type {
   GeneratedTestDraft,
   GenerateTestRequest,
 } from "@/features/tests/schemas/generated-test-schema"
+import {
+  AuthError,
+  requireAdminApiUser,
+  verifyDocumentInOrganization,
+} from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -81,10 +86,11 @@ async function markGenerationRunFailed(
 }
 
 export async function POST(request: Request) {
-  // TODO: Enforce real admin authorization before production.
   let generationRunId: string | null = null
 
   try {
+    const admin = await requireAdminApiUser()
+
     let body: unknown
 
     try {
@@ -114,6 +120,15 @@ export async function POST(request: Request) {
 
     if (!document) {
       return jsonError("Document not found", 404)
+    }
+
+    const documentInOrg = await verifyDocumentInOrganization(
+      document.id,
+      admin.membership.organizationId
+    )
+
+    if (!documentInOrg) {
+      return jsonError("Forbidden", 403)
     }
 
     const supabase = createAdminClient()
@@ -266,6 +281,10 @@ export async function POST(request: Request) {
       })),
     })
   } catch (error) {
+    if (error instanceof AuthError) {
+      return jsonError(error.message, error.status)
+    }
+
     const message = error instanceof Error ? error.message : "Unexpected server error"
     console.error("Generate test API error:", error)
 

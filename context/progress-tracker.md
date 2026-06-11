@@ -4,31 +4,20 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-Replace mock core flows with Supabase-backed data.
-
-The first AI/RAG vertical slice is complete:
-
-Admin document
-→ document chunks
-→ embeddings
-→ pgvector retrieval
-→ AI-generated test draft
-→ admin review
-→ publish test
-
-The next step is to turn the mock-based admin and employee flows into real backend-backed features.
+Real document upload and markdown extraction, or production readiness cleanup.
 
 ## In Progress
 
 ## Next Up
 
-- Feature Spec 30: Invite-only Auth and RLS Policies
-- Optional: Real Document Upload and Markdown Extraction
+- Real Document Upload and Markdown Extraction
+- Production Readiness Cleanup
 
 ## Open Questions
 
 ## Completed
 
+- Feature Spec 30: Invite-only Auth and RLS Policies
 - Feature Spec 29: Admin Progress and Results from Supabase
 - Feature Spec 28: Employee Test Taking and Attempt Persistence
 - Feature Spec 27: Real Test Assignments

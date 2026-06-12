@@ -89,7 +89,13 @@ export type Database = {
           source_type: string
           file_name: string | null
           file_url: string | null
+          storage_path: string | null
+          file_type: string | null
+          file_size_mb: number | null
           extracted_text: string | null
+          extraction_method: string | null
+          processing_error: string | null
+          processed_at: string | null
           status: string
           created_by: string | null
           created_at: string
@@ -103,7 +109,13 @@ export type Database = {
           source_type?: string
           file_name?: string | null
           file_url?: string | null
+          storage_path?: string | null
+          file_type?: string | null
+          file_size_mb?: number | null
           extracted_text?: string | null
+          extraction_method?: string | null
+          processing_error?: string | null
+          processed_at?: string | null
           status?: string
           created_by?: string | null
           created_at?: string
@@ -117,7 +129,13 @@ export type Database = {
           source_type?: string
           file_name?: string | null
           file_url?: string | null
+          storage_path?: string | null
+          file_type?: string | null
+          file_size_mb?: number | null
           extracted_text?: string | null
+          extraction_method?: string | null
+          processing_error?: string | null
+          processed_at?: string | null
           status?: string
           created_by?: string | null
           created_at?: string

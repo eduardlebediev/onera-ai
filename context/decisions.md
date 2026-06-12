@@ -1,5 +1,9 @@
 # Decisions
 
+## 045 — Uploaded documents use private storage, signed downloads, and AI text extraction
+
+Real uploaded documents are stored as original files in a private Supabase Storage bucket. The app does not render original documents inline; instead, admins can download originals through short-lived signed URLs. Text is extracted once after upload, saved to `documents.extracted_text`, chunked, embedded with `text-embedding-3-small`, and then reused through the existing pgvector retrieval and AI test generation flow.
+
 ## 044 — RLS membership helpers use security definer to avoid policy recursion
 
 Organization-scoped RLS checks (`is_active_org_admin`, `is_active_org_member`, assignment helpers) run as `security definer` functions that still gate on `auth.uid()`. This avoids infinite recursion when policies on `organization_members` need to read `organization_members`, while keeping authorization tied to the current authenticated user.

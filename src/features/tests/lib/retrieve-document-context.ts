@@ -1,10 +1,13 @@
+import "server-only"
+
 import OpenAI from "openai"
 
 import { buildRetrievalQuery } from "@/features/tests/lib/generate-test-prompt"
 import type { TestDifficulty, TestLanguage } from "@/features/tests/schemas/generated-test-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { createEmbedding, EMBEDDING_MODEL } from "@/shared/ai/chunk-embeddings"
 
-export const EMBEDDING_MODEL = "text-embedding-3-small"
+export { EMBEDDING_MODEL }
 
 const MIN_CONTEXT_CHUNKS = 3
 
@@ -81,21 +84,6 @@ export function computeMatchCount(questionCount: number): number {
   return Math.min(Math.max(questionCount * 2, 6), 12)
 }
 
-async function createQueryEmbedding(openai: OpenAI, query: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: query,
-  })
-
-  const embedding = response.data[0]?.embedding
-
-  if (!embedding || embedding.length === 0) {
-    throw new Error("OpenAI returned no embedding")
-  }
-
-  return embedding
-}
-
 function mergeRetrievedChunks(
   primary: RetrievedChunk[],
   fallback: EmbeddedChunkRow[]
@@ -168,7 +156,7 @@ export async function retrieveDocumentContext(input: {
     language: input.language,
   })
 
-  const queryEmbedding = await createQueryEmbedding(input.openai, retrievalQuery)
+  const queryEmbedding = await createEmbedding(input.openai, retrievalQuery)
   const matchCount = computeMatchCount(input.questionCount)
 
   const { data: rpcMatches, error: rpcError } = await supabase.rpc("match_document_chunks", {

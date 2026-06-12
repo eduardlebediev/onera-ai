@@ -3,8 +3,7 @@ import OpenAI from "openai"
 
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
-
-const EMBEDDING_MODEL = "text-embedding-3-small"
+import { buildEmbeddingInput, createEmbedding, EMBEDDING_MODEL } from "@/shared/ai/chunk-embeddings"
 
 const VERIFICATION_QUERIES = [
   {
@@ -45,22 +44,6 @@ function requireEnv(name: string): string {
   return value
 }
 
-function buildEmbeddingInput(chunk: Pick<DocumentChunk, "title" | "topic" | "content">): string {
-  const lines: string[] = []
-
-  if (chunk.title) {
-    lines.push(`Title: ${chunk.title}`)
-  }
-
-  if (chunk.topic) {
-    lines.push(`Topic: ${chunk.topic}`)
-  }
-
-  lines.push("Content:", chunk.content)
-
-  return lines.join("\n")
-}
-
 function mergeMetadata(existing: Json, patch: Record<string, Json>): Json {
   if (existing && typeof existing === "object" && !Array.isArray(existing)) {
     return { ...existing, ...patch }
@@ -77,21 +60,6 @@ function previewContent(content: string, maxLength = 120): string {
   }
 
   return `${normalized.slice(0, maxLength)}...`
-}
-
-async function createEmbedding(openai: OpenAI, input: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input,
-  })
-
-  const embedding = response.data[0]?.embedding
-
-  if (!embedding || embedding.length === 0) {
-    throw new Error("OpenAI returned no embedding")
-  }
-
-  return embedding
 }
 
 async function fetchChunksWithoutEmbeddings(): Promise<DocumentChunk[]> {

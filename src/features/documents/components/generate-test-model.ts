@@ -33,7 +33,9 @@ export const TARGET_ROLE_OPTIONS = [
 ]
 
 export function canGenerateTest(document: MockDocumentDetail): boolean {
-  return document.status === "ready" && document.chunks.length > 0
+  const hasEmbeddedChunks = document.hasEmbeddedChunks ?? document.chunks.length > 0
+
+  return document.status === "ready" && document.chunks.length > 0 && hasEmbeddedChunks
 }
 
 export function getGenerateBlockReason(document: MockDocumentDetail): string {
@@ -48,6 +50,9 @@ export function getGenerateBlockReason(document: MockDocumentDetail): string {
   }
   if (document.chunks.length === 0) {
     return "No content chunks are available for this document."
+  }
+  if (document.hasEmbeddedChunks === false) {
+    return "Document chunks are still missing embeddings."
   }
   return "Test generation is not available for this document."
 }

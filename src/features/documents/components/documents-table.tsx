@@ -20,6 +20,10 @@ import {
   type DocumentStatus,
   type MockDocumentDetail,
 } from "@/data/mock/documents"
+import {
+  canGenerateTest,
+  getGenerateBlockReason,
+} from "@/features/documents/components/generate-test-model"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
@@ -60,6 +64,7 @@ const FILE_ICON_STYLES: Record<DocumentFileType, string> = {
   docx: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30",
   pptx: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-900/30",
   txt: "bg-gray-50 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400 border border-gray-200 dark:border-gray-800",
+  md: "bg-gray-50 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400 border border-gray-200 dark:border-gray-800",
 }
 
 function formatRelativeDate(dateStr: string): string {
@@ -216,6 +221,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
               visibleDocuments.map((document) => {
                 const isFailed = document.status === "failed"
                 const isProcessing = document.status === "processing"
+                const isGeneratable = canGenerateTest(document)
 
                 return (
                   <TableRow key={document.id} className="group hover:bg-muted/30 transition-colors">
@@ -322,7 +328,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                           >
                             Processing...
                           </Button>
-                        ) : (
+                        ) : isGeneratable ? (
                           <Button
                             asChild
                             variant="outline"
@@ -332,6 +338,16 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                             <Link href={`/admin/documents/${document.id}/generate-test`}>
                               Generate Test
                             </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs font-medium"
+                            disabled
+                            title={getGenerateBlockReason(document)}
+                          >
+                            Generate Test
                           </Button>
                         )}
                         <Button

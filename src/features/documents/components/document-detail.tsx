@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  Download,
   ExternalLink,
   FileText,
   MoreHorizontal,
@@ -17,6 +16,7 @@ import Link from "next/link"
 
 import type { DocumentStatus, MockDocumentDetail } from "@/data/mock/documents"
 import { canGenerateTest } from "@/features/documents/components/generate-test-model"
+import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
@@ -80,6 +80,7 @@ function formatDate(dateStr: string): string {
 export function DocumentDetail({ document }: DocumentDetailProps) {
   const statusConfig = STATUS_CONFIG[document.status]
   const isReady = canGenerateTest(document)
+  const canDownload = document.canDownloadOriginal === true
   const fileSizeLabel =
     document.fileSizeMb >= 1
       ? `${document.fileSizeMb.toFixed(1)} MB`
@@ -120,10 +121,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" disabled title="Download (coming soon)">
-            <Download />
-            Download
-          </Button>
+          <DocumentDownloadButton documentId={document.id} disabled={!canDownload} />
           <Button asChild={isReady} disabled={!isReady}>
             {isReady ? (
               <Link href={`/admin/documents/${document.id}/generate-test`}>
@@ -185,7 +183,10 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                     <CardTitle>Processing Status</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ProcessingStatusTimeline status={document.status} />
+                    <ProcessingStatusTimeline
+                      status={document.status}
+                      processingError={document.processingError}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -280,7 +281,9 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                   <div className="space-y-3 text-sm">
                     <div className="grid grid-cols-[120px_1fr] gap-2">
                       <span className="text-muted-foreground">File Name</span>
-                      <span className="font-medium text-foreground truncate">{document.title}</span>
+                      <span className="font-medium text-foreground truncate">
+                        {document.fileName ?? document.title}
+                      </span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
                       <span className="text-muted-foreground">File Type</span>
@@ -428,6 +431,34 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                   <span className="text-sm text-foreground">{document.title}</span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">File Name</span>
+                  <span className="text-sm text-foreground">
+                    {document.fileName ?? document.title}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Extraction Method
+                  </span>
+                  <span className="text-sm text-foreground">
+                    {document.extractionMethod ?? "—"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Processed</span>
+                  <span className="text-sm text-foreground">
+                    {document.processedAt ? formatDate(document.processedAt) : "—"}
+                  </span>
+                </div>
+                {document.processingError ? (
+                  <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Processing Error
+                    </span>
+                    <span className="text-sm text-destructive">{document.processingError}</span>
+                  </div>
+                ) : null}
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
                   <span className="text-sm font-medium text-muted-foreground">File Type</span>
                   <span className="text-sm text-foreground uppercase">{document.fileType}</span>
                 </div>
@@ -498,7 +529,13 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
   )
 }
 
-function ProcessingStatusTimeline({ status }: { status: DocumentStatus }) {
+function ProcessingStatusTimeline({
+  status,
+  processingError,
+}: {
+  status: DocumentStatus
+  processingError?: string | null
+}) {
   const steps: Array<{ key: DocumentStatus | "complete"; label: string }> = [
     { key: "uploaded", label: "Uploaded" },
     { key: "processing", label: "Processing" },
@@ -553,7 +590,7 @@ function ProcessingStatusTimeline({ status }: { status: DocumentStatus }) {
       {status === "failed" && (
         <div className="mt-2 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
           <XCircle className="size-4 shrink-0" />
-          Processing failed. Please re-upload the document.
+          {processingError ?? "Processing failed. Please re-upload the document."}
         </div>
       )}
     </div>

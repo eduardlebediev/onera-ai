@@ -4,6 +4,29 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 31: Real Document Upload, Download Link and AI Text Extraction
+
+Added the first real admin document upload and ingestion pipeline with private Supabase Storage, one-time text extraction, chunking, embeddings, signed downloads, and admin UI integration.
+
+- Added `context/feature-specs/31-real-document-upload-download-and-ai-text-extraction.md`.
+- Added `context/document-ingestion.md`.
+- Added `supabase/migrations/00003_document_upload_ingestion.sql` — upload metadata columns and private `documents` storage bucket.
+- Added `src/shared/ai/chunk-embeddings.ts` — shared embedding helpers reused by upload ingestion and `scripts/embed-demo-chunks.ts`.
+- Added server-only ingestion helpers under `src/features/documents/lib/`:
+  - `upload-document.ts`, `extract-document-text.ts`, `clean-extracted-text.ts`, `chunk-extracted-text.ts`, `embed-document-chunks.ts`, `document-download-url.ts`, `document-file-types.ts`, `document-upload-api-client.ts`
+- Added `src/features/documents/schemas/document-upload-schema.ts`.
+- Added `POST /api/admin/documents/upload` and `POST /api/admin/documents/[id]/download-url`.
+- Added `DocumentUploadButton` and `DocumentDownloadButton` client components.
+- Updated admin documents list/detail UI, Supabase document mapping, and generate-test gating to require embedded chunks.
+- Updated `.env.example` with `MAX_UPLOAD_MB` and `DOCUMENT_TEXT_EXTRACTION_MODEL`.
+- Decision 045 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Applied `00003_document_upload_ingestion.sql` to remote Supabase after documents page failed with missing `documents.file_type` column.
+- Verified private `documents` storage bucket exists on remote project.
+
 ## Feature Spec 30: Invite-only Auth and RLS Policies
 
 Added invite-only Supabase Auth with organization membership roles, route protection, API authorization, and RLS policies. Replaced hardcoded demo employee identity and mock role switcher with authenticated user context.

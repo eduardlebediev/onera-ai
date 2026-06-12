@@ -1,5 +1,5 @@
 export type DocumentStatus = "ready" | "processing" | "failed" | "uploaded"
-export type DocumentFileType = "pdf" | "docx" | "pptx" | "txt"
+export type DocumentFileType = "pdf" | "docx" | "pptx" | "txt" | "md"
 
 export interface DocumentChunk {
   id: string
@@ -28,10 +28,16 @@ export interface MockDocumentDetail {
   status: DocumentStatus
   fileType: DocumentFileType
   fileSizeMb: number
+  fileName?: string
   description: string
   uploadedAt: string
   /** Full document text when available from backend extraction. */
   extractedText?: string
+  extractionMethod?: string | null
+  processingError?: string | null
+  processedAt?: string | null
+  hasEmbeddedChunks?: boolean
+  canDownloadOriginal?: boolean
   /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]

@@ -20,8 +20,14 @@ type DocumentRow = {
   description: string | null
   source_type: string
   file_name: string | null
+  file_type: string | null
+  file_size_mb: number | null
   status: string
   extracted_text: string | null
+  extraction_method: string | null
+  processing_error: string | null
+  processed_at: string | null
+  storage_path: string | null
   created_at: string
   updated_at: string
 }
@@ -33,9 +39,20 @@ type ChunkRow = {
   title: string | null
   topic: string | null
   content: string
+  embedding: number[] | null
 }
 
-function inferFileType(fileName: string | null): DocumentFileType {
+function inferFileType(fileName: string | null, fileType: string | null): DocumentFileType {
+  if (
+    fileType === "pdf" ||
+    fileType === "docx" ||
+    fileType === "pptx" ||
+    fileType === "txt" ||
+    fileType === "md"
+  ) {
+    return fileType
+  }
+
   if (!fileName) {
     return "txt"
   }
@@ -45,6 +62,7 @@ function inferFileType(fileName: string | null): DocumentFileType {
   if (extension === "pdf") return "pdf"
   if (extension === "docx") return "docx"
   if (extension === "pptx") return "pptx"
+  if (extension === "md") return "md"
 
   return "txt"
 }
@@ -66,29 +84,45 @@ function deriveTopics(chunks: DocumentChunk[]): string[] {
   return Array.from(new Set(chunks.map((chunk) => chunk.topic).filter((topic) => topic.length > 0)))
 }
 
-function mapChunkRows(rows: ChunkRow[]): DocumentChunk[] {
-  return rows.map((row) => ({
+function mapChunkRows(rows: ChunkRow[]): { chunks: DocumentChunk[]; hasEmbeddedChunks: boolean } {
+  const chunks = rows.map((row) => ({
     id: row.id,
     content: row.content,
     topic: row.topic ?? "General",
     chunkIndex: row.chunk_index,
   }))
+
+  const hasEmbeddedChunks =
+    rows.length > 0 && rows.every((row) => Array.isArray(row.embedding) && row.embedding.length > 0)
+
+  return { chunks, hasEmbeddedChunks }
 }
 
-function mapDocumentToDetail(document: DocumentRow, chunks: DocumentChunk[]): MockDocumentDetail {
+function mapDocumentToDetail(document: DocumentRow, chunkRows: ChunkRow[]): MockDocumentDetail {
+  const { chunks, hasEmbeddedChunks } = mapChunkRows(chunkRows)
   const topics = deriveTopics(chunks)
   const status = normalizeDocumentStatus(document.status)
   const uploadedAt = document.created_at.slice(0, 10)
+  const fileSizeMb =
+    typeof document.file_size_mb === "number" && Number.isFinite(document.file_size_mb)
+      ? Number(document.file_size_mb)
+      : 1
 
   return {
     id: document.id,
     title: document.title,
     status,
-    fileType: inferFileType(document.file_name),
-    fileSizeMb: 1,
+    fileType: inferFileType(document.file_name, document.file_type),
+    fileSizeMb,
+    fileName: document.file_name ?? undefined,
     description: document.description ?? "",
     uploadedAt,
     extractedText: document.extracted_text?.trim() ? document.extracted_text : undefined,
+    extractionMethod: document.extraction_method,
+    processingError: document.processing_error,
+    processedAt: document.processed_at ?? undefined,
+    hasEmbeddedChunks,
+    canDownloadOriginal: Boolean(document.storage_path),
     topicsCount: topics.length,
     topics,
     chunks,
@@ -115,7 +149,7 @@ async function fetchChunksByDocumentIds(documentIds: string[]): Promise<Map<stri
 
   const { data: chunks, error } = await supabase
     .from("document_chunks")
-    .select("id, document_id, chunk_index, title, topic, content")
+    .select("id, document_id, chunk_index, title, topic, content, embedding")
     .in("document_id", documentIds)
     .order("chunk_index", { ascending: true })
 
@@ -138,7 +172,7 @@ export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
   const { data: documents, error } = await supabase
     .from("documents")
     .select(
-      "id, title, description, source_type, file_name, status, extracted_text, created_at, updated_at"
+      "id, title, description, source_type, file_name, file_type, file_size_mb, status, extracted_text, extraction_method, processing_error, processed_at, storage_path, created_at, updated_at"
     )
     .order("updated_at", { ascending: false })
 
@@ -156,7 +190,7 @@ export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
 
   return {
     documents: documentRows.map((document) =>
-      mapDocumentToDetail(document, mapChunkRows(chunksByDocumentId.get(document.id) ?? []))
+      mapDocumentToDetail(document, chunksByDocumentId.get(document.id) ?? [])
     ),
     source: "supabase",
   }
@@ -176,7 +210,7 @@ export async function getDocumentDetailById(
   const { data: document, error: documentError } = await supabase
     .from("documents")
     .select(
-      "id, title, description, source_type, file_name, status, extracted_text, created_at, updated_at"
+      "id, title, description, source_type, file_name, file_type, file_size_mb, status, extracted_text, extraction_method, processing_error, processed_at, storage_path, created_at, updated_at"
     )
     .eq("id", apiDocumentId)
     .maybeSingle()
@@ -191,7 +225,7 @@ export async function getDocumentDetailById(
 
   const { data: chunks, error: chunksError } = await supabase
     .from("document_chunks")
-    .select("id, document_id, chunk_index, title, topic, content")
+    .select("id, document_id, chunk_index, title, topic, content, embedding")
     .eq("document_id", apiDocumentId)
     .order("chunk_index", { ascending: true })
 
@@ -199,5 +233,5 @@ export async function getDocumentDetailById(
     throw new Error(`Failed to fetch document chunks: ${chunksError.message}`)
   }
 
-  return mapDocumentToDetail(document as DocumentRow, mapChunkRows((chunks ?? []) as ChunkRow[]))
+  return mapDocumentToDetail(document as DocumentRow, (chunks ?? []) as ChunkRow[])
 }

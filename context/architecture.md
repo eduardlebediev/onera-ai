@@ -52,12 +52,11 @@ Stores structured application data:
 
 ### Supabase Storage
 
-Stores uploaded source files:
+Stores uploaded source files in a private `documents` bucket:
 
-- PDFs;
-- Markdown files;
-- text files;
-- future document formats.
+- PDFs, DOCX, PPTX, TXT, MD;
+- path pattern `{organizationId}/{documentId}/{safeFileName}`;
+- access via server admin client and short-lived signed download URLs only.
 
 ### Supabase pgvector
 
@@ -106,11 +105,20 @@ Uploaded internal company documents.
 Fields:
 
 - id
+- organization_id
 - title
-- file_url
+- description
+- source_type — demo | upload | manual
+- file_name
+- storage_path
+- file_type
+- file_size_mb
 - extracted_text
+- extraction_method
+- processing_error
+- processed_at
 - status — uploaded | processing | ready | failed
-- uploaded_by
+- created_by
 - created_at
 - updated_at
 

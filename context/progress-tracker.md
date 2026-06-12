@@ -4,19 +4,19 @@ Update this file after every meaningful implementation change.
 
 ## Current Goal
 
-Real document upload and markdown extraction, or production readiness cleanup.
+Production Readiness Cleanup
 
 ## In Progress
 
 ## Next Up
 
-- Real Document Upload and Markdown Extraction
 - Production Readiness Cleanup
 
 ## Open Questions
 
 ## Completed
 
+- Feature Spec 31: Real Document Upload, Download Link and AI Text Extraction
 - Feature Spec 30: Invite-only Auth and RLS Policies
 - Feature Spec 29: Admin Progress and Results from Supabase
 - Feature Spec 28: Employee Test Taking and Attempt Persistence

@@ -5,7 +5,7 @@ import { Check, Plus } from "lucide-react"
 import { type MockDocumentDetail } from "@/data/mock/documents"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
-import { getTopicSummary } from "./generate-test-model"
+import { getGenerateTestTopics, getTopicSummary } from "./generate-test-model"
 
 interface TopicSelectorProps {
   document: MockDocumentDetail
@@ -14,15 +14,17 @@ interface TopicSelectorProps {
 }
 
 export function TopicSelector({ document, selectedTopics, onToggleTopic }: TopicSelectorProps) {
+  const topics = getGenerateTestTopics(document)
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="border-b border-border/50 px-6 py-5">
         <CardTitle className="text-base font-semibold">Selected Topics</CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        {document.topics.length > 0 ? (
+        {topics.length > 0 ? (
           <div className="grid gap-2 md:grid-cols-2">
-            {document.topics.map((topic) => {
+            {topics.map((topic) => {
               const isSelected = selectedTopics.includes(topic)
 
               return (

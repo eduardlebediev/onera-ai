@@ -16,6 +16,7 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 32: AI Document Topic Extraction
 - Feature Spec 31: Real Document Upload, Download Link and AI Text Extraction
 - Feature Spec 30: Invite-only Auth and RLS Policies
 - Feature Spec 29: Admin Progress and Results from Supabase

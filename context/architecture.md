@@ -41,6 +41,7 @@ Stores structured application data:
 - user profiles;
 - uploaded document metadata;
 - document chunks;
+- document topics;
 - tests;
 - test-document relations;
 - questions;
@@ -134,6 +135,21 @@ Fields:
 - topic
 - embedding
 - chunk_index
+- created_at
+
+### document_topics
+
+AI-extracted learning topics stored separately from chunks for document-level presentation and future generation flows.
+
+Fields:
+
+- id
+- organization_id
+- document_id
+- topic
+- description
+- confidence
+- source — ai | chunk
 - created_at
 
 ### tests

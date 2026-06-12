@@ -22,6 +22,14 @@ export interface DocumentVersion {
   status: DocumentStatus
 }
 
+export interface DocumentTopic {
+  id?: string
+  topic: string
+  description?: string | null
+  confidence?: number | null
+  source?: string
+}
+
 export interface MockDocumentDetail {
   id: string
   title: string
@@ -41,6 +49,7 @@ export interface MockDocumentDetail {
   /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]
+  documentTopics?: DocumentTopic[]
   chunks: DocumentChunk[]
   linkedTests: LinkedTest[]
   versions: DocumentVersion[]

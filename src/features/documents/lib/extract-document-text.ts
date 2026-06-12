@@ -10,10 +10,9 @@ import {
 } from "@/features/documents/lib/document-file-types"
 
 const EXTRACTION_PROMPT = `Extract the full readable text from this document.
-Do not summarize.
-Do not add information.
-Preserve headings, lists, and tables where possible.
-Return clean structured plain text.`
+Use Markdown headings (#, ##, ###) to preserve the original document structure and heading hierarchy.
+Preserve lists, tables, and all content.
+Return clean Markdown.`
 
 function getExtractionModel(): string {
   return process.env.DOCUMENT_TEXT_EXTRACTION_MODEL?.trim() || "gpt-4.1-mini"

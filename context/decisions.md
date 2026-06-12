@@ -1,5 +1,9 @@
 # Decisions
 
+## 046 — Document topics are extracted as a separate AI step
+
+Uploaded documents receive AI-extracted learning topics after text extraction, chunking, and embeddings. Topics are stored separately from chunks so the UI can present document-level learning concepts and future generation/recommendation flows can use better topic data than raw chunk headings alone.
+
 ## 045 — Uploaded documents use private storage, signed downloads, and AI text extraction
 
 Real uploaded documents are stored as original files in a private Supabase Storage bucket. The app does not render original documents inline; instead, admins can download originals through short-lived signed URLs. Text is extracted once after upload, saved to `documents.extracted_text`, chunked, embedded with `text-embedding-3-small`, and then reused through the existing pgvector retrieval and AI test generation flow.

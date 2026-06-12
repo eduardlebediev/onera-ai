@@ -65,6 +65,13 @@ export function deriveTopicsFromChunks(document: MockDocumentDetail, chunkIds: s
   return Array.from(new Set(topics))
 }
 
+export function getGenerateTestTopics(document: MockDocumentDetail): string[] {
+  return deriveTopicsFromChunks(
+    document,
+    document.chunks.map((chunk) => chunk.id)
+  )
+}
+
 export function getDefaultGenerateTestSettings(document: MockDocumentDetail): GenerateTestSettings {
   return {
     title: `${document.title} Knowledge Test`,
@@ -78,7 +85,8 @@ export function getDefaultGenerateTestSettings(document: MockDocumentDetail): Ge
 
 export function getDefaultSelectedTopics(document: MockDocumentDetail): string[] {
   if (document.chunks.length === 0) return []
-  return document.topics.slice(0, Math.min(document.topics.length, 3))
+  const chunkTopics = getGenerateTestTopics(document)
+  return chunkTopics.slice(0, Math.min(chunkTopics.length, 3))
 }
 
 export function getDefaultSelectedChunkIds(

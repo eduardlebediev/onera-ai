@@ -4,6 +4,7 @@ import OpenAI from "openai"
 
 import type { CurrentUser } from "@/features/auth/lib/current-user"
 import { chunkExtractedText } from "@/features/documents/lib/chunk-extracted-text"
+import { chunkExtractedTextAi } from "@/features/documents/lib/chunk-extracted-text-ai"
 import {
   DOCUMENTS_STORAGE_BUCKET,
   getExtractionMethod,
@@ -16,6 +17,7 @@ import {
 } from "@/features/documents/lib/document-file-types"
 import { embedDocumentChunks } from "@/features/documents/lib/embed-document-chunks"
 import { extractDocumentText } from "@/features/documents/lib/extract-document-text"
+import { persistDocumentTopicsBestEffort } from "@/features/documents/lib/persist-document-topics"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type UploadDocumentResult = {
@@ -156,7 +158,8 @@ export async function uploadAndIngestDocument(input: {
       extension,
     })
 
-    const chunks = chunkExtractedText(extractedText)
+    const aiChunks = await chunkExtractedTextAi(extractedText, title)
+    const chunks = aiChunks ?? chunkExtractedText(extractedText)
 
     if (chunks.length === 0) {
       throw new Error("Chunking produced no usable document sections")
@@ -189,6 +192,16 @@ export async function uploadAndIngestDocument(input: {
     if (chunksError) {
       throw new Error("Could not save document chunks")
     }
+
+    await persistDocumentTopicsBestEffort({
+      organizationId,
+      documentId,
+      title,
+      extractedText,
+      chunkTopics: embeddedChunks
+        .map((chunk) => chunk.topic)
+        .filter((topic): topic is string => Boolean(topic?.trim())),
+    })
 
     const { error: readyError } = await supabase
       .from("documents")

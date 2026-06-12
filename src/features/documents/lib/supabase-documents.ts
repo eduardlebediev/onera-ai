@@ -4,6 +4,7 @@ import type {
   DocumentChunk,
   DocumentFileType,
   DocumentStatus,
+  DocumentTopic,
   MockDocumentDetail,
 } from "@/data/mock/documents"
 import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
@@ -40,6 +41,29 @@ type ChunkRow = {
   topic: string | null
   content: string
   embedding: number[] | null
+}
+
+type TopicRow = {
+  id: string
+  document_id: string
+  topic: string
+  description: string | null
+  confidence: number | null
+  source: string
+}
+
+type SupabaseQueryError = {
+  code?: string
+  message?: string
+}
+
+function isMissingDocumentTopicsTableError(error: SupabaseQueryError): boolean {
+  const message = error.message ?? ""
+
+  return (
+    error.code === "PGRST205" ||
+    (message.includes("document_topics") && message.includes("schema cache"))
+  )
 }
 
 function inferFileType(fileName: string | null, fileType: string | null): DocumentFileType {
@@ -98,9 +122,47 @@ function mapChunkRows(rows: ChunkRow[]): { chunks: DocumentChunk[]; hasEmbeddedC
   return { chunks, hasEmbeddedChunks }
 }
 
-function mapDocumentToDetail(document: DocumentRow, chunkRows: ChunkRow[]): MockDocumentDetail {
-  const { chunks, hasEmbeddedChunks } = mapChunkRows(chunkRows)
+function mapTopicRows(rows: TopicRow[]): DocumentTopic[] {
+  return rows.map((row) => ({
+    id: row.id,
+    topic: row.topic,
+    description: row.description,
+    confidence: row.confidence,
+    source: row.source,
+  }))
+}
+
+function resolveDocumentTopics(
+  topicRows: TopicRow[],
+  chunks: DocumentChunk[]
+): { topics: string[]; documentTopics: DocumentTopic[] } {
+  if (topicRows.length > 0) {
+    const documentTopics = mapTopicRows(topicRows)
+    const topics = documentTopics.map((item) => item.topic)
+
+    return { topics, documentTopics }
+  }
+
   const topics = deriveTopics(chunks)
+
+  return {
+    topics,
+    documentTopics: topics.map((topic) => ({
+      topic,
+      description: null,
+      confidence: null,
+      source: "chunk",
+    })),
+  }
+}
+
+function mapDocumentToDetail(
+  document: DocumentRow,
+  chunkRows: ChunkRow[],
+  topicRows: TopicRow[] = []
+): MockDocumentDetail {
+  const { chunks, hasEmbeddedChunks } = mapChunkRows(chunkRows)
+  const { topics, documentTopics } = resolveDocumentTopics(topicRows, chunks)
   const status = normalizeDocumentStatus(document.status)
   const uploadedAt = document.created_at.slice(0, 10)
   const fileSizeMb =
@@ -125,6 +187,7 @@ function mapDocumentToDetail(document: DocumentRow, chunkRows: ChunkRow[]): Mock
     canDownloadOriginal: Boolean(document.storage_path),
     topicsCount: topics.length,
     topics,
+    documentTopics,
     chunks,
     linkedTests: [],
     versions: [
@@ -166,6 +229,41 @@ async function fetchChunksByDocumentIds(documentIds: string[]): Promise<Map<stri
   return chunksByDocumentId
 }
 
+async function fetchTopicsByDocumentIds(documentIds: string[]): Promise<Map<string, TopicRow[]>> {
+  const topicsByDocumentId = new Map<string, TopicRow[]>()
+
+  if (documentIds.length === 0) {
+    return topicsByDocumentId
+  }
+
+  const supabase = createAdminClient()
+
+  const { data: topics, error } = await supabase
+    .from("document_topics")
+    .select("id, document_id, topic, description, confidence, source")
+    .in("document_id", documentIds)
+    .order("topic", { ascending: true })
+
+  if (error) {
+    if (isMissingDocumentTopicsTableError(error)) {
+      console.warn(
+        "document_topics table is not available yet; falling back to chunk-derived topics."
+      )
+      return topicsByDocumentId
+    }
+
+    throw new Error(`Failed to fetch document topics: ${error.message}`)
+  }
+
+  for (const topic of (topics ?? []) as TopicRow[]) {
+    const existing = topicsByDocumentId.get(topic.document_id) ?? []
+    existing.push(topic)
+    topicsByDocumentId.set(topic.document_id, existing)
+  }
+
+  return topicsByDocumentId
+}
+
 export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
   const supabase = createAdminClient()
 
@@ -186,11 +284,19 @@ export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
     return { documents: [], source: "supabase" }
   }
 
-  const chunksByDocumentId = await fetchChunksByDocumentIds(documentRows.map((doc) => doc.id))
+  const documentIds = documentRows.map((doc) => doc.id)
+  const [chunksByDocumentId, topicsByDocumentId] = await Promise.all([
+    fetchChunksByDocumentIds(documentIds),
+    fetchTopicsByDocumentIds(documentIds),
+  ])
 
   return {
     documents: documentRows.map((document) =>
-      mapDocumentToDetail(document, chunksByDocumentId.get(document.id) ?? [])
+      mapDocumentToDetail(
+        document,
+        chunksByDocumentId.get(document.id) ?? [],
+        topicsByDocumentId.get(document.id) ?? []
+      )
     ),
     source: "supabase",
   }
@@ -233,5 +339,11 @@ export async function getDocumentDetailById(
     throw new Error(`Failed to fetch document chunks: ${chunksError.message}`)
   }
 
-  return mapDocumentToDetail(document as DocumentRow, (chunks ?? []) as ChunkRow[])
+  const topicsByDocumentId = await fetchTopicsByDocumentIds([apiDocumentId])
+
+  return mapDocumentToDetail(
+    document as DocumentRow,
+    (chunks ?? []) as ChunkRow[],
+    topicsByDocumentId.get(apiDocumentId) ?? []
+  )
 }

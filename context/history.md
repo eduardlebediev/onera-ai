@@ -4,6 +4,33 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 32: AI Document Topic Extraction
+
+Added a separate AI topic extraction step after document upload processing, with durable storage in `document_topics`, chunk-topic fallback, and admin document detail UI.
+
+- Added `context/feature-specs/32-ai-document-topic-extraction.md`.
+- Added `supabase/migrations/00004_document_topics.sql` — `document_topics` table, indexes, and admin SELECT RLS policy.
+- Added `src/features/documents/schemas/document-topics-schema.ts` — Zod schemas and topic normalization helpers.
+- Added `src/features/documents/lib/extract-document-topics.ts` — structured AI topic extraction via Vercel AI SDK.
+- Added `src/features/documents/lib/persist-document-topics.ts` — best-effort AI persistence with chunk fallback.
+- Updated `src/features/documents/lib/upload-document.ts` — topic step after chunk insert, non-fatal on failure.
+- Updated `src/features/documents/lib/supabase-documents.ts` — load `document_topics` for list/detail mapping.
+- Updated `src/data/mock/documents.ts` — `DocumentTopic` type and optional `documentTopics` on detail model.
+- Updated `src/features/documents/components/document-detail.tsx` — AI-extracted topics section with description and confidence.
+- Extended `src/lib/supabase/types.ts` with `document_topics` table types.
+- Decision 046 recorded in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-Review Fix Pass
+
+- Kept Generate Test topic selection chunk-backed so AI document topic names do not break chunk matching.
+- Enforced 5–10 AI topics in structured output validation.
+- Filtered generic topic names from chunk fallback topics.
+- Added a temporary missing-table fallback for `document_topics` reads so existing document pages keep using chunk-derived topics until `00004_document_topics.sql` is applied.
+- Added `src/features/documents/lib/chunk-extracted-text-ai.ts` and wired AI chunking into upload ingestion with heuristic fallback.
+- Updated AI chunking prompt to reuse topic names across related chunks and cap distinct topics to 5–7.
+- Fixed corrupted `supabase-documents.ts` module structure after missing-table fallback patch.
+
 ## Feature Spec 31: Real Document Upload, Download Link and AI Text Extraction
 
 Added the first real admin document upload and ingestion pipeline with private Supabase Storage, one-time text extraction, chunking, embeddings, signed downloads, and admin UI integration.

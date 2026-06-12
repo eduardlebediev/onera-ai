@@ -461,6 +461,39 @@ export type Database = {
         }
         Relationships: []
       }
+      document_topics: {
+        Row: {
+          id: string
+          organization_id: string
+          document_id: string
+          topic: string
+          description: string | null
+          confidence: number | null
+          source: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          document_id: string
+          topic: string
+          description?: string | null
+          confidence?: number | null
+          source?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          document_id?: string
+          topic?: string
+          description?: string | null
+          confidence?: number | null
+          source?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {

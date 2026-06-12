@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-import type { DocumentStatus, MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentStatus, DocumentTopic, MockDocumentDetail } from "@/data/mock/documents"
 import { canGenerateTest } from "@/features/documents/components/generate-test-model"
 import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
 import { Badge } from "@/shared/ui/badge"
@@ -77,10 +77,31 @@ function formatDate(dateStr: string): string {
   })
 }
 
+function getDocumentTopics(document: MockDocumentDetail): DocumentTopic[] {
+  if (document.documentTopics && document.documentTopics.length > 0) {
+    return document.documentTopics
+  }
+
+  return document.topics.map((topic) => ({
+    topic,
+    description: null,
+    confidence: null,
+  }))
+}
+
+function formatConfidence(confidence: number | null | undefined): string | null {
+  if (typeof confidence !== "number" || !Number.isFinite(confidence)) {
+    return null
+  }
+
+  return `${Math.round(confidence * 100)}%`
+}
+
 export function DocumentDetail({ document }: DocumentDetailProps) {
   const statusConfig = STATUS_CONFIG[document.status]
   const isReady = canGenerateTest(document)
   const canDownload = document.canDownloadOriginal === true
+  const documentTopics = getDocumentTopics(document)
   const fileSizeLabel =
     document.fileSizeMb >= 1
       ? `${document.fileSizeMb.toFixed(1)} MB`
@@ -153,7 +174,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger>
-          <TabsTrigger value="topics">Topics ({document.topics.length})</TabsTrigger>
+          <TabsTrigger value="topics">Topics ({documentTopics.length})</TabsTrigger>
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="versions">Versions ({document.versions.length})</TabsTrigger>
         </TabsList>
@@ -240,7 +261,7 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
             <div className="space-y-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle>AI-Detected Topics</CardTitle>
+                  <CardTitle>AI-extracted topics</CardTitle>
                   <Button variant="outline" size="sm" className="h-7 text-xs" disabled>
                     <Pencil className="mr-1 size-3" />
                     Edit topics
@@ -248,27 +269,25 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4 text-sm text-muted-foreground">
-                    {document.topics.length > 0
-                      ? `${document.topics.length} topics identified`
-                      : "No topics detected yet"}
+                    {documentTopics.length > 0
+                      ? `${documentTopics.length} topics identified`
+                      : "No topics extracted yet."}
                   </div>
-                  {document.topics.length > 0 ? (
+                  {documentTopics.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {document.topics.map((topic, i) => (
+                      {documentTopics.map((topicItem, i) => (
                         <Badge
-                          key={topic}
+                          key={topicItem.id ?? topicItem.topic}
                           variant="secondary"
                           className={TOPIC_BADGE_COLORS[i % TOPIC_BADGE_COLORS.length]}
                         >
                           <div className="mr-1.5 size-1.5 rounded-full bg-current opacity-60" />
-                          {topic}
+                          {topicItem.topic}
                         </Badge>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Topics will appear here once processing completes.
-                    </p>
+                    <p className="text-xs text-muted-foreground">No topics extracted yet.</p>
                   )}
                 </CardContent>
               </Card>
@@ -379,40 +398,54 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
         <TabsContent value="topics">
           <Card>
             <CardHeader>
-              <CardTitle>All Detected Topics</CardTitle>
+              <CardTitle>AI-extracted topics</CardTitle>
               <CardDescription>
-                These topics were automatically extracted from the document content.
+                Key learning topics extracted from this document after processing.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {document.topics.length > 0 ? (
+              {documentTopics.length > 0 ? (
                 <div className="flex flex-col gap-4">
-                  {document.topics.map((topic, i) => {
-                    const topicChunks = document.chunks.filter((c) => c.topic === topic)
+                  {documentTopics.map((topicItem, i) => {
+                    const confidenceLabel = formatConfidence(topicItem.confidence)
+                    const topicChunks = document.chunks.filter((c) => c.topic === topicItem.topic)
+
                     return (
                       <div
-                        key={topic}
-                        className="flex items-center justify-between rounded-lg border border-border p-4"
+                        key={topicItem.id ?? topicItem.topic}
+                        className="rounded-lg border border-border p-4"
                       >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`size-2 rounded-full ${TOPIC_BADGE_COLORS[i % TOPIC_BADGE_COLORS.length].split(" ")[0].replace("bg-", "bg-").replace("-50", "-500")}`}
-                          />
-                          <span className="font-medium text-foreground">{topic}</span>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`mt-1.5 size-2 shrink-0 rounded-full ${TOPIC_BADGE_COLORS[i % TOPIC_BADGE_COLORS.length].split(" ")[0].replace("bg-", "bg-").replace("-50", "-500")}`}
+                            />
+                            <div className="space-y-1">
+                              <div className="font-medium text-foreground">{topicItem.topic}</div>
+                              {topicItem.description ? (
+                                <p className="text-sm text-muted-foreground">
+                                  {topicItem.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                            {confidenceLabel ? (
+                              <Badge variant="outline">Confidence {confidenceLabel}</Badge>
+                            ) : null}
+                            {topicChunks.length > 0 ? (
+                              <span>
+                                {topicChunks.length} chunk{topicChunks.length !== 1 ? "s" : ""}
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          {topicChunks.length > 0
-                            ? `${topicChunks.length} chunk${topicChunks.length !== 1 ? "s" : ""}`
-                            : "—"}
-                        </span>
                       </div>
                     )
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  No topics detected. Topics appear here after successful processing.
-                </p>
+                <p className="text-sm text-muted-foreground">No topics extracted yet.</p>
               )}
             </CardContent>
           </Card>

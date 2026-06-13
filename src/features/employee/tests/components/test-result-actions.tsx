@@ -29,12 +29,18 @@ export function TestResultActions({ testId, sourceDocumentId }: TestResultAction
           </Link>
         </Button>
 
-        <Button asChild variant="outline" className="w-full">
-          <Link href={`/employee/tests/${testId}/take`}>
+        <span className="block" title="Test already completed">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled
+            aria-label={`Retake ${testId} disabled: Test already completed`}
+          >
             <RotateCcw className="size-4" />
             Retake Test
-          </Link>
-        </Button>
+          </Button>
+        </span>
       </CardContent>
     </Card>
   )

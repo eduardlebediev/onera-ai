@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 39: Follow-up and Block Retake
+
 - Feature Spec 38: Review Page Supabase Backing
 
 - Feature Spec 37: Admin Dashboard Widgets from Supabase

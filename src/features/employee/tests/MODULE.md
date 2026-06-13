@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the employee-facing My Tests experience: assigned test list, progress summary, filters, test-taking flow, test result with mock AI feedback, and mock follow-up questions for weak topics.
+Owns the employee-facing My Tests experience: assigned test list, progress summary, filters, test-taking flow, test result with AI feedback, and AI-generated follow-up questions for weak topics.
 
 ## Contains
 
@@ -17,8 +17,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 - shared UI primitives
 - admin test management logic
 - real auth or assignment persistence
-- real AI feedback generation or persistence
-- real follow-up question generation or persistence
+- follow-up question persistence
 
 ## Conventions
 

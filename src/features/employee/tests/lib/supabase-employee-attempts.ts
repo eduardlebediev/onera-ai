@@ -16,7 +16,11 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
-import { getAssignmentForEmployee, isAssignmentTakeable } from "./supabase-employee-tests"
+import {
+  getAssignmentForEmployee,
+  isAssignmentFinished,
+  isAssignmentTakeable,
+} from "./supabase-employee-tests"
 
 export type StartAttemptResult = {
   attemptId: string
@@ -339,8 +343,12 @@ export async function startEmployeeTestAttempt(
   const assignment = await getAssignmentForEmployee(testId, userId, organizationId)
   if (!assignment) return null
 
-  if (!isAssignmentTakeable(assignment.status)) {
+  if (isAssignmentFinished(assignment.status)) {
     throw new StartAttemptError("Assignment is already completed", "assignment_finished")
+  }
+
+  if (!isAssignmentTakeable(assignment.status)) {
+    return null
   }
 
   const supabase = createAdminClient()
@@ -372,13 +380,32 @@ export async function startEmployeeTestAttempt(
   }
 
   if (assignment.status === "not_started") {
-    const { error: assignmentUpdateError } = await supabase
+    const { data: updatedAssignment, error: assignmentUpdateError } = await supabase
       .from("test_assignments")
       .update({ status: "in_progress" })
       .eq("id", assignment.id)
+      .eq("status", "not_started")
+      .select("id")
+      .maybeSingle()
 
     if (assignmentUpdateError) {
       throw new Error(`Failed to update assignment status: ${assignmentUpdateError.message}`)
+    }
+
+    if (!updatedAssignment) {
+      const latestAssignment = await getAssignmentForEmployee(testId, userId, organizationId)
+
+      if (!latestAssignment) {
+        return null
+      }
+
+      if (isAssignmentFinished(latestAssignment.status)) {
+        throw new StartAttemptError("Assignment is already completed", "assignment_finished")
+      }
+
+      if (!isAssignmentTakeable(latestAssignment.status)) {
+        return null
+      }
     }
   }
 
@@ -596,6 +623,7 @@ export async function submitEmployeeTestAttempt(input: {
       .from("test_assignments")
       .update({ status: assignmentStatus })
       .eq("id", attempt.assignment_id)
+      .in("status", ["not_started", "in_progress"])
 
     if (assignmentUpdateError) {
       throw new Error(`Failed to update assignment status: ${assignmentUpdateError.message}`)
@@ -733,6 +761,7 @@ export async function getPersistedEmployeeTestResult(
 
   return {
     id: testId,
+    attemptId: attempt.id,
     title: test.title,
     description: test.description ?? "",
     sourceDocument: sourceDocumentTitle,

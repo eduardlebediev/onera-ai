@@ -1,5 +1,9 @@
 # Decisions
 
+## 056 — Follow-up questions are generated on demand without persistence
+
+Employee result pages generate one single-choice follow-up question at click time for an incorrect saved answer. Generated follow-ups are Zod-validated and mapped to the existing result-page UI type, but are not written to `follow_up_questions` or `follow_up_answers` until a future persistence spec explicitly adds that behavior.
+
 ## 055 — Completed generation runs persist review-draft recovery data
 
 Completed AI generation runs store the validated draft, source document summaries, and retrieved chunk summaries in `ai_generation_runs.output_summary.review_draft`. Review and publish pages recover the latest `completed` run for a document when sessionStorage is unavailable; summary-only, failed, or pending runs fall back to visible demo data.

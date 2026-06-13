@@ -118,6 +118,10 @@ export function isAssignmentTakeable(status: string): boolean {
   return status === "not_started" || status === "in_progress"
 }
 
+export function isAssignmentFinished(status: string): boolean {
+  return status === "completed" || status === "failed"
+}
+
 async function getAssignmentForUserAndTest(
   userId: string,
   testId: string,
@@ -207,7 +211,13 @@ export async function getSupabaseEmployeeTakeableTest(
   organizationId: string
 ): Promise<SupabaseEmployeeTakeableTest | null> {
   const assignment = await getAssignmentForUserAndTest(userId, testId, organizationId)
-  if (!assignment || !isAssignmentTakeable(assignment.status)) return null
+  if (
+    !assignment ||
+    isAssignmentFinished(assignment.status) ||
+    !isAssignmentTakeable(assignment.status)
+  ) {
+    return null
+  }
 
   const test = await getTestRow(testId)
   if (!test || test.status !== "published" || test.organization_id !== organizationId) return null

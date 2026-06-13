@@ -1,31 +1,83 @@
 "use client"
 
 import { useState } from "react"
-import { CheckCircle2, Sparkles, XCircle } from "lucide-react"
+import { CheckCircle2, Loader2, Sparkles, XCircle } from "lucide-react"
 
 import { FollowUpQuestionCard } from "@/features/employee/tests/components/follow-up-question-card"
+import { generateFollowUpQuestionForAnswer } from "@/features/employee/tests/lib/follow-up-question-api-client"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
+import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
 
+type FollowUpGenerationState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; followUp: FollowUpQuestion }
+
 interface TestAnswerReviewProps {
   answerReview: AnswerReviewItem[]
+  testId: string
+  attemptId?: string
   sourceDocumentId: string
   onFollowUpComplete: (topic: string, isCorrect: boolean) => void
 }
 
 export function TestAnswerReview({
   answerReview,
+  testId,
+  attemptId,
   sourceDocumentId,
   onFollowUpComplete,
 }: TestAnswerReviewProps) {
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null)
+  const [followUpStateByQuestionId, setFollowUpStateByQuestionId] = useState<
+    Record<string, FollowUpGenerationState>
+  >({})
 
-  function toggleFollowUp(questionId: string) {
-    setExpandedQuestionId((current) => (current === questionId ? null : questionId))
+  async function handleFollowUpClick(item: AnswerReviewItem) {
+    const currentState = followUpStateByQuestionId[item.questionId]
+
+    if (currentState?.status === "ready") {
+      setExpandedQuestionId((current) => (current === item.questionId ? null : item.questionId))
+      return
+    }
+
+    if (!attemptId) {
+      setExpandedQuestionId(item.questionId)
+      setFollowUpStateByQuestionId((current) => ({
+        ...current,
+        [item.questionId]: { status: "error" },
+      }))
+      return
+    }
+
+    setExpandedQuestionId(item.questionId)
+    setFollowUpStateByQuestionId((current) => ({
+      ...current,
+      [item.questionId]: { status: "loading" },
+    }))
+
+    try {
+      const followUp = await generateFollowUpQuestionForAnswer(testId, {
+        attemptId,
+        questionId: item.questionId,
+      })
+
+      setFollowUpStateByQuestionId((current) => ({
+        ...current,
+        [item.questionId]: { status: "ready", followUp },
+      }))
+    } catch {
+      setFollowUpStateByQuestionId((current) => ({
+        ...current,
+        [item.questionId]: { status: "error" },
+      }))
+    }
   }
 
   return (
@@ -45,8 +97,9 @@ export function TestAnswerReview({
         <ul className="space-y-4">
           {answerReview.map((item, index) => {
             const StatusIcon = item.isCorrect ? CheckCircle2 : XCircle
-            const showFollowUp = !item.isCorrect && item.followUp
+            const showFollowUp = !item.isCorrect
             const isFollowUpExpanded = expandedQuestionId === item.questionId
+            const followUpState = followUpStateByQuestionId[item.questionId] ?? { status: "idle" }
 
             return (
               <li
@@ -105,21 +158,44 @@ export function TestAnswerReview({
 
                 {showFollowUp ? (
                   <div className="space-y-3 pt-1">
-                    {!isFollowUpExpanded ? (
+                    {!isFollowUpExpanded || followUpState.status === "idle" ? (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleFollowUp(item.questionId)}
+                        onClick={() => void handleFollowUpClick(item)}
                       >
                         <Sparkles className="size-4" />
                         Check understanding
                       </Button>
                     ) : null}
 
-                    {isFollowUpExpanded && item.followUp ? (
+                    {isFollowUpExpanded && followUpState.status === "loading" ? (
+                      <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-4 typography-small text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin text-primary" />
+                        Generating follow-up question...
+                      </div>
+                    ) : null}
+
+                    {isFollowUpExpanded && followUpState.status === "error" ? (
+                      <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                        <p className="typography-small text-destructive">
+                          Could not generate question. Try again.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleFollowUpClick(item)}
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {isFollowUpExpanded && followUpState.status === "ready" ? (
                       <FollowUpQuestionCard
-                        followUp={item.followUp}
+                        followUp={followUpState.followUp}
                         sourceDocumentId={sourceDocumentId}
                         onComplete={onFollowUpComplete}
                         onBackToResults={() => setExpandedQuestionId(null)}

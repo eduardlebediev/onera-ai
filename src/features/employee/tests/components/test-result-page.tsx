@@ -71,6 +71,8 @@ export function TestResultPage({ result }: TestResultPageProps) {
 
           <TestAnswerReview
             answerReview={result.answerReview}
+            testId={result.id}
+            attemptId={result.attemptId}
             sourceDocumentId={result.sourceDocumentId}
             onFollowUpComplete={handleFollowUpComplete}
           />

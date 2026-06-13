@@ -2,8 +2,6 @@ import {
   getEmployeeAssignedTestById,
   type EmployeeAssignedTest,
 } from "@/features/employee/tests/mock/employee-tests"
-import { getFollowUpQuestionByOriginalQuestionId } from "@/features/employee/tests/mock/follow-up-questions"
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
 import {
   getEmployeeTestAttemptByTestId,
   type ResultAiFeedbackRecord,
@@ -24,7 +22,6 @@ export interface AnswerReviewItem {
   explanation: string
   topic: string
   sourceChunkReference: string
-  followUp?: FollowUpQuestion
 }
 
 export type ResultWeakTopic = ResultWeakTopicRecord
@@ -33,6 +30,7 @@ export type ResultAiFeedback = ResultAiFeedbackRecord
 
 export interface EmployeeTestResult {
   id: string
+  attemptId?: string
   title: string
   description: string
   sourceDocument: string
@@ -53,7 +51,6 @@ export interface EmployeeTestResult {
 
 function buildAnswerReviewItem(question: TestQuestion, employeeAnswer: string): AnswerReviewItem {
   const isCorrect = employeeAnswer === question.correctAnswer
-  const followUp = isCorrect ? undefined : getFollowUpQuestionByOriginalQuestionId(question.id)
 
   return {
     questionId: question.id,
@@ -64,7 +61,6 @@ function buildAnswerReviewItem(question: TestQuestion, employeeAnswer: string): 
     explanation: question.explanation,
     topic: question.topic,
     sourceChunkReference: question.sourceChunkReference,
-    followUp: followUp ?? undefined,
   }
 }
 

@@ -4,6 +4,55 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 39: Follow-up and Block Retake
+
+**Branch:** `feature/39-follow-up-and-block-retake`
+
+Replaced preloaded mock follow-ups on the employee result page with on-demand AI-generated follow-up questions, and tightened Supabase-backed retake prevention for completed or failed assignments.
+
+### AI follow-up generation
+
+- Added `src/features/employee/tests/schemas/follow-up-question-schema.ts` — Zod schemas for generated follow-up requests and final `FollowUpQuestion`-shaped output.
+- Added `src/features/employee/tests/lib/generate-follow-up-question.ts` — server-only Vercel AI SDK helper using `@ai-sdk/openai`, `FOLLOW_UP_QUESTION_MODEL`, output validation, and bounded timeout.
+- Added `src/app/api/employee/tests/[id]/follow-up/route.ts` — employee-only API route that verifies the completed attempt, question ownership, organization scope, and incorrect saved answer before generating a follow-up without persistence.
+- Added `src/features/employee/tests/lib/follow-up-question-api-client.ts` — client helper with response validation and friendly retryable errors.
+
+### Result UI and retake blocking
+
+- Updated `src/features/employee/tests/components/test-answer-review.tsx` — incorrect answers now generate follow-ups on "Check understanding" click, with loading, retryable error, and existing follow-up card/feedback UI reuse.
+- Updated `src/features/employee/tests/lib/test-result-model.ts` and `src/features/employee/tests/lib/supabase-employee-attempts.ts` — removed mock follow-up attachment and threaded persisted `attemptId` into result UI.
+- Updated `src/features/employee/tests/components/test-result-actions.tsx` — result-page "Retake Test" is disabled with the tooltip "Test already completed".
+- Updated `src/features/employee/tests/lib/supabase-employee-tests.ts` and `src/features/employee/tests/lib/supabase-employee-attempts.ts` — completed/failed assignments are explicitly not takeable; start/submit assignment updates guard against status races and avoid changing already finished assignments.
+
+### Context and validation
+
+- Updated `.env.example`, `src/features/employee/tests/MODULE.md`, `context/progress-tracker.md`, and `context/decisions.md`.
+- Supabase schema verification confirmed the remote database has the existing columns used by the follow-up and retake guards.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass after implementation and after the review fix pass.
+
+### Post-review fixes
+
+- Classified generated follow-up post-validation failures as retryable generation failures instead of generic server errors.
+- Added guarded assignment status updates so completed or failed assignments are not changed during start/submit race conditions.
+
+### Files changed
+
+- `.env.example`
+- `src/app/api/employee/tests/[id]/follow-up/route.ts`
+- `src/features/employee/tests/schemas/follow-up-question-schema.ts`
+- `src/features/employee/tests/lib/generate-follow-up-question.ts`
+- `src/features/employee/tests/lib/follow-up-question-api-client.ts`
+- `src/features/employee/tests/components/test-answer-review.tsx`
+- `src/features/employee/tests/components/test-result-actions.tsx`
+- `src/features/employee/tests/components/test-result-page.tsx`
+- `src/features/employee/tests/lib/test-result-model.ts`
+- `src/features/employee/tests/lib/supabase-employee-tests.ts`
+- `src/features/employee/tests/lib/supabase-employee-attempts.ts`
+- `src/features/employee/tests/MODULE.md`
+- `context/progress-tracker.md`, `context/decisions.md`, `context/history.md`
+
+---
+
 ## Feature Spec 38: Review Page Supabase Backing
 
 **Branch:** `feature/38-review-page-supabase-backing`

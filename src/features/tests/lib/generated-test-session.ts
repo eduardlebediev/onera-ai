@@ -9,12 +9,15 @@ export const GENERATED_TEST_DRAFT_KEY = "ontera.generatedTestDraft"
 export function saveGeneratedTestDraft(response: GeneratedTestResponse): void {
   if (typeof window === "undefined") return
 
-  const reviewDocumentId = resolveReviewDocumentRouteId(response.document.id)
-  clearReviewSessionsForDocument(reviewDocumentId)
+  for (const document of response.documents) {
+    const reviewDocumentId = resolveReviewDocumentRouteId(document.id)
+    clearReviewSessionsForDocument(reviewDocumentId)
+  }
 
   const payload: StoredGeneratedTestDraft = {
     generationRunId: response.generationRunId,
     document: response.document,
+    documents: response.documents,
     draft: response.draft,
     retrievedChunks: response.retrievedChunks,
     createdAt: new Date().toISOString(),
@@ -55,4 +58,20 @@ export function clearGeneratedTestDraft(): void {
   } catch {
     // Ignore storage errors in demo mode
   }
+}
+
+export function draftMatchesDocumentContext(
+  stored: StoredGeneratedTestDraft,
+  documentId: string,
+  generationRunId?: string | null
+): boolean {
+  if (generationRunId && stored.generationRunId === generationRunId) {
+    return true
+  }
+
+  const normalizedDocumentIds = new Set(
+    stored.documents.map((document) => resolveReviewDocumentRouteId(document.id))
+  )
+
+  return normalizedDocumentIds.has(documentId)
 }

@@ -206,7 +206,20 @@ Fields:
 - created_at
 - updated_at
 
-MVP foundation uses `tests.source_document_id` for the primary source document. A separate `test_documents` join table is not part of the current backend schema.
+`tests.source_document_id` remains the primary/backward-compatible source reference (first selected document for multi-document tests). Multi-document tests also store all selected sources in `test_documents`.
+
+### test_documents
+
+Join table linking tests to one or more source documents.
+
+Fields:
+
+- test_id
+- document_id
+- organization_id
+- created_at
+
+Primary key: `(test_id, document_id)`. Existing single-document tests are backfilled from `tests.source_document_id`. When `test_documents` rows are missing, loaders fall back to `tests.source_document_id`.
 
 ### test_questions
 
@@ -362,12 +375,11 @@ text Selected document(s) → document chunks → semantic retrieval with pgvect
 1. AI-generated questions must stay in draft state until reviewed and published by an admin.
 2. Each document chunk must belong to one document.
 3. Document chunk embeddings are stored in document_chunks.embedding using Supabase pgvector.
-4. MVP tests reference a primary source document through `tests.source_document_id`.
-5. A question should reference source_chunk_id when generated from document context.
-6. Employees can only complete assigned tests.
-7. Test attempts must belong to one user, one test, and preferably one assignment.
-8. Completed attempts must not break if a test is edited later.
-9. AI output must be validated with Zod before being saved or shown as final.
-10. The MVP should prioritize one complete flow over many incomplete features.
-11. Teams are out of scope for MVP; test assignments are individual for now.
-12. Do not add integrations, payments, enterprise SSO, or advanced permissions before the core MVP works.
+4. Tests reference source documents through `tests.source_document_id` and, for multi-document tests, `test_documents`. Each generated question should reference `source_chunk_id` and `source_document_id` when grounded in document context.
+5. Employees can only complete assigned tests.
+6. Test attempts must belong to one user, one test, and preferably one assignment.
+7. Completed attempts must not break if a test is edited later.
+8. AI output must be validated with Zod before being saved or shown as final.
+9. The MVP should prioritize one complete flow over many incomplete features.
+10. Teams are out of scope for MVP; test assignments are individual for now.
+11. Do not add integrations, payments, enterprise SSO, or advanced permissions before the core MVP works.

@@ -14,6 +14,7 @@ export interface ReviewQuestion {
   explanation: string
   topic: string
   sourceChunkReference: string
+  sourceDocumentTitle?: string
   testedSkill: string
   pedagogicalGoal: string
   difficulty: ReviewDifficulty
@@ -31,6 +32,7 @@ export interface MockTestReviewData {
   passingScore: number
   selectedChunksCount: number
   selectedTopics: string[]
+  sourceDocuments?: Array<{ id: string; title: string }>
   questions: ReviewQuestion[]
 }
 

@@ -6,13 +6,15 @@ import type {
 
 export type RetrievedChunkForPrompt = {
   id: string
+  documentId: string
+  documentTitle: string
   title: string | null
   topic: string | null
   content: string
 }
 
 type BuildGenerateTestPromptInput = {
-  documentTitle: string
+  documents: Array<{ id: string; title: string }>
   questionCount: number
   difficulty: TestDifficulty
   language: TestLanguage
@@ -26,10 +28,14 @@ function formatLanguage(language: TestLanguage): string {
 }
 
 function formatChunk(chunk: RetrievedChunkForPrompt): string {
-  const lines = [`[Chunk ID: ${chunk.id}]`, `Title: ${chunk.title ?? "(untitled)"}`]
+  const lines = [
+    `[Document: ${chunk.documentTitle}]`,
+    `[Chunk ID: ${chunk.id}]`,
+    `Title: ${chunk.title ?? "(untitled)"}`,
+  ]
 
   if (chunk.topic) {
-    lines.push(`Topic: ${chunk.topic}`)
+    lines.push(`[Topic: ${chunk.topic}]`)
   }
 
   lines.push("Content:", chunk.content)
@@ -38,7 +44,7 @@ function formatChunk(chunk: RetrievedChunkForPrompt): string {
 }
 
 export function buildGenerateTestPrompt({
-  documentTitle,
+  documents,
   questionCount,
   difficulty,
   language,
@@ -48,6 +54,7 @@ export function buildGenerateTestPrompt({
 }: BuildGenerateTestPromptInput): string {
   const chunkBlocks = chunks.map(formatChunk).join("\n\n---\n\n")
   const supportedTypes = questionTypes.join(", ")
+  const documentTitles = documents.map((document) => document.title).join(", ")
 
   return [
     "You are an expert employee knowledge test author.",
@@ -72,7 +79,7 @@ export function buildGenerateTestPrompt({
     "- explanation must be at least 20 characters and grounded in the source chunk.",
     "",
     "Test settings:",
-    `- Document title: ${documentTitle}`,
+    `- Source documents: ${documentTitles}`,
     `- Target role: ${targetRole}`,
     `- Difficulty: ${difficulty}`,
     `- Language: ${formatLanguage(language)} (${language})`,
@@ -88,5 +95,5 @@ export function buildRetrievalQuery({
   difficulty,
   language,
 }: Pick<BuildGenerateTestPromptInput, "targetRole" | "difficulty" | "language">): string {
-  return `Generate employee knowledge test questions for ${targetRole} from this document. Difficulty: ${difficulty}. Language: ${language}.`
+  return `Generate employee knowledge test questions for ${targetRole} from these documents. Difficulty: ${difficulty}. Language: ${language}.`
 }

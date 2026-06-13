@@ -1,5 +1,6 @@
 import "server-only"
 
+import { getTestIdsLinkedToDocument } from "@/features/tests/lib/test-documents"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type SourceInvalidationMode = "archived" | "deleted"
@@ -38,20 +39,38 @@ export async function invalidateTestsForSourceDocument(input: {
   const supabase = createAdminClient()
   const config = TEST_INVALIDATION[input.mode]
   const now = new Date().toISOString()
+  const affectedTestIds = await getTestIdsLinkedToDocument(input.documentId)
 
-  const { error: testsError } = await supabase
-    .from("tests")
-    .update({
-      is_active: false,
-      source_validity: config.sourceValidity,
-      source_invalid_reason: config.sourceInvalidReason,
-      source_invalid_at: now,
-    })
-    .eq("organization_id", input.organizationId)
-    .eq("source_document_id", input.documentId)
+  if (affectedTestIds.length > 0) {
+    const { error: testsError } = await supabase
+      .from("tests")
+      .update({
+        is_active: false,
+        source_validity: config.sourceValidity,
+        source_invalid_reason: `${config.sourceInvalidReason}: ${input.documentId}`,
+        source_invalid_at: now,
+      })
+      .eq("organization_id", input.organizationId)
+      .in("id", affectedTestIds)
 
-  if (testsError) {
-    throw new Error(`Failed to invalidate dependent tests: ${testsError.message}`)
+    if (testsError) {
+      throw new Error(`Failed to invalidate dependent tests: ${testsError.message}`)
+    }
+  } else {
+    const { error: testsError } = await supabase
+      .from("tests")
+      .update({
+        is_active: false,
+        source_validity: config.sourceValidity,
+        source_invalid_reason: config.sourceInvalidReason,
+        source_invalid_at: now,
+      })
+      .eq("organization_id", input.organizationId)
+      .eq("source_document_id", input.documentId)
+
+    if (testsError) {
+      throw new Error(`Failed to invalidate dependent tests: ${testsError.message}`)
+    }
   }
 
   const questionUpdate = config.clearSourceChunkIds

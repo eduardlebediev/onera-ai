@@ -1,5 +1,6 @@
 import "server-only"
 
+import { getTestIdsLinkedToDocument } from "@/features/tests/lib/test-documents"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type AffectedDocumentVersionTest = {
@@ -21,12 +22,17 @@ export async function getAffectedTestsForDocumentVersion(input: {
   documentId: string
 }): Promise<AffectedDocumentVersionTest[]> {
   const supabase = createAdminClient()
+  const affectedTestIds = await getTestIdsLinkedToDocument(input.documentId)
+
+  if (affectedTestIds.length === 0) {
+    return []
+  }
 
   const { data, error } = await supabase
     .from("tests")
     .select("id, title, status, question_count")
     .eq("organization_id", input.organizationId)
-    .eq("source_document_id", input.documentId)
+    .in("id", affectedTestIds)
     .order("created_at", { ascending: false })
 
   if (error) {

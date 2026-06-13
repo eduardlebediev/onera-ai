@@ -398,7 +398,7 @@ export function ReviewQuestionDetail({
             </div>
 
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-foreground">Source Chunk</h4>
+              <h4 className="text-sm font-medium text-foreground">Source</h4>
               <p className="text-sm text-foreground">{question.sourceChunkReference}</p>
             </div>
 

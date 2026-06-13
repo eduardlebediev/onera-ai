@@ -6,6 +6,46 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 35: Multi-document Test Generation
+
+**Branch:** `feature/35-multi-document-test-generation`
+
+Added multi-document test generation, publish persistence, saved test detail source-document display, and source-invalidation compatibility while keeping single-document flows backward-compatible.
+
+### Database and types
+
+- Added `supabase/migrations/00007_multi_document_tests.sql` — `test_documents` join table, indexes, backfill from `tests.source_document_id`, and RLS policies for admin/employee reads.
+- Extended `src/lib/supabase/types.ts` with `test_documents` table types.
+- Applied migration `multi_document_tests` (`20260613100945`) to the remote Supabase project via MCP; backfill created 1 `test_documents` row from existing tests.
+
+### Server helpers and generation
+
+- Added server-only helpers: `selectable-documents.ts`, `source-document-validation.ts`, `test-documents.ts`, `multi-document-generation.ts`.
+- Updated generation schemas, multi-document retrieval, prompt grounding with document labels, and `POST /api/admin/generate-test` to accept `documentIds` (legacy `documentId` preserved).
+- Updated publish schema and `POST /api/admin/tests/publish-generated` to validate multi-document sources, insert `test_documents` rows, and set per-question `source_document_id` from chunk ownership.
+
+### Admin UI
+
+- Added `MultiDocumentSelector` and `DocumentTopicSelectionGroup` on the generate-test page; admins can select up to five ready latest documents with grouped topic/chunk selection.
+- Updated review/publish draft storage, source labels (`Document → Topic`), and saved test detail to show all source documents and per-question source labels.
+
+### Source invalidation compatibility
+
+- Extended `test-source-invalidation.ts`, `document-impact.ts`, and `document-affected-tests.ts` to resolve dependent tests through `test_documents` when a non-primary source is archived or deleted.
+
+### Post-review fixes
+
+- Tightened generated-test publish validation so a generation run must publish with the exact selected document set and every non-rejected generated question must keep a source chunk.
+- Locked the route document in the multi-document selector so it remains preselected as required by the spec.
+- Fixed generate-test selection availability by treating non-null Supabase vector values as embedded chunks and removing the global UI pointer-events block that prevented adding source documents while a selection warning was visible.
+- Simplified the multi-document selector with compact checkbox rows, a scrollable list (`max-h-[280px]`), and selected documents pinned to the top for easier review.
+
+### Context and validation
+
+- Added `context/feature-specs/35-multi-document-test-generation.md`.
+- Updated `context/architecture.md`; recorded decisions 052 and 053.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 34: Archive Document, Permanent Delete and Inactivate Dependent Tests
 
 **Branch:** `feature/34-archive-delete-document-and-inactivate-dependent-tests`

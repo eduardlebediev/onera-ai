@@ -8,6 +8,7 @@ import {
   formatAssignmentDeadline,
   formatAssignmentStatus,
 } from "@/features/tests/lib/assign-employees-model"
+import { TestSourceDocumentsSection } from "@/features/tests/components/test-source-documents-section"
 import {
   isSourceBlockingValidity,
   normalizeTestSourceValidity,
@@ -205,14 +206,10 @@ export function SavedTestDetailPage({
               <span className="font-medium">Target role:</span> {test.targetRole ?? "Not specified"}
             </p>
             <p>
-              <span className="font-medium">Source document:</span>{" "}
-              {test.sourceDocumentTitle ?? "Unknown document"}
-              {test.sourceDocumentVersionNumber ? (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · v{test.sourceDocumentVersionNumber}
-                </span>
-              ) : null}
+              <span className="font-medium">Source documents:</span>{" "}
+              {test.sourceDocuments.length > 0
+                ? test.sourceDocuments.map((document) => document.title).join(", ")
+                : (test.sourceDocumentTitle ?? "Unknown document")}
             </p>
             {test.publishedAt ? (
               <p className="md:col-span-2">
@@ -240,6 +237,16 @@ export function SavedTestDetailPage({
                       </span>
                     ) : null}
                   </CardTitle>
+                  {question.sourceLabel ? (
+                    <p className="mt-1 typography-small text-muted-foreground">
+                      Source: {question.sourceLabel}
+                    </p>
+                  ) : null}
+                  {!question.isActive ? (
+                    <p className="mt-1 typography-small text-amber-700">
+                      {question.sourceInvalidReason ?? "Question source is invalid."}
+                    </p>
+                  ) : null}
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <p className="font-medium">{question.questionText}</p>
@@ -271,6 +278,9 @@ export function SavedTestDetailPage({
         </div>
 
         <div className="space-y-2">
+          {test.sourceDocuments.length > 0 ? (
+            <TestSourceDocumentsSection sources={test.sourceDocuments} />
+          ) : null}
           {assignmentSummary ? (
             <TestAssignmentsSection
               assignments={assignmentSummary}

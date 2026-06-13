@@ -32,6 +32,8 @@ export const TARGET_ROLE_OPTIONS = [
   "HR team",
 ]
 
+export const MAX_SELECTABLE_DOCUMENTS = 5
+
 export function canGenerateTest(document: MockDocumentDetail): boolean {
   const hasEmbeddedChunks = document.hasEmbeddedChunks ?? document.chunks.length > 0
 

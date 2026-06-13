@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/u
 import { type GenerateTestSettings } from "./generate-test-model"
 
 interface GenerateTestSummaryProps {
-  document: MockDocumentDetail
+  selectedDocuments: MockDocumentDetail[]
   settings: GenerateTestSettings
   selectedTopicsCount: number
   selectedChunksCount: number
@@ -23,11 +23,16 @@ function toCapitalizedLabel(value: string): string {
 }
 
 export function GenerateTestSummary({
-  document,
+  selectedDocuments,
   settings,
   selectedTopicsCount,
   selectedChunksCount,
 }: GenerateTestSummaryProps) {
+  const totalChunks = selectedDocuments.reduce(
+    (count, document) => count + document.chunks.length,
+    0
+  )
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="border-b border-border/50 px-6 py-5">
@@ -58,6 +63,11 @@ export function GenerateTestSummary({
             value={settings.targetRole}
           />
           <SummaryRow
+            icon={<FileText className="size-4" />}
+            label="Selected Documents"
+            value={`${selectedDocuments.length} document${selectedDocuments.length === 1 ? "" : "s"}`}
+          />
+          <SummaryRow
             icon={<Tag className="size-4" />}
             label="Selected Topics"
             value={`${selectedTopicsCount} topics`}
@@ -65,7 +75,7 @@ export function GenerateTestSummary({
           <SummaryRow
             icon={<FileText className="size-4" />}
             label="Selected Chunks"
-            value={`${selectedChunksCount} of ${document.chunks.length} chunks`}
+            value={`${selectedChunksCount} of ${totalChunks} chunks`}
           />
           <SummaryRow
             icon={<Globe className="size-4" />}

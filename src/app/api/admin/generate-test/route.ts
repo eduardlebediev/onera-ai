@@ -5,17 +5,22 @@ import OpenAI from "openai"
 
 import { buildGenerateTestPrompt } from "@/features/tests/lib/generate-test-prompt"
 import { getLatestReadyDocumentVersionForDocument } from "@/features/documents/lib/document-versioning"
+import { validateGeneratedChunkReferences } from "@/features/tests/lib/multi-document-generation"
 import type { RetrievedChunk } from "@/features/tests/lib/retrieve-document-context"
 import {
   EMBEDDING_MODEL,
-  fetchDocumentById,
   InsufficientContextError,
-  retrieveDocumentContext,
+  retrieveMultiDocumentContext,
 } from "@/features/tests/lib/retrieve-document-context"
+import {
+  SourceDocumentValidationError,
+  validateSelectableDocumentsForGeneration,
+} from "@/features/tests/lib/source-document-validation"
 import {
   GeneratedTestDraftLlmSchema,
   GeneratedTestDraftSchema,
   GenerateTestRequestSchema,
+  normalizeGenerateTestDocumentIds,
   validateDraftAgainstRetrievedChunks,
 } from "@/features/tests/schemas/generated-test-schema"
 import type {
@@ -24,11 +29,7 @@ import type {
   TestDifficulty,
   TestLanguage,
 } from "@/features/tests/schemas/generated-test-schema"
-import {
-  AuthError,
-  requireAdminApiUser,
-  verifyDocumentInOrganization,
-} from "@/features/auth/lib/require-auth"
+import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -51,8 +52,16 @@ function normalizeGeneratedDraft(
   input: EffectiveGenerationSettings,
   retrievedChunks: RetrievedChunk[]
 ): GeneratedTestDraft {
-  const chunkTitleById = new Map(
-    retrievedChunks.map((chunk) => [chunk.id, chunk.title ?? "Untitled chunk"])
+  const chunkMetaById = new Map(
+    retrievedChunks.map((chunk) => [
+      chunk.id,
+      {
+        title: chunk.title ?? "Untitled chunk",
+        documentId: chunk.documentId,
+        documentTitle: input.documentsById.get(chunk.documentId)?.title ?? "Unknown document",
+        topic: chunk.topic,
+      },
+    ])
   )
 
   return {
@@ -64,14 +73,22 @@ function normalizeGeneratedDraft(
     language: input.language,
     targetRole: input.targetRole,
     passingScore: input.passingScore,
-    questions: generatedDraft.questions.map((question) => ({
-      ...question,
-      sourceChunkTitle: chunkTitleById.get(question.sourceChunkId) ?? question.sourceChunkTitle,
-    })),
+    questions: generatedDraft.questions.map((question) => {
+      const chunkMeta = chunkMetaById.get(question.sourceChunkId)
+
+      return {
+        ...question,
+        sourceChunkTitle: chunkMeta?.title ?? question.sourceChunkTitle,
+        sourceDocumentId: chunkMeta?.documentId ?? question.sourceDocumentId,
+        sourceDocumentTitle: chunkMeta?.documentTitle ?? question.sourceDocumentTitle,
+      }
+    }),
   }
 }
 
 type EffectiveGenerationSettings = {
+  documentIds: string[]
+  documentsById: Map<string, { id: string; title: string; organizationId: string }>
   questionCount: number
   difficulty: TestDifficulty
   language: TestLanguage
@@ -80,6 +97,8 @@ type EffectiveGenerationSettings = {
   questionTypes: QuestionType[]
   templateTestId?: string
   templateTitle?: string
+  selectedTopicIds?: string[]
+  selectedChunkIds?: string[]
 }
 
 type TemplateTestRow = {
@@ -156,6 +175,7 @@ export async function POST(request: Request) {
     }
 
     const input = parsedRequest.data
+    const normalizedDocumentIds = normalizeGenerateTestDocumentIds(input)
 
     if (!process.env.OPENAI_API_KEY) {
       return jsonError("Server configuration error", 500)
@@ -165,27 +185,29 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    let document = await fetchDocumentById(input.documentId)
+    let validatedDocuments
 
-    if (!document) {
-      return jsonError("Document not found", 404)
-    }
+    try {
+      validatedDocuments = await validateSelectableDocumentsForGeneration({
+        organizationId: admin.membership.organizationId,
+        documentIds: normalizedDocumentIds,
+      })
+    } catch (error) {
+      if (error instanceof SourceDocumentValidationError) {
+        return jsonError(error.message, 400)
+      }
 
-    const documentInOrg = await verifyDocumentInOrganization(
-      document.id,
-      admin.membership.organizationId
-    )
-
-    if (!documentInOrg) {
-      return jsonError("Forbidden", 403)
-    }
-
-    if (document.status === "archived" || document.status === "deleted") {
-      return jsonError("Archived or deleted documents cannot be used for test generation", 409)
+      throw error
     }
 
     const supabase = createAdminClient()
+    const documentsById = new Map(
+      validatedDocuments.documents.map((document) => [document.id, document])
+    )
+
     const effectiveSettings: EffectiveGenerationSettings = {
+      documentIds: validatedDocuments.documentIds,
+      documentsById,
       questionCount: input.questionCount,
       difficulty: input.difficulty,
       language: input.language,
@@ -193,6 +215,8 @@ export async function POST(request: Request) {
       passingScore: 70,
       questionTypes: input.questionTypes,
       templateTestId: input.templateTestId,
+      selectedTopicIds: input.selectedTopicIds,
+      selectedChunkIds: input.selectedChunkIds,
     }
 
     if (input.templateTestId) {
@@ -227,13 +251,15 @@ export async function POST(request: Request) {
         return jsonError("Latest source document version is not ready for generation", 422)
       }
 
-      document = {
-        id: latestVersion.id,
-        title: latestVersion.title,
-        organizationId: latestVersion.organization_id,
-        status: "ready",
-      }
+      const templateValidated = await validateSelectableDocumentsForGeneration({
+        organizationId: admin.membership.organizationId,
+        documentIds: [latestVersion.id],
+      })
 
+      effectiveSettings.documentIds = templateValidated.documentIds
+      effectiveSettings.documentsById = new Map(
+        templateValidated.documents.map((document) => [document.id, document])
+      )
       effectiveSettings.questionCount = clampQuestionCount(
         template.question_count,
         input.questionCount
@@ -245,22 +271,31 @@ export async function POST(request: Request) {
       effectiveSettings.templateTitle = template.title
     }
 
+    const primaryDocument = effectiveSettings.documentsById.get(effectiveSettings.documentIds[0])
+
+    if (!primaryDocument) {
+      return jsonError("Primary source document not found", 404)
+    }
+
     const { data: generationRun, error: createRunError } = await supabase
       .from("ai_generation_runs")
       .insert({
-        organization_id: document.organizationId,
-        document_id: document.id,
+        organization_id: primaryDocument.organizationId,
+        document_id: primaryDocument.id,
         status: "pending",
         model: GENERATION_MODEL,
         embedding_model: EMBEDDING_MODEL,
         input_config: {
+          documentIds: effectiveSettings.documentIds,
+          selectedTopicIds: effectiveSettings.selectedTopicIds ?? [],
+          selectedChunkIds: effectiveSettings.selectedChunkIds ?? [],
           questionCount: effectiveSettings.questionCount,
           difficulty: effectiveSettings.difficulty,
           language: effectiveSettings.language,
           targetRole: effectiveSettings.targetRole,
           questionTypes: effectiveSettings.questionTypes,
           templateTestId: effectiveSettings.templateTestId ?? null,
-        },
+        } satisfies Json,
         retrieved_chunk_ids: [],
         created_by: admin.userId,
       })
@@ -276,13 +311,27 @@ export async function POST(request: Request) {
     let context
 
     try {
-      context = await retrieveDocumentContext({
-        document,
+      context = await retrieveMultiDocumentContext({
+        documents: effectiveSettings.documentIds.map((documentId) => {
+          const document = effectiveSettings.documentsById.get(documentId)
+
+          if (!document) {
+            throw new InsufficientContextError(`Missing document metadata for ${documentId}`)
+          }
+
+          return {
+            id: document.id,
+            title: document.title,
+            organizationId: document.organizationId,
+          }
+        }),
         questionCount: effectiveSettings.questionCount,
         difficulty: effectiveSettings.difficulty,
         language: effectiveSettings.language,
         targetRole: effectiveSettings.targetRole,
         openai: openaiClient,
+        selectedChunkIds: effectiveSettings.selectedChunkIds,
+        selectedTopicIds: effectiveSettings.selectedTopicIds,
       })
     } catch (error) {
       if (error instanceof InsufficientContextError) {
@@ -294,6 +343,8 @@ export async function POST(request: Request) {
     }
 
     const retrievedChunkIds = context.chunks.map((chunk) => chunk.id)
+    const chunkDocumentById = new Map(context.chunks.map((chunk) => [chunk.id, chunk.documentId]))
+    const allowedDocumentIds = new Set(effectiveSettings.documentIds)
 
     const { error: updateChunksError } = await supabase
       .from("ai_generation_runs")
@@ -307,13 +358,21 @@ export async function POST(request: Request) {
     }
 
     const prompt = buildGenerateTestPrompt({
-      documentTitle: context.document.title,
+      documents: context.documents,
       questionCount: effectiveSettings.questionCount,
       difficulty: effectiveSettings.difficulty,
       language: effectiveSettings.language,
       targetRole: effectiveSettings.targetRole,
       questionTypes: effectiveSettings.questionTypes,
-      chunks: context.chunks,
+      chunks: context.chunks.map((chunk) => ({
+        id: chunk.id,
+        documentId: chunk.documentId,
+        documentTitle:
+          effectiveSettings.documentsById.get(chunk.documentId)?.title ?? "Unknown document",
+        title: chunk.title,
+        topic: chunk.topic,
+        content: chunk.content,
+      })),
     })
 
     let generatedDraft
@@ -355,11 +414,20 @@ export async function POST(request: Request) {
     }
 
     const retrievedChunkIdSet = new Set(retrievedChunkIds)
-    const chunkValidationError = validateDraftAgainstRetrievedChunks(
-      validatedDraft.data,
-      retrievedChunkIdSet,
-      effectiveSettings.questionCount
-    )
+    const chunkValidationError =
+      validateDraftAgainstRetrievedChunks(
+        validatedDraft.data,
+        retrievedChunkIdSet,
+        effectiveSettings.questionCount,
+        chunkDocumentById,
+        allowedDocumentIds
+      ) ??
+      validateGeneratedChunkReferences({
+        chunkIds: validatedDraft.data.questions.map((question) => question.sourceChunkId),
+        allowedChunkIds: retrievedChunkIdSet,
+        allowedDocumentIds,
+        chunkDocumentById,
+      })
 
     if (chunkValidationError) {
       await markGenerationRunFailed(generationRunId, chunkValidationError)
@@ -376,6 +444,7 @@ export async function POST(request: Request) {
           question_count: validatedDraft.data.questions.length,
           topics,
           source_chunk_count: retrievedChunkIds.length,
+          document_ids: effectiveSettings.documentIds,
         } satisfies Json,
         completed_at: new Date().toISOString(),
       })
@@ -385,15 +454,26 @@ export async function POST(request: Request) {
       throw new Error(`Failed to complete ai_generation_runs row: ${completeRunError.message}`)
     }
 
+    const responseDocuments = effectiveSettings.documentIds.flatMap((documentId) => {
+      const document = effectiveSettings.documentsById.get(documentId)
+
+      if (!document) {
+        return []
+      }
+
+      return [{ id: document.id, title: document.title }]
+    })
+
     return NextResponse.json({
       generationRunId,
-      document: {
-        id: context.document.id,
-        title: context.document.title,
-      },
+      document: responseDocuments[0],
+      documents: responseDocuments,
       draft: validatedDraft.data,
       retrievedChunks: context.chunks.map((chunk) => ({
         id: chunk.id,
+        documentId: chunk.documentId,
+        documentTitle:
+          effectiveSettings.documentsById.get(chunk.documentId)?.title ?? "Unknown document",
         title: chunk.title,
         topic: chunk.topic,
         similarity: chunk.similarity,
@@ -402,6 +482,10 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof AuthError) {
       return jsonError(error.message, error.status)
+    }
+
+    if (error instanceof SourceDocumentValidationError) {
+      return jsonError(error.message, 400)
     }
 
     const message = error instanceof Error ? error.message : "Unexpected server error"

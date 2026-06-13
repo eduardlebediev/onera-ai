@@ -1,5 +1,13 @@
 # Decisions
 
+## 053 — Multi-document tests use question-level source tracking
+
+In multi-document tests, each question tracks its source through `source_chunk_id` and `source_document_id`. If one source document becomes archived or deleted, only questions linked to that document are marked source-invalid, while the test becomes inactive until admin review. Valid questions from other documents remain stored for future repair flows.
+
+## 052 — Tests support multiple source documents through test_documents
+
+Tests keep `tests.source_document_id` for backward compatibility, but new generated tests can reference multiple source documents through `test_documents`. Generated questions remain grounded through `source_chunk_id`, and publish validation ensures every approved question references a chunk from one of the selected documents.
+
 ## 051 — Supabase loaders tolerate unreleased migration schema drift
 
 When new Supabase columns are added in a migration that may not yet be applied to every target database, read paths must not hard-fail on missing columns. Document and test loaders attempt the full post-migration select first, then fall back to a legacy select and normalize new fields to safe defaults. Write paths that require the new schema (archive, delete, source invalidation) return a migration-required error instead of a generic server failure, and the UI disables those actions when archive/delete metadata is unavailable.

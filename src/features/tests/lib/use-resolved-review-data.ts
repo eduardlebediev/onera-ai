@@ -4,7 +4,10 @@ import { useSyncExternalStore } from "react"
 
 import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { mapStoredDraftToReviewData } from "@/features/tests/lib/generated-test-mapper"
-import { loadGeneratedTestDraft } from "@/features/tests/lib/generated-test-session"
+import {
+  draftMatchesDocumentContext,
+  loadGeneratedTestDraft,
+} from "@/features/tests/lib/generated-test-session"
 import { mergeReviewSession } from "@/features/tests/lib/review-session"
 import type {
   MockTestReviewData,
@@ -75,12 +78,13 @@ function buildClientCacheKey(
 
 function buildResolvedState(
   documentId: string,
-  fallbackReviewData: MockTestReviewData
+  fallbackReviewData: MockTestReviewData,
+  generationRunId?: string | null
 ): ResolvedReviewState {
   const stored = loadGeneratedTestDraft()
   const apiDocumentId = resolveApiDocumentId(documentId) ?? documentId
 
-  if (stored && stored.document.id === apiDocumentId) {
+  if (stored && draftMatchesDocumentContext(stored, apiDocumentId, generationRunId)) {
     const mappedReviewData = mapStoredDraftToReviewData(stored)
     const runId = stored.generationRunId
     const mergedQuestions = mergeReviewSession(documentId, mappedReviewData.questions, runId)
@@ -123,11 +127,12 @@ function buildResolvedState(
 
 export function useResolvedReviewData(
   documentId: string,
-  fallbackReviewData: MockTestReviewData
+  fallbackReviewData: MockTestReviewData,
+  generationRunId?: string | null
 ): ResolvedReviewState {
   return useSyncExternalStore(
     () => () => {},
-    () => buildResolvedState(documentId, fallbackReviewData),
+    () => buildResolvedState(documentId, fallbackReviewData, generationRunId),
     () => getServerState(documentId, fallbackReviewData)
   )
 }

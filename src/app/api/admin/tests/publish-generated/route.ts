@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server"
 
-import { fetchDocumentById } from "@/features/tests/lib/retrieve-document-context"
+import { insertTestDocuments } from "@/features/tests/lib/test-documents"
 import {
+  SourceDocumentValidationError,
+  validateSelectableDocumentsForGeneration,
+  validateSourceChunkIdsForDocuments,
+} from "@/features/tests/lib/source-document-validation"
+import {
+  normalizePublishDocumentIds,
   PublishGeneratedTestRequestSchema,
   type PublishGeneratedQuestion,
 } from "@/features/tests/schemas/publish-generated-test-schema"
-import {
-  AuthError,
-  requireAdminApiUser,
-  verifyDocumentInOrganization,
-} from "@/features/auth/lib/require-auth"
+import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -23,63 +25,58 @@ function filterSaveableQuestions(
   return questions.filter((question) => question.reviewStatus !== "rejected")
 }
 
-async function validateSourceChunkIds(
-  documentId: string,
-  organizationId: string,
-  questions: PublishGeneratedQuestion[]
-): Promise<string | null> {
-  const chunkIds = [
-    ...new Set(
-      questions
-        .map((question) => question.sourceChunkId)
-        .filter((chunkId): chunkId is string => Boolean(chunkId))
-    ),
-  ]
+function hasExactSameIds(left: string[], right: string[]): boolean {
+  const leftIds = new Set(left)
+  const rightIds = new Set(right)
 
-  if (chunkIds.length === 0) {
-    return null
+  if (leftIds.size !== rightIds.size) {
+    return false
   }
 
-  const supabase = createAdminClient()
-
-  const { data: chunks, error } = await supabase
-    .from("document_chunks")
-    .select("id")
-    .eq("document_id", documentId)
-    .eq("organization_id", organizationId)
-    .in("id", chunkIds)
-
-  if (error) {
-    throw new Error(`Failed to validate source chunks: ${error.message}`)
+  for (const id of leftIds) {
+    if (!rightIds.has(id)) {
+      return false
+    }
   }
 
-  const validChunkIds = new Set((chunks ?? []).map((chunk) => chunk.id))
-  const invalidChunkId = chunkIds.find((chunkId) => !validChunkIds.has(chunkId))
-
-  if (invalidChunkId) {
-    return `Invalid source chunk reference "${invalidChunkId}"`
-  }
-
-  return null
+  return true
 }
 
 async function fetchValidatedGenerationRun(
   generationRunId: string,
-  documentId: string,
+  documentIds: string[],
   organizationId: string
 ): Promise<{ output_summary: Json } | null> {
   const supabase = createAdminClient()
 
   const { data: generationRun, error } = await supabase
     .from("ai_generation_runs")
-    .select("output_summary")
+    .select("output_summary, input_config")
     .eq("id", generationRunId)
-    .eq("document_id", documentId)
     .eq("organization_id", organizationId)
     .maybeSingle()
 
   if (error) {
     throw new Error(`Failed to validate generation run: ${error.message}`)
+  }
+
+  if (!generationRun) {
+    return null
+  }
+
+  const inputConfig =
+    generationRun.input_config &&
+    typeof generationRun.input_config === "object" &&
+    !Array.isArray(generationRun.input_config)
+      ? (generationRun.input_config as Record<string, Json | undefined>)
+      : {}
+
+  const runDocumentIds = Array.isArray(inputConfig.documentIds)
+    ? inputConfig.documentIds.filter((value): value is string => typeof value === "string")
+    : []
+
+  if (runDocumentIds.length > 0 && !hasExactSameIds(documentIds, runDocumentIds)) {
+    return null
   }
 
   return generationRun
@@ -105,39 +102,50 @@ export async function POST(request: Request) {
     }
 
     const input = parsedRequest.data
+    const documentIds = normalizePublishDocumentIds(input)
     const saveableQuestions = filterSaveableQuestions(input.questions)
 
     if (saveableQuestions.length === 0) {
       return jsonError("At least one approved question is required", 400)
     }
 
-    const document = await fetchDocumentById(input.documentId)
+    let validatedDocuments
 
-    if (!document) {
-      return jsonError("Document not found", 404)
+    try {
+      validatedDocuments = await validateSelectableDocumentsForGeneration({
+        organizationId: admin.membership.organizationId,
+        documentIds,
+      })
+    } catch (error) {
+      if (error instanceof SourceDocumentValidationError) {
+        return jsonError(error.message, 400)
+      }
+
+      throw error
     }
 
-    const documentInOrg = await verifyDocumentInOrganization(
-      document.id,
-      admin.membership.organizationId
-    )
+    const primaryDocument = validatedDocuments.documents[0]
 
-    if (!documentInOrg) {
-      return jsonError("Forbidden", 403)
+    if (!primaryDocument) {
+      return jsonError("Primary source document not found", 404)
     }
 
-    if (document.status === "archived" || document.status === "deleted") {
-      return jsonError("Archived or deleted documents cannot be used to publish tests", 409)
-    }
+    let chunkDocumentById: Map<string, string>
 
-    const sourceChunkError = await validateSourceChunkIds(
-      document.id,
-      document.organizationId,
-      saveableQuestions
-    )
+    try {
+      chunkDocumentById = await validateSourceChunkIdsForDocuments({
+        organizationId: admin.membership.organizationId,
+        documentIds: validatedDocuments.documentIds,
+        chunkIds: saveableQuestions
+          .map((question) => question.sourceChunkId)
+          .filter((chunkId): chunkId is string => Boolean(chunkId)),
+      })
+    } catch (error) {
+      if (error instanceof SourceDocumentValidationError) {
+        return jsonError(error.message, 422)
+      }
 
-    if (sourceChunkError) {
-      return jsonError(sourceChunkError, 422)
+      throw error
     }
 
     let generationRunSummary: Json | null = null
@@ -145,12 +153,12 @@ export async function POST(request: Request) {
     if (input.generationRunId) {
       const generationRun = await fetchValidatedGenerationRun(
         input.generationRunId,
-        document.id,
-        document.organizationId
+        validatedDocuments.documentIds,
+        admin.membership.organizationId
       )
 
       if (!generationRun) {
-        return jsonError("Invalid generation run for this document", 422)
+        return jsonError("Invalid generation run for selected documents", 422)
       }
 
       generationRunSummary = generationRun.output_summary
@@ -159,12 +167,11 @@ export async function POST(request: Request) {
     const supabase = createAdminClient()
     const publishedAt = new Date().toISOString()
 
-    // TODO: Replace with DB transaction/RPC before production.
     const { data: savedTest, error: insertTestError } = await supabase
       .from("tests")
       .insert({
-        organization_id: document.organizationId,
-        source_document_id: document.id,
+        organization_id: primaryDocument.organizationId,
+        source_document_id: primaryDocument.id,
         title: input.title,
         description: input.description ?? null,
         status: "published",
@@ -186,11 +193,27 @@ export async function POST(request: Request) {
       return jsonError("Failed to save generated test", 500)
     }
 
+    try {
+      await insertTestDocuments({
+        testId: savedTest.id,
+        organizationId: primaryDocument.organizationId,
+        documentIds: validatedDocuments.documentIds,
+      })
+    } catch (error) {
+      console.error("Failed to insert test_documents:", error)
+      return jsonError(
+        error instanceof Error ? error.message : "Failed to save test source documents",
+        500
+      )
+    }
+
     const questionRows = saveableQuestions.map((question, index) => ({
-      organization_id: document.organizationId,
+      organization_id: primaryDocument.organizationId,
       test_id: savedTest.id,
       source_chunk_id: question.sourceChunkId ?? null,
-      source_document_id: document.id,
+      source_document_id: question.sourceChunkId
+        ? (chunkDocumentById.get(question.sourceChunkId) ?? null)
+        : null,
       is_active: true,
       source_status: "valid",
       question_text: question.questionText,
@@ -229,11 +252,11 @@ export async function POST(request: Request) {
             saved_test_id: savedTest.id,
             saved_question_count: saveableQuestions.length,
             published_at: publishedAt,
+            document_ids: validatedDocuments.documentIds,
           } satisfies Json,
         })
         .eq("id", input.generationRunId)
-        .eq("document_id", document.id)
-        .eq("organization_id", document.organizationId)
+        .eq("organization_id", admin.membership.organizationId)
 
       if (updateRunError) {
         console.warn("Failed to update ai_generation_runs.test_id:", updateRunError.message)
@@ -248,6 +271,10 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof AuthError) {
       return jsonError(error.message, error.status)
+    }
+
+    if (error instanceof SourceDocumentValidationError) {
+      return jsonError(error.message, 400)
     }
 
     console.error("Publish generated test API error:", error)

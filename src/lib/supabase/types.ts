@@ -329,6 +329,27 @@ export type Database = {
         }
         Relationships: []
       }
+      test_documents: {
+        Row: {
+          test_id: string
+          document_id: string
+          organization_id: string
+          created_at: string
+        }
+        Insert: {
+          test_id: string
+          document_id: string
+          organization_id: string
+          created_at?: string
+        }
+        Update: {
+          test_id?: string
+          document_id?: string
+          organization_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       test_questions: {
         Row: {
           id: string

@@ -7,11 +7,11 @@ import { PublishTestPage } from "@/features/tests/components/publish-test-page"
 import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
 
 interface PublishTestRouteProps {
-  searchParams: Promise<{ documentId?: string }>
+  searchParams: Promise<{ documentId?: string; runId?: string }>
 }
 
 export default async function PublishTestRoute({ searchParams }: PublishTestRouteProps) {
-  const { documentId } = await searchParams
+  const { documentId, runId } = await searchParams
   const defaultDocument =
     mockDocuments.find((document) => document.chunks.length > 0) ?? mockDocuments[0]
   const sourceDocument =
@@ -24,6 +24,7 @@ export default async function PublishTestRoute({ searchParams }: PublishTestRout
       document={sourceDocument}
       reviewData={reviewData}
       documentId={reviewDocumentId}
+      generationRunId={runId ?? null}
     />
   )
 }

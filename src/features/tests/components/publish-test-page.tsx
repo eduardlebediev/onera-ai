@@ -38,12 +38,14 @@ interface PublishTestPageProps {
   document: MockDocumentDetail
   reviewData: MockTestReviewData
   documentId: string
+  generationRunId?: string | null
 }
 
 export function PublishTestPage({
   document,
   reviewData: initialReviewData,
   documentId,
+  generationRunId: routeGenerationRunId,
 }: PublishTestPageProps) {
   const router = useRouter()
   const [published, setPublished] = useState(false)
@@ -57,7 +59,7 @@ export function PublishTestPage({
     questions,
     isAiDraft,
     isHydrated,
-  } = useResolvedReviewData(documentId, initialReviewData)
+  } = useResolvedReviewData(documentId, initialReviewData, routeGenerationRunId)
 
   const reviewData = useMemo(
     () => ({

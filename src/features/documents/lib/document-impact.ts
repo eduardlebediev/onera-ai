@@ -1,5 +1,6 @@
 import "server-only"
 
+import { getTestIdsLinkedToDocument } from "@/features/tests/lib/test-documents"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type DocumentImpactSummary = {
@@ -47,12 +48,24 @@ export async function getDocumentImpactSummary(input: {
   documentId: string
 }): Promise<DocumentImpactSummary> {
   const supabase = createAdminClient()
+  const affectedTestIds = await getTestIdsLinkedToDocument(input.documentId)
+
+  if (affectedTestIds.length === 0) {
+    return {
+      documentId: input.documentId,
+      affectedTestCount: 0,
+      affectedQuestionCount: 0,
+      activeAssignmentCount: 0,
+      completedAttemptCount: 0,
+      affectedTests: [],
+    }
+  }
 
   const { data: tests, error: testsError } = await supabase
     .from("tests")
     .select("id, title, status, source_validity")
     .eq("organization_id", input.organizationId)
-    .eq("source_document_id", input.documentId)
+    .in("id", affectedTestIds)
 
   if (testsError) {
     throw new Error(`Failed to fetch affected tests: ${testsError.message}`)

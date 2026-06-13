@@ -102,7 +102,8 @@ export const PublishGeneratedQuestionSchema = z
 export const PublishGeneratedTestRequestSchema = z
   .object({
     generationRunId: z.string().uuid().optional(),
-    documentId: z.string().uuid("documentId must be a valid UUID"),
+    documentId: z.string().uuid("documentId must be a valid UUID").optional(),
+    documentIds: z.array(z.string().uuid()).min(1).max(5).optional(),
     title: z.string().trim().min(3),
     description: z.string().optional(),
     difficulty: TestDifficultySchema,
@@ -112,6 +113,17 @@ export const PublishGeneratedTestRequestSchema = z
     questions: z.array(PublishGeneratedQuestionSchema).min(1),
   })
   .superRefine((input, ctx) => {
+    const hasDocumentId = Boolean(input.documentId)
+    const hasDocumentIds = Boolean(input.documentIds && input.documentIds.length > 0)
+
+    if (!hasDocumentId && !hasDocumentIds) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Either documentId or documentIds is required",
+        path: ["documentIds"],
+      })
+    }
+
     const saveableQuestions = input.questions.filter(
       (question) => question.reviewStatus !== "rejected"
     )
@@ -123,6 +135,16 @@ export const PublishGeneratedTestRequestSchema = z
         path: ["questions"],
       })
     }
+
+    saveableQuestions.forEach((question, index) => {
+      if (!question.sourceChunkId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Approved generated questions must include a source chunk",
+          path: ["questions", index, "sourceChunkId"],
+        })
+      }
+    })
 
     const hasApproved = saveableQuestions.some(
       (question) => question.reviewStatus === "approved" || !question.reviewStatus
@@ -146,3 +168,18 @@ export const PublishGeneratedTestResponseSchema = z.object({
 export type PublishGeneratedTestRequest = z.infer<typeof PublishGeneratedTestRequestSchema>
 export type PublishGeneratedQuestion = z.infer<typeof PublishGeneratedQuestionSchema>
 export type PublishGeneratedTestResponse = z.infer<typeof PublishGeneratedTestResponseSchema>
+
+export function normalizePublishDocumentIds(input: {
+  documentId?: string
+  documentIds?: string[]
+}): string[] {
+  if (input.documentIds && input.documentIds.length > 0) {
+    return [...new Set(input.documentIds)]
+  }
+
+  if (input.documentId) {
+    return [input.documentId]
+  }
+
+  return []
+}

@@ -24,6 +24,7 @@ interface TestReviewPageProps {
   sourceDocumentStatus: DocumentStatus
   reviewData: MockTestReviewData
   documentId: string
+  generationRunId?: string | null
 }
 
 function countByStatus(questions: ReviewQuestion[], status: ReviewStatus): number {
@@ -35,6 +36,7 @@ export function TestReviewPage({
   sourceDocumentStatus,
   reviewData: fallbackReviewData,
   documentId,
+  generationRunId: routeGenerationRunId,
 }: TestReviewPageProps) {
   const {
     reviewData,
@@ -42,7 +44,7 @@ export function TestReviewPage({
     isAiDraft,
     generationRunId,
     isHydrated,
-  } = useResolvedReviewData(documentId, fallbackReviewData)
+  } = useResolvedReviewData(documentId, fallbackReviewData, routeGenerationRunId)
 
   const [questionsOverride, setQuestionsOverride] = useState<ReviewQuestion[] | null>(null)
   const questions = questionsOverride ?? resolvedQuestions
@@ -158,10 +160,21 @@ export function TestReviewPage({
             </div>
 
             <div className="flex flex-wrap items-center gap-4 pt-1">
-              <div className="flex items-center gap-2">
-                <FileText className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{sourceDocumentTitle}</span>
-              </div>
+              {reviewData.sourceDocuments && reviewData.sourceDocuments.length > 1 ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <FileText className="size-4 text-muted-foreground" />
+                  {reviewData.sourceDocuments.map((sourceDocument) => (
+                    <Badge key={sourceDocument.id} variant="secondary" className="font-normal">
+                      {sourceDocument.title}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">{sourceDocumentTitle}</span>
+                </div>
+              )}
               <Badge variant="outline" className={`font-normal ${statusBadge.badgeClass}`}>
                 <span className={`mr-1.5 flex size-1.5 rounded-full ${statusBadge.dotClass}`} />
                 {statusBadge.label}

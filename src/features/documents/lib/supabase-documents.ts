@@ -52,7 +52,7 @@ type ChunkRow = {
   title: string | null
   topic: string | null
   content: string
-  embedding: number[] | null
+  embedding: unknown | null
 }
 
 type TopicRow = {
@@ -191,6 +191,18 @@ function deriveTopics(chunks: DocumentChunk[]): string[] {
   return Array.from(new Set(chunks.map((chunk) => chunk.topic).filter((topic) => topic.length > 0)))
 }
 
+function hasStoredEmbedding(embedding: unknown | null): boolean {
+  if (Array.isArray(embedding)) {
+    return embedding.length > 0
+  }
+
+  if (typeof embedding === "string") {
+    return embedding.trim().length > 0
+  }
+
+  return embedding !== null && embedding !== undefined
+}
+
 function mapChunkRows(rows: ChunkRow[]): { chunks: DocumentChunk[]; hasEmbeddedChunks: boolean } {
   const chunks = rows.map((row) => ({
     id: row.id,
@@ -200,7 +212,7 @@ function mapChunkRows(rows: ChunkRow[]): { chunks: DocumentChunk[]; hasEmbeddedC
   }))
 
   const hasEmbeddedChunks =
-    rows.length > 0 && rows.every((row) => Array.isArray(row.embedding) && row.embedding.length > 0)
+    rows.length > 0 && rows.every((row) => hasStoredEmbedding(row.embedding))
 
   return { chunks, hasEmbeddedChunks }
 }

@@ -4,9 +4,10 @@ export const TestDifficultySchema = z.enum(["easy", "medium", "hard"])
 export const TestLanguageSchema = z.enum(["en", "de"])
 export const QuestionTypeSchema = z.enum(["single_choice", "multiple_choice", "true_false"])
 
-export const GenerateTestRequestSchema = z.object({
-  documentId: z.string().uuid("documentId must be a valid UUID"),
+const BaseGenerateTestRequestSchema = z.object({
   templateTestId: z.string().uuid("templateTestId must be a valid UUID").optional(),
+  selectedTopicIds: z.array(z.string().uuid()).optional(),
+  selectedChunkIds: z.array(z.string().uuid()).optional(),
   questionCount: z.number().int().min(3).max(10).default(5),
   difficulty: TestDifficultySchema.default("medium"),
   language: TestLanguageSchema.default("en"),
@@ -15,6 +16,22 @@ export const GenerateTestRequestSchema = z.object({
     .array(QuestionTypeSchema)
     .min(1)
     .default(["single_choice", "multiple_choice", "true_false"]),
+})
+
+export const GenerateTestRequestSchema = BaseGenerateTestRequestSchema.extend({
+  documentId: z.string().uuid("documentId must be a valid UUID").optional(),
+  documentIds: z.array(z.string().uuid()).min(1).max(5).optional(),
+}).superRefine((input, ctx) => {
+  const hasDocumentId = Boolean(input.documentId)
+  const hasDocumentIds = Boolean(input.documentIds && input.documentIds.length > 0)
+
+  if (!hasDocumentId && !hasDocumentIds) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Either documentId or documentIds is required",
+      path: ["documentIds"],
+    })
+  }
 })
 
 export type GenerateTestRequest = z.infer<typeof GenerateTestRequestSchema>
@@ -43,6 +60,8 @@ export const GeneratedTestQuestionSchema = z
     difficulty: TestDifficultySchema,
     sourceChunkId: z.string().uuid(),
     sourceChunkTitle: z.string().min(1),
+    sourceDocumentId: z.string().uuid().optional(),
+    sourceDocumentTitle: z.string().min(1).optional(),
   })
   .superRefine((question, ctx) => {
     const optionIds = new Set(question.options.map((option) => option.id))
@@ -150,17 +169,22 @@ export const GeneratedTestDraftLlmSchema = z.object({
 
 export const RetrievedChunkSummarySchema = z.object({
   id: z.string().uuid(),
+  documentId: z.string().uuid(),
+  documentTitle: z.string(),
   title: z.string().nullable(),
   topic: z.string().nullable(),
   similarity: z.number(),
 })
 
+export const GeneratedTestDocumentSummarySchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+})
+
 export const GeneratedTestResponseSchema = z.object({
   generationRunId: z.string().uuid(),
-  document: z.object({
-    id: z.string().uuid(),
-    title: z.string(),
-  }),
+  document: GeneratedTestDocumentSummarySchema,
+  documents: z.array(GeneratedTestDocumentSummarySchema).min(1),
   draft: GeneratedTestDraftSchema,
   retrievedChunks: z.array(RetrievedChunkSummarySchema),
 })
@@ -176,7 +200,9 @@ export type StoredGeneratedTestDraftValidated = z.infer<typeof StoredGeneratedTe
 export function validateDraftAgainstRetrievedChunks(
   draft: GeneratedTestDraft,
   retrievedChunkIds: Set<string>,
-  expectedQuestionCount: number
+  expectedQuestionCount: number,
+  chunkDocumentById?: Map<string, string>,
+  allowedDocumentIds?: Set<string>
 ): string | null {
   if (draft.questions.length !== expectedQuestionCount) {
     return `Expected ${expectedQuestionCount} questions but received ${draft.questions.length}`
@@ -189,6 +215,14 @@ export function validateDraftAgainstRetrievedChunks(
       return `Question references unknown sourceChunkId "${question.sourceChunkId}"`
     }
 
+    if (chunkDocumentById && allowedDocumentIds) {
+      const documentId = chunkDocumentById.get(question.sourceChunkId)
+
+      if (!documentId || !allowedDocumentIds.has(documentId)) {
+        return `Question sourceChunkId "${question.sourceChunkId}" does not belong to selected documents`
+      }
+    }
+
     const normalizedQuestionText = question.questionText.trim().toLowerCase()
 
     if (questionTexts.has(normalizedQuestionText)) {
@@ -199,4 +233,19 @@ export function validateDraftAgainstRetrievedChunks(
   }
 
   return null
+}
+
+export function normalizeGenerateTestDocumentIds(input: {
+  documentId?: string
+  documentIds?: string[]
+}): string[] {
+  if (input.documentIds && input.documentIds.length > 0) {
+    return [...new Set(input.documentIds)]
+  }
+
+  if (input.documentId) {
+    return [input.documentId]
+  }
+
+  return []
 }

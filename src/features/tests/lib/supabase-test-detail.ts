@@ -1,6 +1,8 @@
 import "server-only"
 
 import { getLatestDocumentVersionForDocument } from "@/features/documents/lib/document-versioning"
+import { buildSourceLabel } from "@/features/tests/lib/source-label"
+import { getTestSourceDocumentsByTestId } from "@/features/tests/lib/test-documents"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -16,9 +18,18 @@ export type SavedTestQuestion = {
   orderIndex: number
   sourceChunkId: string | null
   sourceDocumentId: string | null
+  sourceLabel: string | null
   isActive: boolean
   sourceStatus: string
   sourceInvalidReason: string | null
+}
+
+export type SavedTestSourceDocument = {
+  documentId: string
+  title: string
+  status: string
+  versionNumber: number | null
+  isLatest: boolean
 }
 
 export type SavedTestDetail = {
@@ -40,6 +51,7 @@ export type SavedTestDetail = {
   sourceDocumentVersionNumber: number | null
   sourceDocumentIsLatest: boolean
   latestSourceDocumentId: string | null
+  sourceDocuments: SavedTestSourceDocument[]
   questions: SavedTestQuestion[]
 }
 
@@ -112,6 +124,11 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     return null
   }
 
+  const sourceDocuments = await getTestSourceDocumentsByTestId({
+    testId,
+    fallbackSourceDocumentId: test.source_document_id,
+  })
+
   const sourceDocumentId: string | null = test.source_document_id
   let sourceDocumentTitle: string | null = null
   let sourceDocumentVersionNumber: number | null = null
@@ -130,15 +147,44 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
       return null
     }
 
-    sourceDocumentTitle = document?.title ?? null
-    sourceDocumentVersionNumber = document?.version_number ?? null
-    sourceDocumentIsLatest = document?.is_latest !== false && !document?.replaced_by_document_id
+    sourceDocumentTitle = document?.title ?? sourceDocuments[0]?.title ?? null
+    sourceDocumentVersionNumber =
+      document?.version_number ?? sourceDocuments[0]?.versionNumber ?? null
+    sourceDocumentIsLatest =
+      document?.is_latest !== false && !document?.replaced_by_document_id
+        ? (sourceDocuments[0]?.isLatest ?? true)
+        : false
 
     if (document && !sourceDocumentIsLatest) {
       const latestDocument = await getLatestDocumentVersionForDocument(document.id)
       latestSourceDocumentId = latestDocument?.id ?? document.replaced_by_document_id ?? null
     } else {
-      latestSourceDocumentId = document?.id ?? null
+      latestSourceDocumentId = document?.id ?? sourceDocuments[0]?.documentId ?? null
+    }
+  }
+
+  const sourceDocumentTitleById = new Map(
+    sourceDocuments.map((document) => [document.documentId, document.title])
+  )
+
+  const chunkIds = (questions ?? [])
+    .map((question) => question.source_chunk_id)
+    .filter((chunkId): chunkId is string => Boolean(chunkId))
+
+  const chunkMetaById = new Map<string, { title: string | null; topic: string | null }>()
+
+  if (chunkIds.length > 0) {
+    const { data: chunks, error: chunksError } = await supabase
+      .from("document_chunks")
+      .select("id, title, topic")
+      .in("id", chunkIds)
+
+    if (chunksError) {
+      console.error(`Failed to fetch question source chunks: ${chunksError.message}`)
+    } else {
+      for (const chunk of chunks ?? []) {
+        chunkMetaById.set(chunk.id, { title: chunk.title, topic: chunk.topic })
+      }
     }
   }
 
@@ -161,21 +207,39 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     sourceDocumentVersionNumber,
     sourceDocumentIsLatest,
     latestSourceDocumentId,
-    questions: (questions ?? []).map((question) => ({
-      id: question.id,
-      questionText: question.question_text,
-      questionType: question.question_type,
-      options: parseOptions(question.options),
-      correctAnswer: parseCorrectAnswer(question.correct_answer),
-      explanation: question.explanation,
-      topic: question.topic,
-      difficulty: question.difficulty,
-      orderIndex: question.order_index,
-      sourceChunkId: question.source_chunk_id,
-      sourceDocumentId: question.source_document_id,
-      isActive: question.is_active ?? true,
-      sourceStatus: question.source_status ?? "valid",
-      sourceInvalidReason: question.source_invalid_reason,
-    })),
+    sourceDocuments,
+    questions: (questions ?? []).map((question) => {
+      const chunkMeta = question.source_chunk_id
+        ? chunkMetaById.get(question.source_chunk_id)
+        : undefined
+      const documentTitle =
+        (question.source_document_id
+          ? sourceDocumentTitleById.get(question.source_document_id)
+          : null) ?? sourceDocumentTitle
+
+      return {
+        id: question.id,
+        questionText: question.question_text,
+        questionType: question.question_type,
+        options: parseOptions(question.options),
+        correctAnswer: parseCorrectAnswer(question.correct_answer),
+        explanation: question.explanation,
+        topic: question.topic,
+        difficulty: question.difficulty,
+        orderIndex: question.order_index,
+        sourceChunkId: question.source_chunk_id,
+        sourceDocumentId: question.source_document_id,
+        sourceLabel: documentTitle
+          ? buildSourceLabel({
+              documentTitle,
+              topic: question.topic,
+              chunkTitle: chunkMeta?.title,
+            })
+          : null,
+        isActive: question.is_active ?? true,
+        sourceStatus: question.source_status ?? "valid",
+        sourceInvalidReason: question.source_invalid_reason,
+      }
+    }),
   }
 }

@@ -3,13 +3,14 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import type { DocumentStatus } from "@/data/mock/documents"
-import type { ResolvedTestSourceDocument } from "@/features/tests/lib/test-source-document"
+import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
+import type { SavedTestSourceDocument } from "@/features/tests/lib/supabase-test-detail"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
 interface TestSourceDocumentsSectionProps {
-  source: ResolvedTestSourceDocument
+  sources: SavedTestSourceDocument[]
 }
 
 const DOCUMENT_STATUS_BADGE: Record<
@@ -51,45 +52,62 @@ const DOCUMENT_STATUS_BADGE: Record<
   },
 }
 
-export function TestSourceDocumentsSection({ source }: TestSourceDocumentsSectionProps) {
-  const statusConfig = DOCUMENT_STATUS_BADGE[source.status]
+function normalizeStatus(status: string): DocumentStatus {
+  if (
+    status === "ready" ||
+    status === "processing" ||
+    status === "failed" ||
+    status === "uploaded" ||
+    status === "archived" ||
+    status === "deleted"
+  ) {
+    return status
+  }
 
+  return "uploaded"
+}
+
+export function TestSourceDocumentsSection({ sources }: TestSourceDocumentsSectionProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Source Document</CardTitle>
+        <CardTitle>{sources.length === 1 ? "Source Document" : "Source Documents"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <FileText className="size-4 text-muted-foreground" />
-            <p className="font-medium text-foreground">{source.title}</p>
-          </div>
-          <Badge variant="secondary" className={`mt-2 ${statusConfig.className}`}>
-            {statusConfig.icon}
-            {statusConfig.label}
-          </Badge>
-        </div>
-        <div>
-          <p className="typography-small text-muted-foreground">Topics used</p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {source.topicsUsed.map((topic) => (
-              <Badge key={topic} variant="secondary" className="font-normal">
-                {topic}
-              </Badge>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="typography-small text-muted-foreground">Chunks used</p>
-          <p className="mt-0.5 text-sm font-medium text-foreground">{source.chunksUsed}</p>
-        </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/admin/documents/${source.documentId}`}>
-            Open document
-            <ExternalLink className="ml-1 size-3" />
-          </Link>
-        </Button>
+        {sources.map((source) => {
+          const status = normalizeStatus(source.status)
+          const statusConfig = DOCUMENT_STATUS_BADGE[status]
+
+          return (
+            <div
+              key={source.documentId}
+              className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3"
+            >
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <FileText className="size-4 text-muted-foreground" />
+                  <p className="font-medium text-foreground">{source.title}</p>
+                  {source.versionNumber ? (
+                    <DocumentVersionBadge
+                      versionNumber={source.versionNumber}
+                      isLatest={source.isLatest}
+                    />
+                  ) : null}
+                </div>
+                <Badge variant="secondary" className={`mt-2 ${statusConfig.className}`}>
+                  {statusConfig.icon}
+                  {statusConfig.label}
+                </Badge>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/admin/documents/${source.documentId}`}>
+                  Open document
+                  <ExternalLink className="ml-1 size-3" />
+                </Link>
+              </Button>
+            </div>
+          )
+        })}
       </CardContent>
     </Card>
   )

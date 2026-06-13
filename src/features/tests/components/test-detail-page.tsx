@@ -74,7 +74,17 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
         </div>
         <div className="space-y-2">
           <TestSettingsSection test={test} />
-          <TestSourceDocumentsSection source={test.sourceDocument} />
+          <TestSourceDocumentsSection
+            sources={[
+              {
+                documentId: test.sourceDocument.documentId,
+                title: test.sourceDocument.title,
+                status: test.sourceDocument.status,
+                versionNumber: null,
+                isLatest: true,
+              },
+            ]}
+          />
           <TestAssignmentsSection
             assignments={test.assignments}
             testId={test.id}

@@ -5,6 +5,7 @@ import type {
   ReviewQuestion,
   ReviewStatus,
 } from "@/features/tests/mock/generated-test-review"
+import { buildSourceLabel } from "@/features/tests/lib/source-label"
 import type { GeneratedTestQuestion } from "@/features/tests/schemas/generated-test-schema"
 import type {
   PublishGeneratedQuestion,
@@ -31,9 +32,12 @@ function mapQuestionToReviewQuestion(
 ): ReviewQuestion {
   const correctAnswerTexts = resolveCorrectAnswerTexts(question)
   const primaryCorrectAnswer = correctAnswerTexts[0] ?? question.options[0]?.text ?? ""
-  const sourceChunkReference = question.sourceChunkTitle?.trim()
-    ? `Source: ${question.sourceChunkTitle}`
-    : `Source: ${question.sourceChunkId}`
+  const documentTitle = question.sourceDocumentTitle ?? "Source document"
+  const sourceChunkReference = buildSourceLabel({
+    documentTitle,
+    topic: question.topic,
+    chunkTitle: question.sourceChunkTitle,
+  })
 
   return {
     id: `ai-${generationRunId}-q-${index + 1}`,
@@ -44,6 +48,7 @@ function mapQuestionToReviewQuestion(
     explanation: question.explanation,
     topic: question.topic,
     sourceChunkReference,
+    sourceDocumentTitle: documentTitle,
     testedSkill: "Knowledge recall",
     pedagogicalGoal: "Verify understanding of source document content",
     difficulty: question.difficulty as ReviewDifficulty,
@@ -127,6 +132,7 @@ export function mapReviewedDraftToPublishRequest(
 ): PublishGeneratedTestRequest {
   const reviewById = new Map(reviewedQuestions.map((question) => [question.id, question]))
   const publishQuestions: PublishGeneratedQuestion[] = []
+  const documentIds = stored.documents.map((document) => document.id)
 
   stored.draft.questions.forEach((draftQuestion, index) => {
     const reviewId = `ai-${stored.generationRunId}-q-${index + 1}`
@@ -161,7 +167,8 @@ export function mapReviewedDraftToPublishRequest(
 
   return {
     generationRunId: stored.generationRunId,
-    documentId: stored.document.id,
+    documentId: documentIds[0],
+    documentIds,
     title: stored.draft.title,
     description: stored.draft.description,
     difficulty: stored.draft.difficulty,
@@ -190,6 +197,10 @@ export function mapStoredDraftToReviewData(
     passingScore: draft.passingScore,
     selectedChunksCount: selectedChunksCount ?? stored.retrievedChunks.length,
     selectedTopics: selectedTopics ?? topicsFromQuestions,
+    sourceDocuments: stored.documents.map((document) => ({
+      id: document.id,
+      title: document.title,
+    })),
     questions: draft.questions.map((question, index) =>
       mapQuestionToReviewQuestion(question, index, stored.generationRunId)
     ),

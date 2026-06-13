@@ -14,10 +14,19 @@ const UUID_BY_MOCK_ID: Record<string, string> = {
   "doc-4": DEMO_SUPPORT_ESCALATION_UUID,
 }
 
+const MOCK_TEST_ID_PATTERN = /^test-\d+$/
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function isUuid(value: string): boolean {
   return UUID_PATTERN.test(value)
+}
+
+export function isMockTestId(value: string): boolean {
+  return MOCK_TEST_ID_PATTERN.test(value)
+}
+
+export function isMockDocumentId(value: string): boolean {
+  return mockDocuments.some((document) => document.id === value)
 }
 
 export function resolveMockDocumentByRouteId(routeId: string): MockDocumentDetail | undefined {

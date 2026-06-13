@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockTestId, isUuid } from "@/features/documents/lib/demo-document-ids"
 import {
   AuthError,
   requireAdminApiUser,
@@ -29,6 +29,10 @@ export async function POST(request: Request, { params }: AssignTestRouteContext)
     const { id } = await params
 
     if (!isUuid(id)) {
+      if (isMockTestId(id)) {
+        return jsonError("Mock tests use the local demo assignment flow", 404)
+      }
+
       return jsonError("Invalid test id", 400)
     }
 

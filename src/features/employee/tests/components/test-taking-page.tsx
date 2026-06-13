@@ -29,6 +29,8 @@ interface TestTakingPageProps {
   test: EmployeeTakeableTest
 }
 
+const MIN_START_ATTEMPT_LOADING_MS = 350
+
 export function TestTakingPage({ test }: TestTakingPageProps) {
   const router = useRouter()
   const startedAtRef = useRef(Date.now())
@@ -50,6 +52,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     let cancelled = false
 
     async function ensureAttemptStarted() {
+      const loadingStartedAt = Date.now()
       setIsStartingAttempt(true)
       setStartAttemptError(null)
 
@@ -65,6 +68,13 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
           )
         }
       } finally {
+        const elapsedMs = Date.now() - loadingStartedAt
+        const remainingLoadingMs = Math.max(0, MIN_START_ATTEMPT_LOADING_MS - elapsedMs)
+
+        if (remainingLoadingMs > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, remainingLoadingMs))
+        }
+
         if (!cancelled) {
           setIsStartingAttempt(false)
         }

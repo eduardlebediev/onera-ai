@@ -3,6 +3,7 @@ import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { TestTakingNotFound } from "@/features/employee/tests/components/test-taking-not-found"
 import { TestTakingPage } from "@/features/employee/tests/components/test-taking-page"
 import { getSupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/supabase-employee-tests"
+import { getEmployeeTakeableTestById } from "@/features/employee/tests/mock/employee-tests"
 import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
 
 export const dynamic = "force-dynamic"
@@ -28,8 +29,14 @@ export default async function EmployeeTestTakeRoute({ params }: EmployeeTestTake
   const { id } = await params
   const user = await getCurrentUser()
 
-  if (!user || !isUuid(id)) {
+  if (!user) {
     return <TestTakingNotFound />
+  }
+
+  if (!isUuid(id)) {
+    const mockTest = getEmployeeTakeableTestById(id)
+
+    return mockTest ? <TestTakingPage test={mockTest} /> : <TestTakingNotFound />
   }
 
   const test = await loadSupabaseTakeableTest(id, user.userId, user.membership.organizationId)

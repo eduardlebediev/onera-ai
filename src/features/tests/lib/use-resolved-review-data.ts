@@ -1,6 +1,6 @@
 "use client"
 
-import { useSyncExternalStore } from "react"
+import { useMemo, useSyncExternalStore } from "react"
 
 import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { mapStoredDraftToReviewData } from "@/features/tests/lib/generated-test-mapper"
@@ -148,9 +148,14 @@ export function useResolvedReviewData(
   generationRunId?: string | null,
   fallbackSource: Exclude<ReviewDataSource, "session"> = "mock"
 ): ResolvedReviewState {
+  const snapshot = useMemo(
+    () => buildResolvedState(documentId, fallbackReviewData, generationRunId, fallbackSource),
+    [documentId, fallbackReviewData, generationRunId, fallbackSource]
+  )
+
   return useSyncExternalStore(
     () => () => {},
-    () => buildResolvedState(documentId, fallbackReviewData, generationRunId, fallbackSource),
+    () => snapshot,
     () => getServerState(documentId, fallbackReviewData, fallbackSource, generationRunId)
   )
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { AuthError, requireEmployeeApiUser } from "@/features/auth/lib/require-auth"
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockTestId, isUuid } from "@/features/documents/lib/demo-document-ids"
 import {
   generateFollowUpQuestion,
   isFollowUpQuestionOutputError,
@@ -51,6 +51,10 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
     const { id: testId } = await params
 
     if (!isUuid(testId)) {
+      if (isMockTestId(testId)) {
+        return jsonError("Mock tests use the local demo follow-up flow", 404)
+      }
+
       return jsonError("Invalid test id", 400)
     }
 

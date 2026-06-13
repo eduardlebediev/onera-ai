@@ -7,7 +7,10 @@ import { FollowUpQuestionCard } from "@/features/employee/tests/components/follo
 import { generateFollowUpQuestionForAnswer } from "@/features/employee/tests/lib/follow-up-question-api-client"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
+import {
+  getFollowUpQuestionByOriginalQuestionId,
+  type FollowUpQuestion,
+} from "@/features/employee/tests/mock/follow-up-questions"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -48,10 +51,14 @@ export function TestAnswerReview({
     }
 
     if (!attemptId) {
+      const mockFollowUp = getFollowUpQuestionByOriginalQuestionId(item.questionId)
+
       setExpandedQuestionId(item.questionId)
       setFollowUpStateByQuestionId((current) => ({
         ...current,
-        [item.questionId]: { status: "error" },
+        [item.questionId]: mockFollowUp
+          ? { status: "ready", followUp: mockFollowUp }
+          : { status: "error" },
       }))
       return
     }
@@ -197,7 +204,9 @@ export function TestAnswerReview({
                       <FollowUpQuestionCard
                         followUp={followUpState.followUp}
                         sourceDocumentId={sourceDocumentId}
-                        onComplete={onFollowUpComplete}
+                        onComplete={(_topic, isCorrect) =>
+                          onFollowUpComplete(item.topic, isCorrect)
+                        }
                         onBackToResults={() => setExpandedQuestionId(null)}
                       />
                     ) : null}

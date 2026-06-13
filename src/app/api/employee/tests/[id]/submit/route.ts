@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockTestId, isUuid } from "@/features/documents/lib/demo-document-ids"
 import { AuthError, requireEmployeeApiUser } from "@/features/auth/lib/require-auth"
 import {
   SubmitAttemptError,
@@ -22,6 +22,10 @@ export async function POST(request: Request, { params }: SubmitAttemptRouteConte
     const { id } = await params
 
     if (!isUuid(id)) {
+      if (isMockTestId(id)) {
+        return jsonError("Mock tests use the local demo submit flow", 404)
+      }
+
       return jsonError("Invalid test id", 400)
     }
 

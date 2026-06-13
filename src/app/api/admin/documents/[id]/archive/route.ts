@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockDocumentId, resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import {
   ARCHIVE_DELETE_MIGRATION_REQUIRED_MESSAGE,
   isArchiveDeleteMigrationError,
@@ -33,14 +33,19 @@ export async function POST(_request: Request, { params }: ArchiveDocumentRouteCo
   try {
     const admin = await requireAdminApiUser()
     const { id } = await params
+    const documentId = resolveApiDocumentId(id)
 
-    if (!isUuid(id)) {
+    if (!documentId) {
+      if (isMockDocumentId(id)) {
+        return jsonError("Mock documents use the local demo document flow", 404)
+      }
+
       return jsonError("Invalid document id", 400)
     }
 
     const result = await archiveDocument({
       organizationId: admin.membership.organizationId,
-      documentId: id,
+      documentId,
       archivedBy: admin.userId,
     })
 

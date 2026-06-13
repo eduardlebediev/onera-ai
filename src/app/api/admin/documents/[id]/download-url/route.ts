@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockDocumentId, resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { createDocumentDownloadUrl } from "@/features/documents/lib/document-download-url"
 import {
   AuthError,
@@ -21,12 +21,20 @@ export async function POST(_request: Request, { params }: DownloadUrlRouteContex
   try {
     const admin = await requireAdminApiUser()
     const { id } = await params
+    const documentId = resolveApiDocumentId(id)
 
-    if (!isUuid(id)) {
+    if (!documentId) {
+      if (isMockDocumentId(id)) {
+        return jsonError("Mock documents use the local demo document flow", 404)
+      }
+
       return jsonError("Invalid document id", 400)
     }
 
-    const documentInOrg = await verifyDocumentInOrganization(id, admin.membership.organizationId)
+    const documentInOrg = await verifyDocumentInOrganization(
+      documentId,
+      admin.membership.organizationId
+    )
 
     if (!documentInOrg) {
       return jsonError("Document not found", 404)
@@ -37,7 +45,7 @@ export async function POST(_request: Request, { params }: DownloadUrlRouteContex
     const { data: document, error } = await supabase
       .from("documents")
       .select("storage_path, status")
-      .eq("id", id)
+      .eq("id", documentId)
       .maybeSingle()
 
     if (error) {

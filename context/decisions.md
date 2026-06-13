@@ -1,5 +1,9 @@
 # Decisions
 
+## 057 — Demo route IDs resolve before API UUID validation
+
+Mock route ids such as `doc-1`, `doc-4`, and `test-*` must not fail generic UUID validation at API boundaries. Known mock test ids return local-demo-flow responses; mapped demo document route ids resolve to seeded Supabase UUIDs via `resolveApiDocumentId()` before auth and data access; mock-only document ids return local-demo-flow responses. Employee take/result pages keep the same mock fallback for non-UUID test ids.
+
 ## 056 — Follow-up questions are generated on demand without persistence
 
 Employee result pages generate one single-choice follow-up question at click time for an incorrect saved answer. Generated follow-ups are Zod-validated and mapped to the existing result-page UI type, but are not written to `follow_up_questions` or `follow_up_answers` until a future persistence spec explicitly adds that behavior.

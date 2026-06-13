@@ -4,6 +4,56 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 40: Production Bugfixes
+
+**Branch:** `feature/40-production-bugfixes`
+
+Fixed runtime bugs found during smoke testing across review/publish hydration, employee test-taking, follow-up topic status, and mock ID handling.
+
+### Review and employee runtime fixes
+
+- Updated `src/features/tests/lib/use-resolved-review-data.ts` so the client snapshot returned to `useSyncExternalStore` is memoized, preventing React's uncached `getSnapshot` warning and infinite re-render loop on review/publish pages.
+- Updated `src/features/employee/tests/components/test-taking-page.tsx` with a short minimum Supabase attempt-start loading duration to prevent loader flicker before the page transitions to the test UI.
+- Restored local demo take/result fallbacks for non-UUID test ids in `src/app/(employee)/employee/tests/[id]/take/page.tsx` and `src/app/(employee)/employee/tests/[id]/result/page.tsx`.
+- Updated `src/features/employee/tests/components/test-answer-review.tsx` to use existing mock follow-up records when no persisted attempt is available and to persist completion status against the original weak topic.
+
+### Mock ID API handling
+
+- Extended `src/features/documents/lib/demo-document-ids.ts` with mock test/document ID helpers.
+- Updated employee start/submit/follow-up and admin assignment APIs so known mock test IDs return local-demo-flow responses instead of UUID validation errors.
+- Updated admin document download/archive/delete/version APIs to resolve API-backed demo document route IDs such as `doc-1` before validation, while mock-only documents return local-demo-flow responses.
+
+### Post-review fixes
+
+- Fixed a review finding where the first pass handled `test-*` IDs but still allowed `doc-1` to fail document API UUID validation.
+- Formatted the new spec file and review-fix routes so repo-wide Prettier checks pass.
+
+### Context and validation
+
+- Updated `context/progress-tracker.md` and recorded decision 057 in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Files changed
+
+- `context/feature-specs/40-production-bugfixes.md`
+- `src/features/tests/lib/use-resolved-review-data.ts`
+- `src/features/employee/tests/components/test-taking-page.tsx`
+- `src/features/employee/tests/components/test-answer-review.tsx`
+- `src/app/(employee)/employee/tests/[id]/take/page.tsx`
+- `src/app/(employee)/employee/tests/[id]/result/page.tsx`
+- `src/features/documents/lib/demo-document-ids.ts`
+- `src/app/api/admin/documents/[id]/download-url/route.ts`
+- `src/app/api/admin/documents/[id]/archive/route.ts`
+- `src/app/api/admin/documents/[id]/route.ts`
+- `src/app/api/admin/documents/[id]/versions/route.ts`
+- `src/app/api/admin/tests/[id]/assign/route.ts`
+- `src/app/api/employee/tests/[id]/start/route.ts`
+- `src/app/api/employee/tests/[id]/submit/route.ts`
+- `src/app/api/employee/tests/[id]/follow-up/route.ts`
+- `context/progress-tracker.md`, `context/decisions.md`, `context/history.md`
+
+---
+
 ## Feature Spec 39: Follow-up and Block Retake
 
 **Branch:** `feature/39-follow-up-and-block-retake`

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
-import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { isMockDocumentId, resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { getAffectedTestsForDocumentVersion } from "@/features/documents/lib/document-affected-tests"
 import { summarizeDocumentChangesBestEffort } from "@/features/documents/lib/document-change-summary"
 import { createDocumentVersionEvent } from "@/features/documents/lib/document-version-events"
@@ -46,8 +46,13 @@ export async function POST(request: Request, { params }: DocumentVersionsRouteCo
   try {
     const admin = await requireAdminApiUser()
     const { id } = await params
+    const documentId = resolveApiDocumentId(id)
 
-    if (!isUuid(id)) {
+    if (!documentId) {
+      if (isMockDocumentId(id)) {
+        return jsonError("Mock documents use the local demo document flow", 404)
+      }
+
       return jsonError("Invalid document id", 400)
     }
 
@@ -66,13 +71,13 @@ export async function POST(request: Request, { params }: DocumentVersionsRouteCo
     }
 
     const changeMessage = normalizeChangeMessage(formData.get("changeMessage"))
-    const family = await getDocumentVersionFamily(id)
+    const family = await getDocumentVersionFamily(documentId)
 
     if (!family) {
       return jsonError("Document not found", 404)
     }
 
-    const sourceDocument = family.versions.find((version) => version.id === id)
+    const sourceDocument = family.versions.find((version) => version.id === documentId)
 
     if (!sourceDocument || sourceDocument.organization_id !== admin.membership.organizationId) {
       return jsonError("Document not found", 404)

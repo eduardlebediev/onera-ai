@@ -15,7 +15,10 @@ export function TestAiFeedback({ feedback }: TestAiFeedbackProps) {
           <div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="size-4 text-primary" />
           </div>
-          <h2 className="typography-h3 font-semibold">AI Feedback</h2>
+          <div className="flex items-baseline gap-2">
+            <h2 className="typography-h3 font-semibold">AI Feedback</h2>
+            <span className="typography-small text-muted-foreground">AI-generated</span>
+          </div>
         </div>
 
         <p className="typography-p">{feedback.performanceSummary}</p>

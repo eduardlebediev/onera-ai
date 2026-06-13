@@ -1,5 +1,9 @@
 # Decisions
 
+## 054 — Employee attempt feedback is persisted with best-effort generation on submit
+
+After an employee submits a test, AI feedback is generated once from scored answers and persisted to `test_attempts.ai_feedback` as a versioned JSON envelope. Generation runs best-effort with a bounded timeout; submit and scoring must succeed even when feedback generation, validation, or persistence fails. Result pages read stored feedback first and fall back to `buildDynamicAiFeedback()` template output.
+
 ## 053 — Multi-document tests use question-level source tracking
 
 In multi-document tests, each question tracks its source through `source_chunk_id` and `source_document_id`. If one source document becomes archived or deleted, only questions linked to that document are marked source-invalid, while the test becomes inactive until admin review. Valid questions from other documents remain stored for future repair flows.

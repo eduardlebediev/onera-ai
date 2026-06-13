@@ -6,6 +6,40 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+---
+
+## Feature Spec 36: AI Test Feedback
+
+**Branch:** `feature/36-ai-test-feedback`
+
+Added personalized AI feedback generation on employee test submit, persistence to `test_attempts.ai_feedback`, and result-page read with template fallback.
+
+### Schema and generator
+
+- Added `src/features/employee/tests/schemas/attempt-feedback-schema.ts` — Zod output schema, versioned JSON envelope, serialize/parse helpers.
+- Added `src/features/employee/tests/lib/generate-attempt-feedback.ts` — server-only structured AI feedback via Vercel AI SDK with best-effort wrapper and `ATTEMPT_FEEDBACK_MODEL` default `gpt-4.1-mini`.
+
+### Submit and result integration
+
+- Updated `src/features/employee/tests/lib/supabase-employee-attempts.ts` — generate feedback after scoring/completion (non-fatal), persist validated envelope to `test_attempts.ai_feedback`, read stored feedback on result load with `buildDynamicAiFeedback()` fallback.
+- Extended attempt selects to include `ai_feedback`.
+
+### UI and env
+
+- Updated `src/features/employee/tests/components/test-ai-feedback.tsx` — added "AI-generated" caption next to heading (no new props).
+- Updated `.env.example` with `ATTEMPT_FEEDBACK_MODEL=gpt-4.1-mini` and `ATTEMPT_FEEDBACK_TIMEOUT_MS=15000`.
+
+### Context and validation
+
+- Added `context/feature-specs/36-ai-test-feedback.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+- Decision 054 recorded in `context/decisions.md`.
+
+### Post-review fixes
+
+- Added `AbortSignal.timeout()` around attempt feedback generation (default 15s via `ATTEMPT_FEEDBACK_TIMEOUT_MS`) so slow AI calls cannot block submit indefinitely.
+- Formatted `.docs/spec-template.md` so repo-wide `format:check` passes.
+
 ## Feature Spec 35: Multi-document Test Generation
 
 **Branch:** `feature/35-multi-document-test-generation`

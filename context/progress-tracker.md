@@ -10,11 +10,13 @@ Production Readiness Cleanup
 
 ## Next Up
 
-- Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 36–49 in `context/current-plan.md`. Start with Spec 36 (AI-Generated Test Feedback).
+- Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 37–49 in `context/current-plan.md`.
 
 ## Open Questions
 
 ## Completed
+
+- Feature Spec 36: AI Test Feedback
 
 - Feature Spec 35: Multi-document Test Generation
 

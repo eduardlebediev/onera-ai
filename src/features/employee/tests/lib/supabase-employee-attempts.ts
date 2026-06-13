@@ -2,6 +2,14 @@ import "server-only"
 
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
 import {
+  generateAttemptFeedbackBestEffort,
+  type AttemptFeedbackAnswerInput,
+} from "@/features/employee/tests/lib/generate-attempt-feedback"
+import {
+  parseAttemptFeedbackEnvelope,
+  serializeAttemptFeedbackEnvelope,
+} from "@/features/employee/tests/schemas/attempt-feedback-schema"
+import {
   INACTIVE_TEST_START_MESSAGE,
   isTestAssignable,
 } from "@/features/tests/lib/test-source-validity-style"
@@ -36,6 +44,7 @@ type AttemptRow = {
   status: string
   score: number | null
   passed: boolean | null
+  ai_feedback: string | null
   started_at: string | null
   completed_at: string | null
 }
@@ -149,6 +158,62 @@ function formatOptionTexts(
   return texts.length > 0 ? texts.join(", ") : "—"
 }
 
+function buildAttemptFeedbackInput(
+  scoredAnswers: Array<{
+    question: QuestionScoringRow
+    options: Array<{ id: string; text: string }>
+    correctAnswer: { optionIds: string[] }
+    selectedOptionIds: string[]
+    isCorrect: boolean
+  }>
+): AttemptFeedbackAnswerInput[] {
+  return scoredAnswers.map((item) => ({
+    questionText: item.question.question_text,
+    topic: item.question.topic ?? "General",
+    isCorrect: item.isCorrect,
+    employeeAnswer: formatOptionTexts(item.options, item.selectedOptionIds),
+    correctAnswer: formatOptionTexts(item.options, item.correctAnswer.optionIds),
+    explanation: item.question.explanation ?? "",
+  }))
+}
+
+function resolveAttemptAiFeedback(
+  storedFeedback: string | null | undefined,
+  testTitle: string,
+  score: number,
+  passed: boolean,
+  answerReview: EmployeeTestResult["answerReview"]
+): EmployeeTestResult["aiFeedback"] {
+  const parsed = parseAttemptFeedbackEnvelope(storedFeedback)
+
+  if (parsed) {
+    return parsed
+  }
+
+  return buildDynamicAiFeedback(testTitle, score, passed, answerReview)
+}
+
+async function persistAttemptFeedbackBestEffort(
+  attemptId: string,
+  input: Parameters<typeof generateAttemptFeedbackBestEffort>[0]
+): Promise<void> {
+  const feedback = await generateAttemptFeedbackBestEffort(input)
+
+  if (!feedback) {
+    return
+  }
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from("test_attempts")
+    .update({ ai_feedback: serializeAttemptFeedbackEnvelope(feedback) })
+    .eq("id", attemptId)
+
+  if (error) {
+    console.warn("Failed to persist attempt feedback:", error.message)
+  }
+}
+
 function buildDynamicAiFeedback(
   testTitle: string,
   score: number,
@@ -205,7 +270,7 @@ async function getActiveAttempt(userId: string, testId: string): Promise<Attempt
   const { data, error } = await supabase
     .from("test_attempts")
     .select(
-      "id, organization_id, test_id, user_id, assignment_id, status, score, passed, started_at, completed_at"
+      "id, organization_id, test_id, user_id, assignment_id, status, score, passed, ai_feedback, started_at, completed_at"
     )
     .eq("user_id", userId)
     .eq("test_id", testId)
@@ -227,7 +292,7 @@ async function getAttemptById(attemptId: string): Promise<AttemptRow | null> {
   const { data, error } = await supabase
     .from("test_attempts")
     .select(
-      "id, organization_id, test_id, user_id, assignment_id, status, score, passed, started_at, completed_at"
+      "id, organization_id, test_id, user_id, assignment_id, status, score, passed, ai_feedback, started_at, completed_at"
     )
     .eq("id", attemptId)
     .maybeSingle()
@@ -471,7 +536,7 @@ export async function submitEmployeeTestAttempt(input: {
 
   const { data: testMeta, error: testMetaError } = await supabase
     .from("tests")
-    .select("passing_score")
+    .select("title, description, passing_score")
     .eq("id", input.testId)
     .eq("organization_id", organizationId)
     .maybeSingle()
@@ -536,6 +601,15 @@ export async function submitEmployeeTestAttempt(input: {
       throw new Error(`Failed to update assignment status: ${assignmentUpdateError.message}`)
     }
   }
+
+  await persistAttemptFeedbackBestEffort(attempt.id, {
+    testTitle: testMeta.title,
+    testDescription: testMeta.description,
+    score,
+    passed,
+    passingScore: testMeta.passing_score,
+    answers: buildAttemptFeedbackInput(scoredAnswers),
+  })
 
   return {
     attemptId: attempt.id,
@@ -674,7 +748,13 @@ export async function getPersistedEmployeeTestResult(
     wrongCount,
     answerReview,
     weakTopics: buildWeakTopicsFromReview(answerReview),
-    aiFeedback: buildDynamicAiFeedback(test.title, score, passed, answerReview),
+    aiFeedback: resolveAttemptAiFeedback(
+      attempt.ai_feedback,
+      test.title,
+      score,
+      passed,
+      answerReview
+    ),
   }
 }
 

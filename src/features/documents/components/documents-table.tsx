@@ -239,6 +239,20 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                           <span className="typography-small text-xs text-muted-foreground mt-0.5">
                             {formatFileSize(document.fileSizeMb)}
                           </span>
+                          <span className="mt-1 flex items-center gap-1.5">
+                            <Badge variant="outline" className="w-fit text-[10px]">
+                              v{document.versionNumber ?? document.versions[0]?.version ?? 1}
+                            </Badge>
+                            {document.isLatestVersion === false ? (
+                              <Badge variant="secondary" className="w-fit text-[10px]">
+                                Old
+                              </Badge>
+                            ) : (
+                              <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
+                                Latest
+                              </Badge>
+                            )}
+                          </span>
                         </div>
                       </button>
                     </TableCell>

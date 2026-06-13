@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  AlertTriangle,
   CheckCircle2,
   ChevronRight,
   Clock,
@@ -15,8 +16,12 @@ import {
 import Link from "next/link"
 
 import type { DocumentStatus, DocumentTopic, MockDocumentDetail } from "@/data/mock/documents"
-import { canGenerateTest } from "@/features/documents/components/generate-test-model"
 import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
+import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
+import { DocumentVersionHistory } from "@/features/documents/components/document-version-history"
+import { canGenerateTest } from "@/features/documents/components/generate-test-model"
+import { UpdateDocumentDropdownItem } from "@/features/documents/components/update-document-dropdown-item"
+import { UploadDocumentVersionButton } from "@/features/documents/components/upload-document-version-button"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
@@ -101,6 +106,10 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
   const statusConfig = STATUS_CONFIG[document.status]
   const isReady = canGenerateTest(document)
   const canDownload = document.canDownloadOriginal === true
+  const versionNumber = document.versionNumber ?? document.versions[0]?.version ?? 1
+  const isLatestVersion = document.isLatestVersion !== false
+  const latestDocumentId = document.latestDocumentId ?? document.id
+  const canUploadNewVersion = document.sourceType === "upload" && isLatestVersion
   const documentTopics = getDocumentTopics(document)
   const fileSizeLabel =
     document.fileSizeMb >= 1
@@ -123,6 +132,8 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
             <h1 className="typography-h1">{document.title}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <DocumentVersionBadge versionNumber={versionNumber} isLatest={isLatestVersion} />
+            <span className="text-border">|</span>
             <Badge variant="secondary" className={statusConfig.className}>
               {statusConfig.icon}
               {statusConfig.label}
@@ -163,12 +174,35 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <UpdateDocumentDropdownItem
+                documentId={document.id}
+                disabled={!canUploadNewVersion}
+              />
               <DropdownMenuItem disabled>Edit Metadata (coming soon)</DropdownMenuItem>
               <DropdownMenuItem disabled>Share (coming soon)</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      {!isLatestVersion ? (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div>
+              <p className="font-medium">A newer version of this document exists.</p>
+              <p className="mt-1">New tests should usually use the latest ready version.</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/documents/${latestDocumentId}`}>Open latest version</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300">
+          This is the latest version.
+        </div>
+      )}
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
@@ -211,6 +245,35 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                   </CardContent>
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Version Notes</CardTitle>
+                  <CardDescription>Change context for this document version.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  {document.changeMessage ? (
+                    <div>
+                      <p className="font-medium text-foreground">Change message</p>
+                      <p className="mt-1 text-muted-foreground">{document.changeMessage}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      {versionNumber === 1
+                        ? "Initial upload."
+                        : "No admin change message was provided."}
+                    </p>
+                  )}
+                  {document.aiChangeSummary ? (
+                    <div>
+                      <p className="font-medium text-foreground">AI change summary</p>
+                      <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                        {document.aiChangeSummary}
+                      </p>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader>
@@ -299,6 +362,16 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                 <CardContent>
                   <div className="space-y-3 text-sm">
                     <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Version</span>
+                      <span className="font-medium text-foreground">v{versionNumber}</span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">Latest</span>
+                      <span className="font-medium text-foreground">
+                        {isLatestVersion ? "Yes" : "No"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
                       <span className="text-muted-foreground">File Name</span>
                       <span className="font-medium text-foreground truncate">
                         {document.fileName ?? document.title}
@@ -334,6 +407,17 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                         {document.status}
                       </span>
                     </div>
+                  </div>
+                  <div className="mt-6 border-t border-border pt-4">
+                    <UploadDocumentVersionButton
+                      documentId={document.id}
+                      disabled={!canUploadNewVersion}
+                    />
+                    {!canUploadNewVersion ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        New versions can be uploaded from the latest uploaded document version.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="mt-6 border-t border-border pt-4">
                     <Button
@@ -509,8 +593,12 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4">
                   <span className="text-sm font-medium text-muted-foreground">Version</span>
+                  <span className="text-sm text-foreground">v{versionNumber}</span>
+                </div>
+                <div className="grid grid-cols-[150px_1fr] gap-4 border-t border-border pt-4">
+                  <span className="text-sm font-medium text-muted-foreground">Version State</span>
                   <span className="text-sm text-foreground">
-                    v{document.versions[0]?.version ?? 1}
+                    {isLatestVersion ? "Latest version" : "Old version"}
                   </span>
                 </div>
               </div>
@@ -522,38 +610,12 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
           <Card>
             <CardHeader>
               <CardTitle>Version History</CardTitle>
+              <CardDescription>
+                Immutable document versions and change history for this source.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {document.versions.length > 0 ? (
-                <div className="space-y-6">
-                  {document.versions.map((version, index) => {
-                    const isCurrent = index === 0
-                    return (
-                      <div key={version.id} className="relative pl-6">
-                        {index < document.versions.length - 1 && (
-                          <div className="absolute left-2 top-4 h-full w-px bg-border" />
-                        )}
-                        <div
-                          className={`absolute left-0 top-1.5 size-4 rounded-full border-2 bg-background ${
-                            isCurrent ? "border-primary" : "border-border"
-                          }`}
-                        />
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-foreground">
-                            v{version.version}
-                            {isCurrent && " (Current)"}
-                          </span>
-                          <span className="text-sm text-muted-foreground capitalize">
-                            {formatDate(version.uploadedAt)} · {version.status}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No version history available.</p>
-              )}
+              <DocumentVersionHistory versions={document.versions} />
             </CardContent>
           </Card>
         </TabsContent>

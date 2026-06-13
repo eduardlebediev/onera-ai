@@ -103,6 +103,8 @@ Fields:
 
 Uploaded internal company documents.
 
+Documents are immutable after processing. Uploading an updated file creates a new `documents` row in the same version family instead of overwriting `extracted_text`, chunks, embeddings, or topics on an existing row.
+
 Fields:
 
 - id
@@ -119,9 +121,31 @@ Fields:
 - processing_error
 - processed_at
 - status — uploaded | processing | ready | failed
+- parent_document_id — null for v1, root v1 id for later versions
+- version_number
+- is_latest
+- replaced_by_document_id
+- change_message
+- ai_change_summary
 - created_by
 - created_at
 - updated_at
+
+### document_version_events
+
+Append-only document version history events.
+
+Fields:
+
+- id
+- organization_id
+- document_id
+- previous_document_id
+- event_type — initial_upload | new_version
+- created_by
+- change_message
+- ai_change_summary
+- created_at
 
 ### document_chunks
 

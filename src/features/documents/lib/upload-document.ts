@@ -5,6 +5,7 @@ import OpenAI from "openai"
 import type { CurrentUser } from "@/features/auth/lib/current-user"
 import { chunkExtractedText } from "@/features/documents/lib/chunk-extracted-text"
 import { chunkExtractedTextAi } from "@/features/documents/lib/chunk-extracted-text-ai"
+import { createDocumentVersionEvent } from "@/features/documents/lib/document-version-events"
 import {
   DOCUMENTS_STORAGE_BUCKET,
   getExtractionMethod,
@@ -14,6 +15,7 @@ import {
   isAllowedMimeType,
   isSupportedUploadExtension,
   sanitizeStorageFileName,
+  type SupportedUploadExtension,
 } from "@/features/documents/lib/document-file-types"
 import { embedDocumentChunks } from "@/features/documents/lib/embed-document-chunks"
 import { extractDocumentText } from "@/features/documents/lib/extract-document-text"
@@ -25,6 +27,26 @@ export type UploadDocumentResult = {
   status: "ready" | "failed" | "processing"
   redirectTo: string
 }
+
+export type PreparedDocumentUploadFile = {
+  extension: SupportedUploadExtension
+  mimeType: string
+  buffer: Buffer
+  safeFileName: string
+  title: string
+  fileSizeMb: number
+  extractionMethod: string
+}
+
+export type ProcessDocumentUploadResult =
+  | {
+      status: "ready"
+      extractedText: string
+    }
+  | {
+      status: "failed"
+      processingError: string
+    }
 
 function deriveTitleFromFileName(fileName: string): string {
   const withoutExtension = fileName.replace(/\.[^.]+$/, "")
@@ -72,11 +94,8 @@ async function removeStorageObject(storagePath: string): Promise<void> {
   await supabase.storage.from(DOCUMENTS_STORAGE_BUCKET).remove([storagePath])
 }
 
-export async function uploadAndIngestDocument(input: {
-  admin: CurrentUser
-  file: File
-}): Promise<UploadDocumentResult> {
-  const extension = getExtensionFromFileName(input.file.name)
+export async function prepareDocumentUploadFile(file: File): Promise<PreparedDocumentUploadFile> {
+  const extension = getExtensionFromFileName(file.name)
 
   if (!isSupportedUploadExtension(extension)) {
     throw new Error("Unsupported file type. Allowed: .pdf, .docx, .pptx, .txt, .md")
@@ -84,58 +103,52 @@ export async function uploadAndIngestDocument(input: {
 
   const maxBytes = getMaxUploadBytes()
 
-  if (input.file.size > maxBytes) {
+  if (file.size > maxBytes) {
     throw new Error(`File is too large. Maximum size is ${Math.round(maxBytes / (1024 * 1024))} MB`)
   }
 
-  if (input.file.size === 0) {
+  if (file.size === 0) {
     throw new Error("Uploaded file is empty")
   }
 
-  const mimeType = input.file.type || getMimeTypeForExtension(extension)
+  const mimeType = file.type || getMimeTypeForExtension(extension)
 
   if (!isAllowedMimeType(extension, mimeType)) {
     throw new Error("File MIME type does not match the selected file extension")
   }
 
-  const buffer = Buffer.from(await input.file.arrayBuffer())
-  const safeFileName = sanitizeStorageFileName(input.file.name)
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const safeFileName = sanitizeStorageFileName(file.name)
   const title = deriveTitleFromFileName(safeFileName)
-  const fileSizeMb = Number((input.file.size / (1024 * 1024)).toFixed(3))
+  const fileSizeMb = Number((file.size / (1024 * 1024)).toFixed(3))
   const extractionMethod = getExtractionMethod(extension)
-  const organizationId = input.admin.membership.organizationId
+
+  return {
+    extension,
+    mimeType,
+    buffer,
+    safeFileName,
+    title,
+    fileSizeMb,
+    extractionMethod,
+  }
+}
+
+export async function processDocumentUploadForDocument(input: {
+  documentId: string
+  organizationId: string
+  preparedFile: PreparedDocumentUploadFile
+}): Promise<ProcessDocumentUploadResult> {
+  const { documentId, organizationId, preparedFile } = input
 
   const supabase = createAdminClient()
-
-  const { data: document, error: createError } = await supabase
-    .from("documents")
-    .insert({
-      organization_id: organizationId,
-      title,
-      description: `Uploaded document: ${safeFileName}`,
-      source_type: "upload",
-      file_name: safeFileName,
-      file_type: extension,
-      file_size_mb: fileSizeMb,
-      status: "processing",
-      extraction_method: extractionMethod,
-      created_by: input.admin.userId,
-    })
-    .select("id")
-    .single()
-
-  if (createError || !document) {
-    throw new Error("Could not create document record")
-  }
-
-  const documentId = document.id
-  const storagePath = `${organizationId}/${documentId}/${safeFileName}`
+  const storagePath = `${organizationId}/${documentId}/${preparedFile.safeFileName}`
 
   try {
     const { error: storageError } = await supabase.storage
       .from(DOCUMENTS_STORAGE_BUCKET)
-      .upload(storagePath, buffer, {
-        contentType: mimeType,
+      .upload(storagePath, preparedFile.buffer, {
+        contentType: preparedFile.mimeType,
         upsert: false,
       })
 
@@ -153,12 +166,12 @@ export async function uploadAndIngestDocument(input: {
     }
 
     const extractedText = await extractDocumentText({
-      buffer,
-      fileName: safeFileName,
-      extension,
+      buffer: preparedFile.buffer,
+      fileName: preparedFile.safeFileName,
+      extension: preparedFile.extension,
     })
 
-    const aiChunks = await chunkExtractedTextAi(extractedText, title)
+    const aiChunks = await chunkExtractedTextAi(extractedText, preparedFile.title)
     const chunks = aiChunks ?? chunkExtractedText(extractedText)
 
     if (chunks.length === 0) {
@@ -172,7 +185,7 @@ export async function uploadAndIngestDocument(input: {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     const embeddedChunks = await embedDocumentChunks({
       chunks,
-      fileType: extension,
+      fileType: preparedFile.extension,
       openai,
     })
 
@@ -196,7 +209,7 @@ export async function uploadAndIngestDocument(input: {
     await persistDocumentTopicsBestEffort({
       organizationId,
       documentId,
-      title,
+      title: preparedFile.title,
       extractedText,
       chunkTopics: embeddedChunks
         .map((chunk) => chunk.topic)
@@ -218,9 +231,8 @@ export async function uploadAndIngestDocument(input: {
     }
 
     return {
-      documentId,
       status: "ready",
-      redirectTo: `/admin/documents/${documentId}`,
+      extractedText,
     }
   } catch (error) {
     const processingError = toSafeProcessingError(error)
@@ -234,9 +246,62 @@ export async function uploadAndIngestDocument(input: {
     }
 
     return {
-      documentId,
       status: "failed",
-      redirectTo: `/admin/documents/${documentId}`,
+      processingError,
     }
+  }
+}
+
+export async function uploadAndIngestDocument(input: {
+  admin: CurrentUser
+  file: File
+}): Promise<UploadDocumentResult> {
+  const preparedFile = await prepareDocumentUploadFile(input.file)
+  const organizationId = input.admin.membership.organizationId
+
+  const supabase = createAdminClient()
+
+  const { data: document, error: createError } = await supabase
+    .from("documents")
+    .insert({
+      organization_id: organizationId,
+      title: preparedFile.title,
+      description: `Uploaded document: ${preparedFile.safeFileName}`,
+      source_type: "upload",
+      file_name: preparedFile.safeFileName,
+      file_type: preparedFile.extension,
+      file_size_mb: preparedFile.fileSizeMb,
+      status: "processing",
+      extraction_method: preparedFile.extractionMethod,
+      created_by: input.admin.userId,
+    })
+    .select("id")
+    .single()
+
+  if (createError || !document) {
+    throw new Error("Could not create document record")
+  }
+
+  const documentId = document.id
+  const result = await processDocumentUploadForDocument({
+    documentId,
+    organizationId,
+    preparedFile,
+  })
+
+  if (result.status === "ready") {
+    await createDocumentVersionEvent({
+      organizationId,
+      documentId,
+      eventType: "initial_upload",
+      createdBy: input.admin.userId,
+      changeMessage: "Initial upload",
+    })
+  }
+
+  return {
+    documentId,
+    status: result.status,
+    redirectTo: `/admin/documents/${documentId}`,
   }
 }

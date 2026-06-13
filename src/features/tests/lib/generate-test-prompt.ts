@@ -1,4 +1,8 @@
-import type { TestDifficulty, TestLanguage } from "@/features/tests/schemas/generated-test-schema"
+import type {
+  QuestionType,
+  TestDifficulty,
+  TestLanguage,
+} from "@/features/tests/schemas/generated-test-schema"
 
 export type RetrievedChunkForPrompt = {
   id: string
@@ -13,6 +17,7 @@ type BuildGenerateTestPromptInput = {
   difficulty: TestDifficulty
   language: TestLanguage
   targetRole: string
+  questionTypes: QuestionType[]
   chunks: RetrievedChunkForPrompt[]
 }
 
@@ -38,9 +43,11 @@ export function buildGenerateTestPrompt({
   difficulty,
   language,
   targetRole,
+  questionTypes,
   chunks,
 }: BuildGenerateTestPromptInput): string {
   const chunkBlocks = chunks.map(formatChunk).join("\n\n---\n\n")
+  const supportedTypes = questionTypes.join(", ")
 
   return [
     "You are an expert employee knowledge test author.",
@@ -56,7 +63,7 @@ export function buildGenerateTestPrompt({
     "- Avoid duplicate or near-duplicate questions.",
     "- Return exactly the requested number of questions.",
     "- Prefer practical employee scenarios over trivia.",
-    "- Supported question types only: single_choice, multiple_choice, true_false.",
+    `- Supported question types only: ${supportedTypes}.`,
     "- single_choice: exactly 4 options and exactly 1 correct option.",
     "- multiple_choice: exactly 4 options and at least 2 correct options.",
     "- true_false: exactly 2 options (prefer True and False) and exactly 1 correct option.",

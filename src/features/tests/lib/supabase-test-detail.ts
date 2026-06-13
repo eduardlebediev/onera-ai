@@ -1,5 +1,6 @@
 import "server-only"
 
+import { getLatestDocumentVersionForDocument } from "@/features/documents/lib/document-versioning"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -27,7 +28,11 @@ export type SavedTestDetail = {
   passingScore: number
   questionCount: number
   publishedAt: string | null
+  sourceDocumentId: string | null
   sourceDocumentTitle: string | null
+  sourceDocumentVersionNumber: number | null
+  sourceDocumentIsLatest: boolean
+  latestSourceDocumentId: string | null
   questions: SavedTestQuestion[]
 }
 
@@ -100,12 +105,16 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     return null
   }
 
+  const sourceDocumentId: string | null = test.source_document_id
   let sourceDocumentTitle: string | null = null
+  let sourceDocumentVersionNumber: number | null = null
+  let sourceDocumentIsLatest = true
+  let latestSourceDocumentId: string | null = null
 
   if (test.source_document_id) {
     const { data: document, error: documentError } = await supabase
       .from("documents")
-      .select("title")
+      .select("id, title, version_number, is_latest, replaced_by_document_id")
       .eq("id", test.source_document_id)
       .maybeSingle()
 
@@ -115,6 +124,15 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     }
 
     sourceDocumentTitle = document?.title ?? null
+    sourceDocumentVersionNumber = document?.version_number ?? null
+    sourceDocumentIsLatest = document?.is_latest !== false && !document?.replaced_by_document_id
+
+    if (document && !sourceDocumentIsLatest) {
+      const latestDocument = await getLatestDocumentVersionForDocument(document.id)
+      latestSourceDocumentId = latestDocument?.id ?? document.replaced_by_document_id ?? null
+    } else {
+      latestSourceDocumentId = document?.id ?? null
+    }
   }
 
   return {
@@ -128,7 +146,11 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     passingScore: test.passing_score,
     questionCount: test.question_count ?? questions?.length ?? 0,
     publishedAt: test.published_at,
+    sourceDocumentId,
     sourceDocumentTitle,
+    sourceDocumentVersionNumber,
+    sourceDocumentIsLatest,
+    latestSourceDocumentId,
     questions: (questions ?? []).map((question) => ({
       id: question.id,
       questionText: question.question_text,

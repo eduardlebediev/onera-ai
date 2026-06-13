@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import OpenAI from "openai"
 
 import { buildGenerateTestPrompt } from "@/features/tests/lib/generate-test-prompt"
+import { getLatestReadyDocumentVersionForDocument } from "@/features/documents/lib/document-versioning"
 import type { RetrievedChunk } from "@/features/tests/lib/retrieve-document-context"
 import {
   EMBEDDING_MODEL,
@@ -19,7 +20,9 @@ import {
 } from "@/features/tests/schemas/generated-test-schema"
 import type {
   GeneratedTestDraft,
-  GenerateTestRequest,
+  QuestionType,
+  TestDifficulty,
+  TestLanguage,
 } from "@/features/tests/schemas/generated-test-schema"
 import {
   AuthError,
@@ -45,7 +48,7 @@ function isInvalidGeneratedOutputError(error: unknown): boolean {
 
 function normalizeGeneratedDraft(
   generatedDraft: GeneratedTestDraft,
-  input: GenerateTestRequest,
+  input: EffectiveGenerationSettings,
   retrievedChunks: RetrievedChunk[]
 ): GeneratedTestDraft {
   const chunkTitleById = new Map(
@@ -54,15 +57,61 @@ function normalizeGeneratedDraft(
 
   return {
     ...generatedDraft,
+    title: input.templateTitle
+      ? `${input.templateTitle} (Latest version draft)`
+      : generatedDraft.title,
     difficulty: input.difficulty,
     language: input.language,
     targetRole: input.targetRole,
-    passingScore: 70,
+    passingScore: input.passingScore,
     questions: generatedDraft.questions.map((question) => ({
       ...question,
       sourceChunkTitle: chunkTitleById.get(question.sourceChunkId) ?? question.sourceChunkTitle,
     })),
   }
+}
+
+type EffectiveGenerationSettings = {
+  questionCount: number
+  difficulty: TestDifficulty
+  language: TestLanguage
+  targetRole: string
+  passingScore: number
+  questionTypes: QuestionType[]
+  templateTestId?: string
+  templateTitle?: string
+}
+
+type TemplateTestRow = {
+  id: string
+  title: string
+  organization_id: string
+  source_document_id: string | null
+  difficulty: string
+  language: string
+  target_role: string | null
+  question_count: number | null
+  passing_score: number
+}
+
+function normalizeDifficulty(value: string): TestDifficulty {
+  return value === "easy" || value === "medium" || value === "hard" ? value : "medium"
+}
+
+function normalizeLanguage(value: string): TestLanguage {
+  return value === "de" ? "de" : "en"
+}
+
+function clampQuestionCount(value: number | null, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback
+  }
+
+  return Math.min(Math.max(Math.trunc(value), 3), 10)
+}
+
+function clampPassingScore(value: number): number {
+  return Math.min(Math.max(Math.trunc(value), 0), 100)
 }
 
 async function markGenerationRunFailed(
@@ -116,7 +165,7 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    const document = await fetchDocumentById(input.documentId)
+    let document = await fetchDocumentById(input.documentId)
 
     if (!document) {
       return jsonError("Document not found", 404)
@@ -132,6 +181,64 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient()
+    const effectiveSettings: EffectiveGenerationSettings = {
+      questionCount: input.questionCount,
+      difficulty: input.difficulty,
+      language: input.language,
+      targetRole: input.targetRole,
+      passingScore: 70,
+      questionTypes: input.questionTypes,
+      templateTestId: input.templateTestId,
+    }
+
+    if (input.templateTestId) {
+      const { data: templateTest, error: templateError } = await supabase
+        .from("tests")
+        .select(
+          "id, title, organization_id, source_document_id, difficulty, language, target_role, question_count, passing_score"
+        )
+        .eq("id", input.templateTestId)
+        .eq("organization_id", admin.membership.organizationId)
+        .maybeSingle()
+
+      if (templateError) {
+        throw new Error(`Failed to fetch template test: ${templateError.message}`)
+      }
+
+      if (!templateTest) {
+        return jsonError("Template test not found", 404)
+      }
+
+      const template = templateTest as TemplateTestRow
+
+      if (!template.source_document_id) {
+        return jsonError("Template test has no source document", 422)
+      }
+
+      const latestVersion = await getLatestReadyDocumentVersionForDocument(
+        template.source_document_id
+      )
+
+      if (!latestVersion) {
+        return jsonError("Latest source document version is not ready for generation", 422)
+      }
+
+      document = {
+        id: latestVersion.id,
+        title: latestVersion.title,
+        organizationId: latestVersion.organization_id,
+      }
+
+      effectiveSettings.questionCount = clampQuestionCount(
+        template.question_count,
+        input.questionCount
+      )
+      effectiveSettings.difficulty = normalizeDifficulty(template.difficulty)
+      effectiveSettings.language = normalizeLanguage(template.language)
+      effectiveSettings.targetRole = template.target_role ?? input.targetRole
+      effectiveSettings.passingScore = clampPassingScore(template.passing_score)
+      effectiveSettings.templateTitle = template.title
+    }
 
     const { data: generationRun, error: createRunError } = await supabase
       .from("ai_generation_runs")
@@ -142,13 +249,15 @@ export async function POST(request: Request) {
         model: GENERATION_MODEL,
         embedding_model: EMBEDDING_MODEL,
         input_config: {
-          questionCount: input.questionCount,
-          difficulty: input.difficulty,
-          language: input.language,
-          targetRole: input.targetRole,
+          questionCount: effectiveSettings.questionCount,
+          difficulty: effectiveSettings.difficulty,
+          language: effectiveSettings.language,
+          targetRole: effectiveSettings.targetRole,
+          questionTypes: effectiveSettings.questionTypes,
+          templateTestId: effectiveSettings.templateTestId ?? null,
         },
         retrieved_chunk_ids: [],
-        created_by: null,
+        created_by: admin.userId,
       })
       .select("id")
       .single()
@@ -164,10 +273,10 @@ export async function POST(request: Request) {
     try {
       context = await retrieveDocumentContext({
         document,
-        questionCount: input.questionCount,
-        difficulty: input.difficulty,
-        language: input.language,
-        targetRole: input.targetRole,
+        questionCount: effectiveSettings.questionCount,
+        difficulty: effectiveSettings.difficulty,
+        language: effectiveSettings.language,
+        targetRole: effectiveSettings.targetRole,
         openai: openaiClient,
       })
     } catch (error) {
@@ -194,10 +303,11 @@ export async function POST(request: Request) {
 
     const prompt = buildGenerateTestPrompt({
       documentTitle: context.document.title,
-      questionCount: input.questionCount,
-      difficulty: input.difficulty,
-      language: input.language,
-      targetRole: input.targetRole,
+      questionCount: effectiveSettings.questionCount,
+      difficulty: effectiveSettings.difficulty,
+      language: effectiveSettings.language,
+      targetRole: effectiveSettings.targetRole,
+      questionTypes: effectiveSettings.questionTypes,
       chunks: context.chunks,
     })
 
@@ -223,7 +333,11 @@ export async function POST(request: Request) {
       return jsonError("Failed to generate test draft", 500)
     }
 
-    const normalizedDraftInput = normalizeGeneratedDraft(generatedDraft, input, context.chunks)
+    const normalizedDraftInput = normalizeGeneratedDraft(
+      generatedDraft,
+      effectiveSettings,
+      context.chunks
+    )
     const validatedDraft = GeneratedTestDraftSchema.safeParse(normalizedDraftInput)
 
     if (!validatedDraft.success) {
@@ -239,7 +353,7 @@ export async function POST(request: Request) {
     const chunkValidationError = validateDraftAgainstRetrievedChunks(
       validatedDraft.data,
       retrievedChunkIdSet,
-      input.questionCount
+      effectiveSettings.questionCount
     )
 
     if (chunkValidationError) {

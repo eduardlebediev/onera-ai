@@ -20,6 +20,11 @@ export interface DocumentVersion {
   version: number
   uploadedAt: string
   status: DocumentStatus
+  isLatest?: boolean
+  isCurrent?: boolean
+  changeMessage?: string | null
+  aiChangeSummary?: string | null
+  newerVersionId?: string | null
 }
 
 export interface DocumentTopic {
@@ -46,6 +51,13 @@ export interface MockDocumentDetail {
   processedAt?: string | null
   hasEmbeddedChunks?: boolean
   canDownloadOriginal?: boolean
+  sourceType?: string
+  versionNumber?: number
+  isLatestVersion?: boolean
+  latestDocumentId?: string
+  newerVersionId?: string | null
+  changeMessage?: string | null
+  aiChangeSummary?: string | null
   /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]

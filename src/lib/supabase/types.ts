@@ -97,6 +97,12 @@ export type Database = {
           processing_error: string | null
           processed_at: string | null
           status: string
+          parent_document_id: string | null
+          version_number: number
+          is_latest: boolean
+          replaced_by_document_id: string | null
+          change_message: string | null
+          ai_change_summary: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -117,6 +123,12 @@ export type Database = {
           processing_error?: string | null
           processed_at?: string | null
           status?: string
+          parent_document_id?: string | null
+          version_number?: number
+          is_latest?: boolean
+          replaced_by_document_id?: string | null
+          change_message?: string | null
+          ai_change_summary?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -137,9 +149,51 @@ export type Database = {
           processing_error?: string | null
           processed_at?: string | null
           status?: string
+          parent_document_id?: string | null
+          version_number?: number
+          is_latest?: boolean
+          replaced_by_document_id?: string | null
+          change_message?: string | null
+          ai_change_summary?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      document_version_events: {
+        Row: {
+          id: string
+          organization_id: string
+          document_id: string
+          previous_document_id: string | null
+          event_type: string
+          created_by: string | null
+          change_message: string | null
+          ai_change_summary: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          document_id: string
+          previous_document_id?: string | null
+          event_type: string
+          created_by?: string | null
+          change_message?: string | null
+          ai_change_summary?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          document_id?: string
+          previous_document_id?: string | null
+          event_type?: string
+          created_by?: string | null
+          change_message?: string | null
+          ai_change_summary?: string | null
+          created_at?: string
         }
         Relationships: []
       }

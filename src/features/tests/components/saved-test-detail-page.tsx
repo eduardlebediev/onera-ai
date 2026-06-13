@@ -1,5 +1,7 @@
 import Link from "next/link"
+import { AlertTriangle } from "lucide-react"
 
+import { GenerateLatestVersionDraftButton } from "@/features/tests/components/generate-latest-version-draft-button"
 import { TestAssignmentsSection } from "@/features/tests/components/test-assignments-section"
 import { TestResultsSection } from "@/features/tests/components/test-results-section"
 import {
@@ -103,6 +105,41 @@ export function SavedTestDetailPage({
           </div>
         </div>
 
+        {!test.sourceDocumentIsLatest && test.sourceDocumentId && test.latestSourceDocumentId ? (
+          <Card className="border-orange-200 bg-orange-50 dark:border-orange-900/50 dark:bg-orange-900/20">
+            <CardContent className="flex flex-col gap-4 p-4 text-sm text-orange-800 dark:text-orange-300 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <div>
+                  <p className="font-medium">
+                    This test was generated from an older document version.
+                  </p>
+                  <p className="mt-1">
+                    A newer version of the source document exists. The test remains valid and
+                    unchanged.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button asChild variant="outline">
+                  <Link href={`/admin/documents/${test.sourceDocumentId}`}>
+                    Open source version
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/admin/documents/${test.latestSourceDocumentId}`}>
+                    Open latest document version
+                  </Link>
+                </Button>
+                <GenerateLatestVersionDraftButton
+                  documentId={test.latestSourceDocumentId}
+                  templateTestId={test.id}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Saved Test Summary</CardTitle>
@@ -120,6 +157,12 @@ export function SavedTestDetailPage({
             <p>
               <span className="font-medium">Source document:</span>{" "}
               {test.sourceDocumentTitle ?? "Unknown document"}
+              {test.sourceDocumentVersionNumber ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · v{test.sourceDocumentVersionNumber}
+                </span>
+              ) : null}
             </p>
             {test.publishedAt ? (
               <p className="md:col-span-2">

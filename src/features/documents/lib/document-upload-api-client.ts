@@ -1,6 +1,7 @@
 import {
   DocumentDownloadUrlResponseSchema,
   UploadDocumentResponseSchema,
+  UploadDocumentVersionResponseSchema,
 } from "@/features/documents/schemas/document-upload-schema"
 
 const DEFAULT_UPLOAD_ERROR = "Could not upload this document. Please try again."
@@ -47,6 +48,52 @@ export async function uploadDocument(file: File) {
   }
 
   const parsed = UploadDocumentResponseSchema.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(DEFAULT_UPLOAD_ERROR)
+  }
+
+  return parsed.data
+}
+
+export async function uploadDocumentVersion(input: {
+  documentId: string
+  file: File
+  changeMessage?: string
+}) {
+  const formData = new FormData()
+  formData.append("file", input.file)
+
+  if (input.changeMessage?.trim()) {
+    formData.append("changeMessage", input.changeMessage.trim())
+  }
+
+  const response = await fetch(`/api/admin/documents/${input.documentId}/versions`, {
+    method: "POST",
+    body: formData,
+  })
+
+  let payload: unknown = null
+
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof (payload as { error?: unknown }).error === "string"
+        ? (payload as { error: string }).error
+        : undefined
+
+    throw new Error(getUploadErrorMessage(response.status, serverMessage))
+  }
+
+  const parsed = UploadDocumentVersionResponseSchema.safeParse(payload)
 
   if (!parsed.success) {
     throw new Error(DEFAULT_UPLOAD_ERROR)

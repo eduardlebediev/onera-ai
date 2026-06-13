@@ -6,15 +6,22 @@ export const QuestionTypeSchema = z.enum(["single_choice", "multiple_choice", "t
 
 export const GenerateTestRequestSchema = z.object({
   documentId: z.string().uuid("documentId must be a valid UUID"),
+  templateTestId: z.string().uuid("templateTestId must be a valid UUID").optional(),
   questionCount: z.number().int().min(3).max(10).default(5),
   difficulty: TestDifficultySchema.default("medium"),
   language: TestLanguageSchema.default("en"),
   targetRole: z.string().trim().min(1).max(120).default("General employee"),
+  questionTypes: z
+    .array(QuestionTypeSchema)
+    .min(1)
+    .default(["single_choice", "multiple_choice", "true_false"]),
 })
 
 export type GenerateTestRequest = z.infer<typeof GenerateTestRequestSchema>
+export type GenerateTestRequestInput = z.input<typeof GenerateTestRequestSchema>
 export type TestDifficulty = z.infer<typeof TestDifficultySchema>
 export type TestLanguage = z.infer<typeof TestLanguageSchema>
+export type QuestionType = z.infer<typeof QuestionTypeSchema>
 
 const GeneratedTestOptionSchema = z.object({
   id: z.string().min(1),

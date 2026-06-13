@@ -61,6 +61,8 @@ export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSet
   const router = useRouter()
   const isGeneratable = canGenerateTest(document)
   const canCallApi = hasApiBackedDocument(routeDocumentId)
+  const isLatestVersion = document.isLatestVersion !== false
+  const latestDocumentId = document.latestDocumentId ?? document.id
   const defaultTopics = useMemo(() => getDefaultSelectedTopics(document), [document])
   const defaultChunkIds = useMemo(
     () => getDefaultSelectedChunkIds(document, defaultTopics),
@@ -73,8 +75,13 @@ export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSet
   const [selectedChunkIds, setSelectedChunkIds] = useState<string[]>(defaultChunkIds)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
+  const [hasAcceptedOldVersion, setHasAcceptedOldVersion] = useState(isLatestVersion)
 
-  const canPreview = isGeneratable && selectedChunkIds.length > 0 && selectedTopics.length > 0
+  const canPreview =
+    isGeneratable &&
+    selectedChunkIds.length > 0 &&
+    selectedTopics.length > 0 &&
+    (isLatestVersion || hasAcceptedOldVersion)
   const reviewDocumentId = resolveReviewDocumentRouteId(routeDocumentId)
 
   const handleSettingsChange = useCallback((updates: Partial<GenerateTestSettings>) => {
@@ -252,6 +259,28 @@ export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSet
           <Button type="button" variant="outline" size="sm" onClick={handleMockPreview}>
             Continue with mock preview
           </Button>
+        </div>
+      ) : null}
+
+      {!isLatestVersion && !hasAcceptedOldVersion ? (
+        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
+            <div>
+              <p className="font-medium">This is not the latest document version.</p>
+              <p className="mt-1">Use the latest version instead, or explicitly continue here.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/documents/${latestDocumentId}/generate-test`}>
+                Use latest version
+              </Link>
+            </Button>
+            <Button type="button" size="sm" onClick={() => setHasAcceptedOldVersion(true)}>
+              Continue with this version
+            </Button>
+          </div>
         </div>
       ) : null}
 

@@ -1,5 +1,13 @@
 # Decisions
 
+## 048 — Regeneration from a new document version creates a new draft, not a mutation of published tests
+
+When a new document version is uploaded, existing tests generated from older versions remain unchanged and valid. Admins may generate a new AI draft from the latest version, but the system does not delete old questions, rewrite published tests, change assignments, or alter completed results automatically.
+
+## 047 — Documents use immutable versions with visible change history
+
+Documents are not overwritten in place. Uploading an updated file creates a new document row with its own extracted text, chunks, embeddings, topics, version metadata, and history event. Old versions remain available for historical tests and results. The UI shows a document version timeline, latest/old version badges, and outdated source warnings for tests generated from older versions.
+
 ## 046 — Document topics are extracted as a separate AI step
 
 Uploaded documents receive AI-extracted learning topics after text extraction, chunking, and embeddings. Topics are stored separately from chunks so the UI can present document-level learning concepts and future generation/recommendation flows can use better topic data than raw chunk headings alone.

@@ -1,5 +1,5 @@
 import type {
-  GenerateTestRequest,
+  GenerateTestRequestInput,
   GeneratedTestResponse,
 } from "@/features/tests/schemas/generated-test-schema"
 import { GeneratedTestResponseSchema } from "@/features/tests/schemas/generated-test-schema"
@@ -30,7 +30,7 @@ function getFriendlyErrorMessage(status: number, serverMessage?: string): string
 }
 
 export async function generateTestFromDocument(
-  input: GenerateTestRequest
+  input: GenerateTestRequestInput
 ): Promise<GeneratedTestResponse> {
   const response = await fetch("/api/admin/generate-test", {
     method: "POST",

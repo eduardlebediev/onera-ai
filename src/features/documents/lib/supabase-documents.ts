@@ -17,6 +17,7 @@ export type DocumentsListResult = {
 
 type DocumentRow = {
   id: string
+  organization_id: string
   title: string
   description: string | null
   source_type: string
@@ -31,6 +32,13 @@ type DocumentRow = {
   storage_path: string | null
   created_at: string
   updated_at: string
+  parent_document_id: string | null
+  version_number: number
+  is_latest: boolean
+  replaced_by_document_id: string | null
+  change_message: string | null
+  ai_change_summary: string | null
+  created_by: string | null
 }
 
 type ChunkRow = {
@@ -56,6 +64,32 @@ type SupabaseQueryError = {
   code?: string
   message?: string
 }
+
+const DOCUMENT_SELECT = [
+  "id",
+  "title",
+  "description",
+  "source_type",
+  "file_name",
+  "file_type",
+  "file_size_mb",
+  "status",
+  "extracted_text",
+  "extraction_method",
+  "processing_error",
+  "processed_at",
+  "storage_path",
+  "created_at",
+  "updated_at",
+  "parent_document_id",
+  "version_number",
+  "is_latest",
+  "replaced_by_document_id",
+  "change_message",
+  "ai_change_summary",
+  "organization_id",
+  "created_by",
+].join(", ")
 
 function isMissingDocumentTopicsTableError(error: SupabaseQueryError): boolean {
   const message = error.message ?? ""
@@ -159,12 +193,20 @@ function resolveDocumentTopics(
 function mapDocumentToDetail(
   document: DocumentRow,
   chunkRows: ChunkRow[],
-  topicRows: TopicRow[] = []
+  topicRows: TopicRow[] = [],
+  versionRows: DocumentRow[] = [document]
 ): MockDocumentDetail {
   const { chunks, hasEmbeddedChunks } = mapChunkRows(chunkRows)
   const { topics, documentTopics } = resolveDocumentTopics(topicRows, chunks)
   const status = normalizeDocumentStatus(document.status)
   const uploadedAt = document.created_at.slice(0, 10)
+  const sortedVersionRows = [...versionRows].sort((a, b) => b.version_number - a.version_number)
+  const latestVersion =
+    sortedVersionRows.find((version) => version.is_latest) ?? sortedVersionRows[0]
+  const newerVersion =
+    document.replaced_by_document_id ??
+    sortedVersionRows.find((version) => version.version_number > document.version_number)?.id ??
+    null
   const fileSizeMb =
     typeof document.file_size_mb === "number" && Number.isFinite(document.file_size_mb)
       ? Number(document.file_size_mb)
@@ -174,6 +216,7 @@ function mapDocumentToDetail(
     id: document.id,
     title: document.title,
     status,
+    sourceType: document.source_type,
     fileType: inferFileType(document.file_name, document.file_type),
     fileSizeMb,
     fileName: document.file_name ?? undefined,
@@ -185,19 +228,28 @@ function mapDocumentToDetail(
     processedAt: document.processed_at ?? undefined,
     hasEmbeddedChunks,
     canDownloadOriginal: Boolean(document.storage_path),
+    versionNumber: document.version_number,
+    isLatestVersion: document.is_latest,
+    latestDocumentId: latestVersion?.id ?? document.id,
+    newerVersionId: newerVersion,
+    changeMessage: document.change_message,
+    aiChangeSummary: document.ai_change_summary,
     topicsCount: topics.length,
     topics,
     documentTopics,
     chunks,
     linkedTests: [],
-    versions: [
-      {
-        id: `${document.id}-v1`,
-        version: 1,
-        uploadedAt,
-        status,
-      },
-    ],
+    versions: sortedVersionRows.map((version) => ({
+      id: version.id,
+      version: version.version_number,
+      uploadedAt: version.created_at.slice(0, 10),
+      status: normalizeDocumentStatus(version.status),
+      isLatest: version.is_latest,
+      isCurrent: version.id === document.id,
+      changeMessage: version.change_message,
+      aiChangeSummary: version.ai_change_summary,
+      newerVersionId: version.replaced_by_document_id,
+    })),
   }
 }
 
@@ -264,38 +316,76 @@ async function fetchTopicsByDocumentIds(documentIds: string[]): Promise<Map<stri
   return topicsByDocumentId
 }
 
+function getDocumentRootId(document: DocumentRow): string {
+  return document.parent_document_id ?? document.id
+}
+
+async function fetchVersionRowsByRootIds(rootIds: string[]): Promise<Map<string, DocumentRow[]>> {
+  const versionsByRootId = new Map<string, DocumentRow[]>()
+  const uniqueRootIds = Array.from(new Set(rootIds))
+
+  if (uniqueRootIds.length === 0) {
+    return versionsByRootId
+  }
+
+  const supabase = createAdminClient()
+  const rootList = uniqueRootIds.join(",")
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select(DOCUMENT_SELECT)
+    .or(`id.in.(${rootList}),parent_document_id.in.(${rootList})`)
+    .order("version_number", { ascending: false })
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch document version history: ${error.message}`)
+  }
+
+  for (const version of (data ?? []) as unknown as DocumentRow[]) {
+    const rootId = getDocumentRootId(version)
+    const existing = versionsByRootId.get(rootId) ?? []
+    existing.push(version)
+    versionsByRootId.set(rootId, existing)
+  }
+
+  return versionsByRootId
+}
+
 export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
   const supabase = createAdminClient()
 
   const { data: documents, error } = await supabase
     .from("documents")
-    .select(
-      "id, title, description, source_type, file_name, file_type, file_size_mb, status, extracted_text, extraction_method, processing_error, processed_at, storage_path, created_at, updated_at"
-    )
+    .select(DOCUMENT_SELECT)
+    .eq("is_latest", true)
     .order("updated_at", { ascending: false })
 
   if (error) {
     throw new Error(`Failed to fetch documents: ${error.message}`)
   }
 
-  const documentRows = (documents ?? []) as DocumentRow[]
+  const documentRows = (documents ?? []) as unknown as DocumentRow[]
 
   if (documentRows.length === 0) {
     return { documents: [], source: "supabase" }
   }
 
   const documentIds = documentRows.map((doc) => doc.id)
+  const rootIds = documentRows.map(getDocumentRootId)
   const [chunksByDocumentId, topicsByDocumentId] = await Promise.all([
     fetchChunksByDocumentIds(documentIds),
     fetchTopicsByDocumentIds(documentIds),
   ])
+  const versionsByRootId = await fetchVersionRowsByRootIds(rootIds)
 
   return {
     documents: documentRows.map((document) =>
       mapDocumentToDetail(
         document,
         chunksByDocumentId.get(document.id) ?? [],
-        topicsByDocumentId.get(document.id) ?? []
+        topicsByDocumentId.get(document.id) ?? [],
+        versionsByRootId.get(getDocumentRootId(document)) ?? [document]
       )
     ),
     source: "supabase",
@@ -315,9 +405,7 @@ export async function getDocumentDetailById(
 
   const { data: document, error: documentError } = await supabase
     .from("documents")
-    .select(
-      "id, title, description, source_type, file_name, file_type, file_size_mb, status, extracted_text, extraction_method, processing_error, processed_at, storage_path, created_at, updated_at"
-    )
+    .select(DOCUMENT_SELECT)
     .eq("id", apiDocumentId)
     .maybeSingle()
 
@@ -339,11 +427,16 @@ export async function getDocumentDetailById(
     throw new Error(`Failed to fetch document chunks: ${chunksError.message}`)
   }
 
-  const topicsByDocumentId = await fetchTopicsByDocumentIds([apiDocumentId])
+  const documentRow = document as unknown as DocumentRow
+  const [topicsByDocumentId, versionsByRootId] = await Promise.all([
+    fetchTopicsByDocumentIds([apiDocumentId]),
+    fetchVersionRowsByRootIds([getDocumentRootId(documentRow)]),
+  ])
 
   return mapDocumentToDetail(
-    document as DocumentRow,
+    documentRow,
     (chunks ?? []) as ChunkRow[],
-    topicsByDocumentId.get(apiDocumentId) ?? []
+    topicsByDocumentId.get(apiDocumentId) ?? [],
+    versionsByRootId.get(getDocumentRootId(documentRow)) ?? [documentRow]
   )
 }

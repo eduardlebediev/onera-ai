@@ -4,6 +4,28 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 33: Document Versioning and Change History
+
+Added immutable document versions, version history, new-version uploads, affected-test awareness, and outdated source warnings without mutating existing tests or historical chunks.
+
+- Added `supabase/migrations/00005_document_versioning.sql` — document version metadata, `document_version_events`, indexes, and admin RLS policies.
+- Extended `src/lib/supabase/types.ts` with document version columns and `document_version_events`.
+- Added server-only document version helpers:
+  - `src/features/documents/lib/document-versioning.ts`
+  - `src/features/documents/lib/document-version-events.ts`
+  - `src/features/documents/lib/document-change-summary.ts`
+  - `src/features/documents/lib/document-affected-tests.ts`
+- Refactored `src/features/documents/lib/upload-document.ts` so first uploads and version uploads share validation, storage, extraction, chunking, embeddings, and topic extraction.
+- Added `POST /api/admin/documents/[id]/versions` for upload-new-version flow with best-effort AI change summaries and affected tests response.
+- Updated document upload schemas/client helpers for version upload responses.
+- Updated `src/features/documents/lib/supabase-documents.ts` and document models to load latest-only document lists and real version history.
+- Added document version UI components and wired document detail/list badges, history, latest/old banners, upload-new-version controls, and an "Update document" dropdown action on document detail.
+- Extended `POST /api/admin/generate-test` with optional template test regeneration from the latest ready source version.
+- Added old-version warning behavior to the generate setup page.
+- Updated saved test detail loading/UI to show outdated source warnings and actions to open old/latest document versions or generate a new draft.
+- Updated `context/architecture.md` and recorded decisions 047 and 048.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 32: AI Document Topic Extraction
 
 Added a separate AI topic extraction step after document upload processing, with durable storage in `document_topics`, chunk-topic fallback, and admin document detail UI.

@@ -22,7 +22,9 @@ interface SupabaseTestQuestionCardProps {
   questionNumber: number
   totalQuestions: number
   selectedOptionIds: string[]
+  openText?: string
   onSelectOptionIds: (optionIds: string[]) => void
+  onOpenTextChange?: (text: string) => void
 }
 
 type TestQuestionCardProps = MockTestQuestionCardProps | SupabaseTestQuestionCardProps
@@ -35,6 +37,8 @@ function formatSupabaseQuestionType(questionType: EmployeeSafeQuestion["question
       return "Multiple choice"
     case "true_false":
       return "True / false"
+    case "open_question":
+      return "Open question"
   }
 }
 
@@ -114,8 +118,9 @@ export function TestQuestionCard(props: TestQuestionCardProps) {
     )
   }
 
-  const { question, selectedOptionIds, onSelectOptionIds } = props
+  const { question, selectedOptionIds, openText = "", onSelectOptionIds, onOpenTextChange } = props
   const isMultiple = question.questionType === "multiple_choice"
+  const isOpenQuestion = question.questionType === "open_question"
   const groupRole = isMultiple ? "group" : "radiogroup"
 
   function handleOptionClick(optionId: string) {
@@ -157,51 +162,62 @@ export function TestQuestionCard(props: TestQuestionCardProps) {
           ) : null}
         </div>
 
-        <div
-          className="space-y-2"
-          role={groupRole}
-          aria-label={`Answer options for question ${questionNumber}`}
-        >
-          {question.options.map((option) => {
-            const isSelected = selectedOptionIds.includes(option.id)
+        {isOpenQuestion ? (
+          <textarea
+            value={openText}
+            onChange={(event) => onOpenTextChange?.(event.target.value)}
+            rows={5}
+            aria-label={`Open answer for question ${questionNumber}`}
+            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-y min-h-32"
+            placeholder="Type your answer here..."
+          />
+        ) : (
+          <div
+            className="space-y-2"
+            role={groupRole}
+            aria-label={`Answer options for question ${questionNumber}`}
+          >
+            {question.options.map((option) => {
+              const isSelected = selectedOptionIds.includes(option.id)
 
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role={isMultiple ? "checkbox" : "radio"}
-                aria-checked={isSelected}
-                onClick={() => handleOptionClick(option.id)}
-                className={cn(
-                  "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                    : "border-border bg-card hover:bg-muted/30"
-                )}
-              >
-                <span
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role={isMultiple ? "checkbox" : "radio"}
+                  aria-checked={isSelected}
+                  onClick={() => handleOptionClick(option.id)}
                   className={cn(
-                    "mt-0.5 flex size-4 shrink-0 items-center justify-center border",
-                    isMultiple ? "rounded-md" : "rounded-full",
+                    "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
                     isSelected
-                      ? "border-primary bg-primary"
-                      : "border-muted-foreground/40 bg-background"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border bg-card hover:bg-muted/30"
                   )}
-                  aria-hidden="true"
                 >
-                  {isSelected ? (
-                    isMultiple ? (
-                      <span className="size-2 rounded-sm bg-background" />
-                    ) : (
-                      <span className="size-1.5 rounded-full bg-background" />
-                    )
-                  ) : null}
-                </span>
-                <span className="typography-small text-foreground">{option.text}</span>
-              </button>
-            )
-          })}
-        </div>
+                  <span
+                    className={cn(
+                      "mt-0.5 flex size-4 shrink-0 items-center justify-center border",
+                      isMultiple ? "rounded-md" : "rounded-full",
+                      isSelected
+                        ? "border-primary bg-primary"
+                        : "border-muted-foreground/40 bg-background"
+                    )}
+                    aria-hidden="true"
+                  >
+                    {isSelected ? (
+                      isMultiple ? (
+                        <span className="size-2 rounded-sm bg-background" />
+                      ) : (
+                        <span className="size-1.5 rounded-full bg-background" />
+                      )
+                    ) : null}
+                  </span>
+                  <span className="typography-small text-foreground">{option.text}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

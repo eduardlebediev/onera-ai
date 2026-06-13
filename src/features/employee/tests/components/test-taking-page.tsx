@@ -94,9 +94,15 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
   const isFirstQuestion = currentIndex === 0
   const isLastQuestion = currentIndex === totalQuestions - 1
 
+  const supabaseQuestion = isSupabaseTakeableTest(test) ? test.questions[currentIndex] : null
+
   const hasCurrentAnswer = currentQuestion
-    ? isSupabase
-      ? isSupabaseQuestionAnswered(supabaseAnswers, currentQuestion.id)
+    ? supabaseQuestion
+      ? isSupabaseQuestionAnswered(
+          supabaseAnswers,
+          supabaseQuestion.id,
+          supabaseQuestion.questionType
+        )
       : isQuestionAnswered(mockAnswers, currentQuestion.id)
     : false
 
@@ -116,13 +122,17 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     () =>
       questions.map((question, index) => {
         if (index === currentIndex) return "current" as const
-        const answered = isSupabase
-          ? isSupabaseQuestionAnswered(supabaseAnswers, question.id)
+        const answered = isSupabaseTakeableTest(test)
+          ? isSupabaseQuestionAnswered(
+              supabaseAnswers,
+              test.questions[index].id,
+              test.questions[index].questionType
+            )
           : isQuestionAnswered(mockAnswers, question.id)
         if (answered) return "answered" as const
         return "unanswered" as const
       }),
-    [questions, currentIndex, isSupabase, supabaseAnswers, mockAnswers]
+    [questions, currentIndex, test, supabaseAnswers, mockAnswers]
   )
 
   function handleSelectMockAnswer(answer: string) {
@@ -140,6 +150,16 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     setSupabaseAnswers((previous) => ({
       ...previous,
       [currentQuestion.id]: optionIds,
+    }))
+    setShowIncompleteWarning(false)
+    setSubmitError(null)
+  }
+
+  function handleOpenTextChange(text: string) {
+    if (!currentQuestion) return
+    setSupabaseAnswers((previous) => ({
+      ...previous,
+      [currentQuestion.id]: text,
     }))
     setShowIncompleteWarning(false)
     setSubmitError(null)
@@ -189,10 +209,20 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
         const payload = {
           attemptId,
           answers: isSupabaseTakeableTest(test)
-            ? test.questions.map((question) => ({
-                questionId: question.id,
-                selectedOptionIds: supabaseAnswers[question.id] ?? [],
-              }))
+            ? test.questions.map((question) => {
+                const answer = supabaseAnswers[question.id]
+                if (question.questionType === "open_question") {
+                  return {
+                    questionId: question.id,
+                    openText: typeof answer === "string" ? answer : "",
+                  }
+                }
+
+                return {
+                  questionId: question.id,
+                  selectedOptionIds: Array.isArray(answer) ? answer : [],
+                }
+              })
             : [],
         }
 
@@ -281,8 +311,16 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
               question={test.questions[currentIndex]}
               questionNumber={currentIndex + 1}
               totalQuestions={totalQuestions}
-              selectedOptionIds={supabaseAnswers[currentQuestion.id] ?? []}
+              selectedOptionIds={(() => {
+                const answer = supabaseAnswers[test.questions[currentIndex].id]
+                return Array.isArray(answer) ? answer : []
+              })()}
+              openText={(() => {
+                const answer = supabaseAnswers[test.questions[currentIndex].id]
+                return typeof answer === "string" ? answer : ""
+              })()}
               onSelectOptionIds={handleSelectSupabaseOptionIds}
+              onOpenTextChange={handleOpenTextChange}
             />
           ) : (
             <TestQuestionCard

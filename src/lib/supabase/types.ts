@@ -367,6 +367,7 @@ export type Database = {
           source_document_id: string | null
           is_active: boolean
           source_status: string
+          review_status: string
           source_invalid_reason: string | null
           created_at: string
           updated_at: string
@@ -387,6 +388,7 @@ export type Database = {
           source_document_id?: string | null
           is_active?: boolean
           source_status?: string
+          review_status?: string
           source_invalid_reason?: string | null
           created_at?: string
           updated_at?: string
@@ -407,6 +409,7 @@ export type Database = {
           source_document_id?: string | null
           is_active?: boolean
           source_status?: string
+          review_status?: string
           source_invalid_reason?: string | null
           created_at?: string
           updated_at?: string

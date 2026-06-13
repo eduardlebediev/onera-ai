@@ -13,9 +13,24 @@ const PublishTestOptionSchema = z.object({
   text: z.string().min(1),
 })
 
-const PublishCorrectAnswerSchema = z.object({
-  optionIds: z.array(z.string().min(1)).min(1),
-})
+const PublishCorrectAnswerSchema = z
+  .object({
+    optionIds: z.array(z.string().min(1)).optional(),
+    expectedAnswer: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasOptionIds = Boolean(value.optionIds && value.optionIds.length > 0)
+    const hasExpectedAnswer = Boolean(
+      value.expectedAnswer && value.expectedAnswer.trim().length > 0
+    )
+
+    if (!hasOptionIds && !hasExpectedAnswer) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "correctAnswer must include optionIds or expectedAnswer",
+      })
+    }
+  })
 
 export const PublishGeneratedQuestionSchema = z
   .object({
@@ -32,9 +47,30 @@ export const PublishGeneratedQuestionSchema = z
     reviewStatus: PublishReviewStatusSchema.optional(),
   })
   .superRefine((question, ctx) => {
-    const optionIds = new Set(question.options.map((option) => option.id))
+    if (question.questionType === "open_question") {
+      if (question.options.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "open_question must not include options",
+          path: ["options"],
+        })
+      }
 
-    for (const optionId of question.correctAnswer.optionIds) {
+      if (!question.correctAnswer.expectedAnswer?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "open_question requires expectedAnswer",
+          path: ["correctAnswer", "expectedAnswer"],
+        })
+      }
+
+      return
+    }
+
+    const optionIds = new Set(question.options.map((option) => option.id))
+    const correctOptionIds = question.correctAnswer.optionIds ?? []
+
+    for (const optionId of correctOptionIds) {
       if (!optionIds.has(optionId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -53,7 +89,7 @@ export const PublishGeneratedQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length !== 1) {
+      if (question.correctAnswer.optionIds?.length !== 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "true_false questions must have exactly 1 correct option",
@@ -71,7 +107,7 @@ export const PublishGeneratedQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length !== 1) {
+      if (question.correctAnswer.optionIds?.length !== 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "single_choice questions must have exactly 1 correct option",
@@ -89,7 +125,7 @@ export const PublishGeneratedQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length < 1) {
+      if ((question.correctAnswer.optionIds?.length ?? 0) < 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "multiple_choice questions must have at least 1 correct option",
@@ -135,16 +171,6 @@ export const PublishGeneratedTestRequestSchema = z
         path: ["questions"],
       })
     }
-
-    saveableQuestions.forEach((question, index) => {
-      if (!question.sourceChunkId) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Approved generated questions must include a source chunk",
-          path: ["questions", index, "sourceChunkId"],
-        })
-      }
-    })
 
     const hasApproved = saveableQuestions.some(
       (question) => question.reviewStatus === "approved" || !question.reviewStatus

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import OpenAI from "openai"
 
 import { buildGenerateTestPrompt } from "@/features/tests/lib/generate-test-prompt"
+import { createDraftTestFromGeneration } from "@/features/tests/lib/draft-test"
 import { getLatestReadyDocumentVersionForDocument } from "@/features/documents/lib/document-versioning"
 import { validateGeneratedChunkReferences } from "@/features/tests/lib/multi-document-generation"
 import type { RetrievedChunk } from "@/features/tests/lib/retrieve-document-context"
@@ -478,8 +479,23 @@ export async function POST(request: Request) {
       throw new Error(`Failed to complete ai_generation_runs row: ${completeRunError.message}`)
     }
 
+    let draftTestId: string | undefined
+
+    try {
+      draftTestId = await createDraftTestFromGeneration({
+        organizationId: admin.membership.organizationId,
+        generationRunId,
+        primaryDocumentId: responseDocuments[0].id,
+        documentIds: effectiveSettings.documentIds,
+        draft: validatedDraft.data,
+      })
+    } catch (draftError) {
+      console.warn("Failed to persist draft test rows:", draftError)
+    }
+
     return NextResponse.json({
       generationRunId,
+      testId: draftTestId,
       document: responseDocuments[0],
       documents: responseDocuments,
       draft: validatedDraft.data,

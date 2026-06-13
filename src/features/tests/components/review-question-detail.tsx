@@ -4,9 +4,11 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Loader2,
   PencilLine,
   RotateCw,
   Save,
+  Trash2,
   X,
   XCircle,
 } from "lucide-react"
@@ -23,6 +25,9 @@ interface ReviewQuestionDetailProps {
   onApprove: (questionId: string) => void
   onReject: (questionId: string) => void
   onSaveEdit: (questionId: string, patch: Partial<ReviewQuestion>) => void
+  onDelete?: (questionId: string) => void
+  onRegenerate?: (questionId: string) => Promise<void>
+  isRegenerating?: boolean
   onPrevious: () => void
   onNext: () => void
 }
@@ -66,10 +71,14 @@ export function ReviewQuestionDetail({
   onApprove,
   onReject,
   onSaveEdit,
+  onDelete,
+  onRegenerate,
+  isRegenerating = false,
   onPrevious,
   onNext,
 }: ReviewQuestionDetailProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editText, setEditText] = useState(question.questionText)
   const [editOptions, setEditOptions] = useState<string[]>(question.options)
   const [editCorrectAnswer, setEditCorrectAnswer] = useState(question.correctAnswer)
@@ -122,6 +131,8 @@ export function ReviewQuestionDetail({
   const correctAnswerIndices = question.options
     .map((option, index) => (isCorrectOption(option, question) ? index : -1))
     .filter((index) => index >= 0)
+  const isOpenQuestion = question.questionType === "open_question"
+  const canRegenerate = question.isAiGenerated && Boolean(onRegenerate)
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -193,91 +204,100 @@ export function ReviewQuestionDetail({
             </div>
 
             {/* Options */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">Options</h4>
-                {isEditing && (
-                  <p className="text-xs text-muted-foreground">
-                    Click a circle to set the correct answer
-                  </p>
-                )}
-              </div>
-              <div className="space-y-3">
-                {isEditing
-                  ? editOptions.map((option, index) => {
-                      const letter = String.fromCharCode(65 + index)
-                      const isCorrect = option === editCorrectAnswer
+            {!isOpenQuestion ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-muted-foreground">Options</h4>
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Click a circle to set the correct answer
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  {isEditing
+                    ? editOptions.map((option, index) => {
+                        const letter = String.fromCharCode(65 + index)
+                        const isCorrect = option === editCorrectAnswer
 
-                      return (
-                        <div
-                          key={index}
-                          className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                            isCorrect
-                              ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
-                              : "border-border/50 bg-background"
-                          }`}
-                        >
-                          {/* Correct answer selector */}
-                          <button
-                            type="button"
-                            onClick={() => setEditCorrectAnswer(option)}
-                            aria-label={`Mark option ${letter} as correct answer`}
-                            className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
-                              isCorrect
-                                ? "border-green-400 bg-green-500 text-white hover:bg-green-600"
-                                : "border-border text-muted-foreground hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                            }`}
-                          >
-                            {isCorrect ? <CheckCircle2 className="size-4" /> : letter}
-                          </button>
-                          {/* Option text input */}
-                          <input
-                            type="text"
-                            value={option}
-                            onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                            aria-label={`Option ${letter} text`}
-                            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                          />
-                        </div>
-                      )
-                    })
-                  : question.options.map((option, index) => {
-                      const isCorrect = isCorrectOption(option, question)
-                      const letter = String.fromCharCode(65 + index)
-
-                      return (
-                        <div
-                          key={index}
-                          className={`flex items-center gap-4 p-4 rounded-xl border ${
-                            isCorrect
-                              ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
-                              : "border-border/50 bg-background"
-                          }`}
-                        >
+                        return (
                           <div
-                            className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${
+                            key={index}
+                            className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                               isCorrect
-                                ? "border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/50 dark:text-green-400"
-                                : "border-border text-muted-foreground"
+                                ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
+                                : "border-border/50 bg-background"
                             }`}
                           >
-                            {letter}
+                            {/* Correct answer selector */}
+                            <button
+                              type="button"
+                              onClick={() => setEditCorrectAnswer(option)}
+                              aria-label={`Mark option ${letter} as correct answer`}
+                              className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
+                                isCorrect
+                                  ? "border-green-400 bg-green-500 text-white hover:bg-green-600"
+                                  : "border-border text-muted-foreground hover:border-green-300 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                              }`}
+                            >
+                              {isCorrect ? <CheckCircle2 className="size-4" /> : letter}
+                            </button>
+                            {/* Option text input */}
+                            <input
+                              type="text"
+                              value={option}
+                              onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                              aria-label={`Option ${letter} text`}
+                              className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                            />
                           </div>
-                          <p
-                            className={`flex-1 text-sm ${isCorrect ? "font-medium text-foreground" : "text-foreground"}`}
+                        )
+                      })
+                    : question.options.map((option, index) => {
+                        const isCorrect = isCorrectOption(option, question)
+                        const letter = String.fromCharCode(65 + index)
+
+                        return (
+                          <div
+                            key={index}
+                            className={`flex items-center gap-4 p-4 rounded-xl border ${
+                              isCorrect
+                                ? "border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-900/10"
+                                : "border-border/50 bg-background"
+                            }`}
                           >
-                            {option}
-                          </p>
-                          {isCorrect && (
-                            <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-                              <CheckCircle2 className="size-4" />
+                            <div
+                              className={`flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-medium ${
+                                isCorrect
+                                  ? "border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/50 dark:text-green-400"
+                                  : "border-border text-muted-foreground"
+                              }`}
+                            >
+                              {letter}
                             </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                            <p
+                              className={`flex-1 text-sm ${isCorrect ? "font-medium text-foreground" : "text-foreground"}`}
+                            >
+                              {option}
+                            </p>
+                            {isCorrect && (
+                              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
+                                <CheckCircle2 className="size-4" />
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Expected answer</h4>
+                <p className="rounded-xl border border-green-200 bg-green-50/50 px-4 py-3 text-sm text-foreground dark:border-green-900/50 dark:bg-green-900/10">
+                  {question.expectedAnswer ?? question.correctAnswer}
+                </p>
+              </div>
+            )}
 
             {/* Explanation (always shown in edit mode; shown in sidebar in view mode) */}
             {isEditing && (
@@ -332,15 +352,54 @@ export function ReviewQuestionDetail({
                     <XCircle className="mr-2 size-4" />
                     Reject
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="h-10 px-6 ml-auto"
-                    disabled
-                    title="Regenerate is not yet implemented"
-                  >
-                    <RotateCw className="mr-2 size-4" />
-                    Regenerate
-                  </Button>
+                  {onDelete ? (
+                    showDeleteConfirm ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          className="h-10 px-4 border-red-200 text-red-700"
+                          onClick={() => {
+                            onDelete(question.id)
+                            setShowDeleteConfirm(false)
+                          }}
+                        >
+                          Confirm delete
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="h-10 px-4"
+                          onClick={() => setShowDeleteConfirm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="h-10 px-6"
+                        title="Remove this question from the draft"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        Delete
+                      </Button>
+                    )
+                  ) : null}
+                  {canRegenerate ? (
+                    <Button
+                      variant="outline"
+                      className="h-10 px-6 ml-auto"
+                      disabled={isRegenerating}
+                      onClick={() => void onRegenerate?.(question.id)}
+                    >
+                      {isRegenerating ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <RotateCw className="mr-2 size-4" />
+                      )}
+                      Regenerate
+                    </Button>
+                  ) : null}
                 </>
               )}
             </div>
@@ -353,7 +412,11 @@ export function ReviewQuestionDetail({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">Correct Answer</h4>
               <div className="flex flex-wrap gap-2">
-                {correctAnswerIndices.length > 0 ? (
+                {isOpenQuestion ? (
+                  <p className="text-sm text-muted-foreground">
+                    {question.expectedAnswer ?? question.correctAnswer}
+                  </p>
+                ) : correctAnswerIndices.length > 0 ? (
                   correctAnswerIndices.map((index) => (
                     <div
                       key={index}

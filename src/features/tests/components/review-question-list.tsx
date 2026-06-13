@@ -1,5 +1,7 @@
 import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
+import { ManualQuestionForm } from "@/features/tests/components/manual-question-form"
 import { Badge } from "@/shared/ui/badge"
+import { Button } from "@/shared/ui/button"
 
 interface ReviewQuestionListProps {
   questions: ReviewQuestion[]
@@ -7,6 +9,10 @@ interface ReviewQuestionListProps {
   selectedQuestionId: string | null
   onSelectQuestion: (questionId: string) => void
   onApprove?: (questionId: string) => void
+  topics: string[]
+  showAddForm: boolean
+  onToggleAddForm: () => void
+  onAddQuestion: (question: ReviewQuestion) => void
 }
 
 function getStatusBadgeVariant(
@@ -35,6 +41,10 @@ export function ReviewQuestionList({
   selectedQuestionId,
   onSelectQuestion,
   onApprove,
+  topics,
+  showAddForm,
+  onToggleAddForm,
+  onAddQuestion,
 }: ReviewQuestionListProps) {
   return (
     <div className="flex flex-col h-full bg-card">
@@ -116,9 +126,20 @@ export function ReviewQuestionList({
       </div>
 
       <div className="flex items-center justify-center p-4 border-t border-border/50">
-        <p className="text-xs text-muted-foreground">
-          Showing {questions.length} question{questions.length !== 1 ? "s" : ""}
-        </p>
+        {showAddForm ? (
+          <ManualQuestionForm
+            topics={topics}
+            onAdd={(question) => {
+              onAddQuestion(question)
+              onToggleAddForm()
+            }}
+            onCancel={onToggleAddForm}
+          />
+        ) : (
+          <Button type="button" variant="outline" className="w-full" onClick={onToggleAddForm}>
+            Add question
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -32,6 +32,7 @@ export default async function TestReviewRoute({ searchParams }: TestReviewRouteP
       reviewData={reviewData}
       documentId={reviewDocumentId}
       generationRunId={supabaseReviewDraft?.generationRunId ?? runId ?? null}
+      draftTestId={supabaseReviewDraft?.testId ?? null}
       reviewDataSource={supabaseReviewDraft ? "supabase" : "mock"}
     />
   )

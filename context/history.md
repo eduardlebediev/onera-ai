@@ -4,6 +4,46 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 41: Review Editor Enhancements
+
+**Branch:** `feature/41-review-editor-enhancements`
+
+Added admin review editor controls for manual add/delete/regenerate, open-ended question support, and persisted draft question review state.
+
+### Database and API
+
+- Added migration `00008_review_editor_enhancements.sql` with idempotent `review_status` on `test_questions`.
+- Extended `POST /api/admin/generate-test` to persist draft `tests` + `test_questions` rows and return `testId`.
+- Added `PATCH /api/admin/tests/[id]/questions` for upsert/delete draft questions.
+- Added `POST /api/admin/tests/[id]/questions/[questionId]/regenerate` for single AI question regeneration.
+
+### Review UI
+
+- Added `ManualQuestionForm` and wired add/delete/regenerate into `test-review-page`, `review-question-list`, and `review-question-detail`.
+- Persisted review edits through the new PATCH route when a draft test id is available; sessionStorage remains the optimistic cache.
+
+### Open questions and grading
+
+- Added `open_question` to `QuestionTypeSchema` and generation prompt rules.
+- Employee take flow renders textarea for open questions; submit stores `openText` answers.
+- Added AI grading via `grade-open-question.ts` with non-fatal fallback to incorrect + "needs manual review".
+
+### Second review fixes
+
+- Fixed persisted review edits/status updates to preserve the question's existing `order_index` instead of overwriting edited questions with index `0`.
+- Marked filled manual questions as approved and allowed manual non-open questions through publish validation without a source chunk.
+- Included `open_question` in default AI generation question types and persisted open-question grading fallback rationale so result review can show the manual-review note.
+
+### Verification
+
+- `npm run lint`, `typecheck`, `format:check`, and `build` pass.
+
+### Context
+
+- Recorded decisions 058–060 in `context/decisions.md`.
+
+---
+
 ## Feature Spec 40: Production Bugfixes
 
 **Branch:** `feature/40-production-bugfixes`

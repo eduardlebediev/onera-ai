@@ -7,6 +7,10 @@ import { useMemo, useState, useEffect } from "react"
 import type { DocumentStatus } from "@/data/mock/documents"
 import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
 import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
+import {
+  patchReviewQuestions,
+  regenerateReviewQuestion,
+} from "@/features/tests/lib/review-questions-api-client"
 import { saveReviewSession } from "@/features/tests/lib/review-session"
 import {
   useResolvedReviewData,
@@ -28,6 +32,7 @@ interface TestReviewPageProps {
   reviewData: MockTestReviewData
   documentId: string
   generationRunId?: string | null
+  draftTestId?: string | null
   reviewDataSource?: Exclude<ReviewDataSource, "session">
 }
 
@@ -41,6 +46,7 @@ export function TestReviewPage({
   reviewData: fallbackReviewData,
   documentId,
   generationRunId: routeGenerationRunId,
+  draftTestId: routeDraftTestId,
   reviewDataSource = "mock",
 }: TestReviewPageProps) {
   const {
@@ -48,6 +54,7 @@ export function TestReviewPage({
     questions: resolvedQuestions,
     isAiDraft,
     generationRunId,
+    draftTestId: resolvedDraftTestId,
     isHydrated,
     source,
   } = useResolvedReviewData(documentId, fallbackReviewData, routeGenerationRunId, reviewDataSource)
@@ -61,6 +68,9 @@ export function TestReviewPage({
   const [statusFilter, setStatusFilter] = useState<ReviewStatusFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [topicFilter, setTopicFilter] = useState("all")
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [regeneratingQuestionId, setRegeneratingQuestionId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const updateQuestions = (updater: (current: ReviewQuestion[]) => ReviewQuestion[]) => {
     setQuestionsOverride((previous) => {
@@ -96,6 +106,68 @@ export function TestReviewPage({
 
   const canPublish = approvedQuestions > 0
   const showDemoFallbackBanner = isHydrated && source === "mock"
+  const draftTestId = routeDraftTestId ?? resolvedDraftTestId ?? null
+
+  function buildQuestionPayload(question: ReviewQuestion, orderIndex: number) {
+    const options =
+      question.questionType === "open_question"
+        ? []
+        : question.options.map((text, index) => ({
+            id: `opt-${String.fromCharCode(97 + index)}`,
+            text,
+          }))
+    const optionIdByText = new Map(options.map((option) => [option.text, option.id]))
+    const correctTexts =
+      question.correctAnswers && question.correctAnswers.length > 0
+        ? question.correctAnswers
+        : [question.correctAnswer]
+    const optionIds = correctTexts
+      .map((text) => optionIdByText.get(text))
+      .filter((optionId): optionId is string => Boolean(optionId))
+
+    return {
+      id: question.dbQuestionId,
+      clientId: question.clientId ?? question.id,
+      questionText: question.questionText,
+      questionType: question.questionType,
+      options,
+      correctAnswer:
+        question.questionType === "open_question"
+          ? { expectedAnswer: question.expectedAnswer ?? question.correctAnswer }
+          : { optionIds: optionIds.length > 0 ? optionIds : options.slice(0, 1).map((o) => o.id) },
+      explanation: question.explanation,
+      topic: question.topic,
+      difficulty: question.difficulty,
+      reviewStatus: question.status,
+      sourceChunkId: question.sourceChunkId ?? null,
+      isAiGenerated: question.isAiGenerated,
+      orderIndex,
+    }
+  }
+
+  function resolveQuestionOrderIndex(question: ReviewQuestion): number {
+    const index = questions.findIndex(
+      (item) =>
+        item.id === question.id ||
+        (question.dbQuestionId && item.dbQuestionId === question.dbQuestionId)
+    )
+
+    return index >= 0 ? index : questions.length
+  }
+
+  async function persistQuestionChanges(input: {
+    upsert?: ReviewQuestion[]
+    deleteIds?: string[]
+  }): Promise<{ upserted: Array<{ clientId?: string; id: string }>; deletedIds: string[] } | void> {
+    if (!draftTestId) return
+
+    return patchReviewQuestions(draftTestId, {
+      upsert: input.upsert?.map((question) =>
+        buildQuestionPayload(question, resolveQuestionOrderIndex(question))
+      ),
+      deleteIds: input.deleteIds,
+    })
+  }
 
   useEffect(() => {
     if (!isHydrated) return
@@ -116,6 +188,15 @@ export function TestReviewPage({
     updateQuestions((prev) =>
       prev.map((question) => (question.id === questionId ? { ...question, status } : question))
     )
+
+    const nextQuestion = questions.find((question) => question.id === questionId)
+    if (!nextQuestion) return
+
+    void persistQuestionChanges({
+      upsert: [{ ...nextQuestion, status }],
+    }).catch((error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to save review status")
+    })
   }
 
   const handleSaveEdit = (questionId: string, patch: Partial<ReviewQuestion>) => {
@@ -124,6 +205,92 @@ export function TestReviewPage({
         question.id === questionId ? { ...question, ...patch, status: "edited" } : question
       )
     )
+
+    if (!draftTestId) return
+
+    const nextQuestion = questions.find((question) => question.id === questionId)
+    if (!nextQuestion) return
+
+    void persistQuestionChanges({
+      upsert: [{ ...nextQuestion, ...patch, status: "edited" }],
+    }).catch((error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to save question edit")
+    })
+  }
+
+  const handleAddQuestion = (question: ReviewQuestion) => {
+    updateQuestions((prev) => [...prev, question])
+    setSelectedQuestionId(question.id)
+
+    if (!draftTestId) return
+
+    void persistQuestionChanges({ upsert: [question] })
+      .then((result) => {
+        if (!result) return
+        const mappedId = result.upserted.find((item) => item.clientId === question.clientId)?.id
+        if (!mappedId) return
+
+        const persistedQuestionId = `db-${mappedId}`
+        updateQuestions((prev) =>
+          prev.map((item) =>
+            item.id === question.id
+              ? { ...item, dbQuestionId: mappedId, id: persistedQuestionId }
+              : item
+          )
+        )
+        setSelectedQuestionId(persistedQuestionId)
+      })
+      .catch((error) => {
+        setActionError(error instanceof Error ? error.message : "Failed to add question")
+      })
+  }
+
+  const handleDeleteQuestion = (questionId: string) => {
+    const questionToDelete = questions.find((question) => question.id === questionId)
+    updateQuestions((prev) => prev.filter((question) => question.id !== questionId))
+    setSelectedQuestionId((current) => {
+      if (current !== questionId) return current
+      const remaining = questions.filter((question) => question.id !== questionId)
+      return remaining[0]?.id ?? null
+    })
+
+    if (!draftTestId || !questionToDelete?.dbQuestionId) return
+
+    void persistQuestionChanges({ deleteIds: [questionToDelete.dbQuestionId] }).catch((error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to delete question")
+    })
+  }
+
+  const handleRegenerateQuestion = async (questionId: string) => {
+    const question = questions.find((item) => item.id === questionId)
+    if (!question?.dbQuestionId || !draftTestId) {
+      setActionError("Regenerate is only available for persisted AI questions.")
+      return
+    }
+
+    setRegeneratingQuestionId(questionId)
+    setActionError(null)
+
+    try {
+      const regenerated = await regenerateReviewQuestion(draftTestId, question.dbQuestionId)
+      updateQuestions((prev) =>
+        prev.map((item) =>
+          item.id === questionId
+            ? {
+                ...item,
+                ...regenerated,
+                id: regenerated.id,
+                dbQuestionId: regenerated.dbQuestionId,
+                status: "needs_review",
+              }
+            : item
+        )
+      )
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Failed to regenerate question")
+    } finally {
+      setRegeneratingQuestionId(null)
+    }
   }
 
   const handlePrevious = () => {
@@ -225,6 +392,11 @@ export function TestReviewPage({
                 <span>Showing demo data. Generate a test to see real AI-generated questions.</span>
               </div>
             ) : null}
+            {actionError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {actionError}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -280,6 +452,10 @@ export function TestReviewPage({
               selectedQuestionId={selectedQuestionId}
               onSelectQuestion={setSelectedQuestionId}
               onApprove={(id) => handleSetStatus(id, "approved")}
+              topics={reviewData.selectedTopics}
+              showAddForm={showAddForm}
+              onToggleAddForm={() => setShowAddForm((value) => !value)}
+              onAddQuestion={handleAddQuestion}
             />
           </div>
           <div className="lg:col-span-8 min-h-0 bg-card">
@@ -291,6 +467,9 @@ export function TestReviewPage({
                 onApprove={(id) => handleSetStatus(id, "approved")}
                 onReject={(id) => handleSetStatus(id, "rejected")}
                 onSaveEdit={handleSaveEdit}
+                onDelete={handleDeleteQuestion}
+                onRegenerate={handleRegenerateQuestion}
+                isRegenerating={regeneratingQuestionId === selectedQuestion.id}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
               />

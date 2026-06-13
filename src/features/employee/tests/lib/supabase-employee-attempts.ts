@@ -5,6 +5,7 @@ import {
   generateAttemptFeedbackBestEffort,
   type AttemptFeedbackAnswerInput,
 } from "@/features/employee/tests/lib/generate-attempt-feedback"
+import { gradeOpenQuestionAnswer } from "@/features/employee/tests/lib/grade-open-question"
 import {
   parseAttemptFeedbackEnvelope,
   serializeAttemptFeedbackEnvelope,
@@ -29,7 +30,8 @@ export type StartAttemptResult = {
 
 export type SubmitAnswerInput = {
   questionId: string
-  selectedOptionIds: string[]
+  selectedOptionIds?: string[]
+  openText?: string
 }
 
 export type SubmitAttemptResult = {
@@ -90,38 +92,42 @@ function parseOptions(value: Json): Array<{ id: string; text: string }> {
   })
 }
 
-function parseCorrectAnswer(value: Json): { optionIds: string[] } {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "optionIds" in value &&
-    Array.isArray(value.optionIds)
-  ) {
-    return {
-      optionIds: value.optionIds.filter(
-        (optionId): optionId is string => typeof optionId === "string"
-      ),
-    }
+function parseCorrectAnswer(value: Json): { optionIds: string[]; expectedAnswer?: string } {
+  if (typeof value !== "object" || value === null) {
+    return { optionIds: [] }
   }
 
-  return { optionIds: [] }
+  const record = value as Record<string, unknown>
+  const optionIds = Array.isArray(record.optionIds)
+    ? record.optionIds.filter((optionId): optionId is string => typeof optionId === "string")
+    : []
+  const expectedAnswer =
+    typeof record.expectedAnswer === "string" ? record.expectedAnswer : undefined
+
+  return { optionIds, expectedAnswer }
 }
 
-function parseUserAnswer(value: Json): { selectedOptionIds: string[] } {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "selectedOptionIds" in value &&
-    Array.isArray(value.selectedOptionIds)
-  ) {
-    return {
-      selectedOptionIds: value.selectedOptionIds.filter(
-        (id): id is string => typeof id === "string"
-      ),
-    }
+function parseUserAnswer(value: Json): {
+  selectedOptionIds: string[]
+  openText?: string
+  gradingRationale?: string
+  needsManualReview?: boolean
+} {
+  if (typeof value !== "object" || value === null) {
+    return { selectedOptionIds: [] }
   }
 
-  return { selectedOptionIds: [] }
+  const record = value as Record<string, unknown>
+  const selectedOptionIds = Array.isArray(record.selectedOptionIds)
+    ? record.selectedOptionIds.filter((id): id is string => typeof id === "string")
+    : []
+  const openText = typeof record.openText === "string" ? record.openText : undefined
+  const gradingRationale =
+    typeof record.gradingRationale === "string" ? record.gradingRationale : undefined
+  const needsManualReview =
+    typeof record.needsManualReview === "boolean" ? record.needsManualReview : undefined
+
+  return { selectedOptionIds, openText, gradingRationale, needsManualReview }
 }
 
 function setsEqual(a: string[], b: string[]): boolean {
@@ -151,6 +157,52 @@ function isAnswerCorrect(
   return false
 }
 
+async function scoreQuestionAnswer(input: {
+  question: QuestionScoringRow
+  options: Array<{ id: string; text: string }>
+  correctAnswer: { optionIds: string[]; expectedAnswer?: string }
+  selectedOptionIds: string[]
+  openText?: string
+}): Promise<{
+  isCorrect: boolean
+  employeeAnswer: string
+  correctAnswer: string
+  gradingRationale?: string
+  needsManualReview?: boolean
+}> {
+  if (input.question.question_type === "open_question") {
+    const employeeAnswer = input.openText?.trim() ?? ""
+    const expectedAnswer = input.correctAnswer.expectedAnswer ?? ""
+
+    const grading = await gradeOpenQuestionAnswer({
+      questionText: input.question.question_text,
+      expectedAnswer,
+      employeeAnswer,
+      explanation: input.question.explanation,
+    })
+
+    return {
+      isCorrect: grading.isCorrect,
+      employeeAnswer: employeeAnswer || "—",
+      correctAnswer: expectedAnswer || "—",
+      gradingRationale: grading.rationale,
+      needsManualReview: grading.needsManualReview,
+    }
+  }
+
+  const isCorrect = isAnswerCorrect(
+    input.question.question_type,
+    input.correctAnswer.optionIds,
+    input.selectedOptionIds
+  )
+
+  return {
+    isCorrect,
+    employeeAnswer: formatOptionTexts(input.options, input.selectedOptionIds),
+    correctAnswer: formatOptionTexts(input.options, input.correctAnswer.optionIds),
+  }
+}
+
 function formatOptionTexts(
   options: Array<{ id: string; text: string }>,
   optionIds: string[]
@@ -165,9 +217,8 @@ function formatOptionTexts(
 function buildAttemptFeedbackInput(
   scoredAnswers: Array<{
     question: QuestionScoringRow
-    options: Array<{ id: string; text: string }>
-    correctAnswer: { optionIds: string[] }
-    selectedOptionIds: string[]
+    employeeAnswer: string
+    correctAnswer: string
     isCorrect: boolean
   }>
 ): AttemptFeedbackAnswerInput[] {
@@ -175,8 +226,8 @@ function buildAttemptFeedbackInput(
     questionText: item.question.question_text,
     topic: item.question.topic ?? "General",
     isCorrect: item.isCorrect,
-    employeeAnswer: formatOptionTexts(item.options, item.selectedOptionIds),
-    correctAnswer: formatOptionTexts(item.options, item.correctAnswer.optionIds),
+    employeeAnswer: item.employeeAnswer,
+    correctAnswer: item.correctAnswer,
     explanation: item.question.explanation ?? "",
   }))
 }
@@ -534,28 +585,37 @@ export async function submitEmployeeTestAttempt(input: {
     throw new SubmitAttemptError("Test has no questions", "invalid_questions")
   }
 
-  const answersByQuestionId = new Map(
-    input.answers.map((answer) => [answer.questionId, answer.selectedOptionIds])
-  )
+  const answersByQuestionId = new Map(input.answers.map((answer) => [answer.questionId, answer]))
 
-  const scoredAnswers = questionRows.map((question) => {
+  const scoredAnswers = []
+
+  for (const question of questionRows) {
     const options = parseOptions(question.options)
     const correctAnswer = parseCorrectAnswer(question.correct_answer)
-    const selectedOptionIds = answersByQuestionId.get(question.id) ?? []
-    const isCorrect = isAnswerCorrect(
-      question.question_type,
-      correctAnswer.optionIds,
-      selectedOptionIds
-    )
-
-    return {
+    const submittedAnswer = answersByQuestionId.get(question.id)
+    const selectedOptionIds = submittedAnswer?.selectedOptionIds ?? []
+    const openText = submittedAnswer?.openText
+    const scored = await scoreQuestionAnswer({
       question,
       options,
       correctAnswer,
       selectedOptionIds,
-      isCorrect,
-    }
-  })
+      openText,
+    })
+
+    scoredAnswers.push({
+      question,
+      options,
+      correctAnswer,
+      selectedOptionIds,
+      openText,
+      isCorrect: scored.isCorrect,
+      employeeAnswer: scored.employeeAnswer,
+      correctAnswerText: scored.correctAnswer,
+      gradingRationale: scored.gradingRationale,
+      needsManualReview: scored.needsManualReview,
+    })
+  }
 
   const correctCount = scoredAnswers.filter((item) => item.isCorrect).length
   const totalQuestions = scoredAnswers.length
@@ -584,7 +644,14 @@ export async function submitEmployeeTestAttempt(input: {
     organization_id: attempt.organization_id,
     attempt_id: attempt.id,
     question_id: item.question.id,
-    user_answer: { selectedOptionIds: item.selectedOptionIds } satisfies Json,
+    user_answer:
+      item.question.question_type === "open_question"
+        ? ({
+            openText: item.openText ?? "",
+            gradingRationale: item.gradingRationale,
+            needsManualReview: item.needsManualReview,
+          } satisfies Json)
+        : ({ selectedOptionIds: item.selectedOptionIds } satisfies Json),
     is_correct: item.isCorrect,
   }))
 
@@ -636,7 +703,14 @@ export async function submitEmployeeTestAttempt(input: {
     score,
     passed,
     passingScore: testMeta.passing_score,
-    answers: buildAttemptFeedbackInput(scoredAnswers),
+    answers: buildAttemptFeedbackInput(
+      scoredAnswers.map((item) => ({
+        question: item.question,
+        employeeAnswer: item.employeeAnswer,
+        correctAnswer: item.correctAnswerText,
+        isCorrect: item.isCorrect,
+      }))
+    ),
   })
 
   return {
@@ -730,18 +804,35 @@ export async function getPersistedEmployeeTestResult(
     const options = parseOptions(question.options)
     const correctAnswer = parseCorrectAnswer(question.correct_answer)
     const savedAnswer = answersByQuestionId.get(question.id)
-    const selectedOptionIds = savedAnswer
-      ? parseUserAnswer(savedAnswer.user_answer).selectedOptionIds
-      : []
+    const parsedAnswer = savedAnswer ? parseUserAnswer(savedAnswer.user_answer) : null
+    const selectedOptionIds = parsedAnswer?.selectedOptionIds ?? []
+    const openText = parsedAnswer?.openText
     const isCorrect = savedAnswer?.is_correct ?? false
+    const employeeAnswer =
+      question.question_type === "open_question"
+        ? openText?.trim() || "—"
+        : formatOptionTexts(options, selectedOptionIds)
+    const correctAnswerText =
+      question.question_type === "open_question"
+        ? (correctAnswer.expectedAnswer ?? "—")
+        : formatOptionTexts(options, correctAnswer.optionIds)
+    const explanation =
+      question.question_type === "open_question" && parsedAnswer?.needsManualReview
+        ? [
+            question.explanation,
+            parsedAnswer.gradingRationale ?? "AI grading failed — needs manual review.",
+          ]
+            .filter((value): value is string => Boolean(value))
+            .join(" ")
+        : (question.explanation ?? "")
 
     return {
       questionId: question.id,
       questionText: question.question_text,
-      employeeAnswer: formatOptionTexts(options, selectedOptionIds),
-      correctAnswer: formatOptionTexts(options, correctAnswer.optionIds),
+      employeeAnswer,
+      correctAnswer: correctAnswerText,
       isCorrect,
-      explanation: question.explanation ?? "",
+      explanation,
       topic: question.topic ?? "General",
       sourceChunkReference: question.source_chunk_id
         ? `Chunk (${question.source_chunk_id.slice(0, 8)}…)`

@@ -15,7 +15,7 @@ export type EmployeeSafeQuestionOption = {
 export type EmployeeSafeQuestion = {
   id: string
   questionText: string
-  questionType: "single_choice" | "multiple_choice" | "true_false"
+  questionType: "single_choice" | "multiple_choice" | "true_false" | "open_question"
   options: EmployeeSafeQuestionOption[]
   topic: string
   sourceChunkReference: string
@@ -96,7 +96,8 @@ function mapQuestionType(questionType: string): EmployeeSafeQuestion["questionTy
   if (
     questionType === "single_choice" ||
     questionType === "multiple_choice" ||
-    questionType === "true_false"
+    questionType === "true_false" ||
+    questionType === "open_question"
   ) {
     return questionType
   }

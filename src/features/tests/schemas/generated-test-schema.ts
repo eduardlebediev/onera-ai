@@ -2,7 +2,12 @@ import { z } from "zod"
 
 export const TestDifficultySchema = z.enum(["easy", "medium", "hard"])
 export const TestLanguageSchema = z.enum(["en", "de"])
-export const QuestionTypeSchema = z.enum(["single_choice", "multiple_choice", "true_false"])
+export const QuestionTypeSchema = z.enum([
+  "single_choice",
+  "multiple_choice",
+  "true_false",
+  "open_question",
+])
 
 const BaseGenerateTestRequestSchema = z.object({
   templateTestId: z.string().uuid("templateTestId must be a valid UUID").optional(),
@@ -15,7 +20,7 @@ const BaseGenerateTestRequestSchema = z.object({
   questionTypes: z
     .array(QuestionTypeSchema)
     .min(1)
-    .default(["single_choice", "multiple_choice", "true_false"]),
+    .default(["single_choice", "multiple_choice", "true_false", "open_question"]),
 })
 
 export const GenerateTestRequestSchema = BaseGenerateTestRequestSchema.extend({
@@ -45,9 +50,24 @@ const GeneratedTestOptionSchema = z.object({
   text: z.string().min(1),
 })
 
-const GeneratedTestCorrectAnswerSchema = z.object({
-  optionIds: z.array(z.string().min(1)).min(1),
-})
+const GeneratedTestCorrectAnswerSchema = z
+  .object({
+    optionIds: z.array(z.string().min(1)).optional(),
+    expectedAnswer: z.string().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const hasOptionIds = Boolean(value.optionIds && value.optionIds.length > 0)
+    const hasExpectedAnswer = Boolean(
+      value.expectedAnswer && value.expectedAnswer.trim().length > 0
+    )
+
+    if (!hasOptionIds && !hasExpectedAnswer) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "correctAnswer must include optionIds or expectedAnswer",
+      })
+    }
+  })
 
 export const GeneratedTestQuestionSchema = z
   .object({
@@ -64,9 +84,30 @@ export const GeneratedTestQuestionSchema = z
     sourceDocumentTitle: z.string().min(1).optional(),
   })
   .superRefine((question, ctx) => {
-    const optionIds = new Set(question.options.map((option) => option.id))
+    if (question.questionType === "open_question") {
+      if (question.options.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "open_question must not include options",
+          path: ["options"],
+        })
+      }
 
-    for (const optionId of question.correctAnswer.optionIds) {
+      if (!question.correctAnswer.expectedAnswer?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "open_question requires expectedAnswer",
+          path: ["correctAnswer", "expectedAnswer"],
+        })
+      }
+
+      return
+    }
+
+    const optionIds = new Set(question.options.map((option) => option.id))
+    const correctOptionIds = question.correctAnswer.optionIds ?? []
+
+    for (const optionId of correctOptionIds) {
       if (!optionIds.has(optionId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -85,7 +126,7 @@ export const GeneratedTestQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length !== 1) {
+      if (question.correctAnswer.optionIds?.length !== 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "true_false questions must have exactly 1 correct option",
@@ -103,7 +144,7 @@ export const GeneratedTestQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length !== 1) {
+      if (question.correctAnswer.optionIds?.length !== 1) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "single_choice questions must have exactly 1 correct option",
@@ -121,7 +162,7 @@ export const GeneratedTestQuestionSchema = z
         })
       }
 
-      if (question.correctAnswer.optionIds.length < 2) {
+      if ((question.correctAnswer.optionIds?.length ?? 0) < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "multiple_choice questions must have at least 2 correct options",
@@ -183,6 +224,7 @@ export const GeneratedTestDocumentSummarySchema = z.object({
 
 export const GeneratedTestResponseSchema = z.object({
   generationRunId: z.string().uuid(),
+  testId: z.string().uuid().optional(),
   document: GeneratedTestDocumentSummarySchema,
   documents: z.array(GeneratedTestDocumentSummarySchema).min(1),
   draft: GeneratedTestDraftSchema,

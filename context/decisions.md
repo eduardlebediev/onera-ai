@@ -1,5 +1,17 @@
 # Decisions
 
+## 060 — Open question grading is best-effort on submit
+
+Open-ended answers are graded by AI during attempt submit using the question's stored `expectedAnswer`. If grading fails or times out, the answer is marked incorrect with a "needs manual review" note persisted in `user_answer`. Submit, scoring, and attempt completion must succeed regardless of grading outcome.
+
+## 059 — Manual review questions skip source chunk validation
+
+Questions added manually in the review editor do not require `source_chunk_id` for publish. AI-generated questions remain grounded through chunk references; manual questions are stored with `source_status = manual_kept` and approved by default once the form is filled.
+
+## 058 — Draft tests persist at generation for review mutations
+
+`POST /api/admin/generate-test` writes a draft `tests` row and `test_questions` immediately, returning `testId` to the client. Review editor add/delete/regenerate/edit/approve/reject operations mutate those rows through `PATCH /api/admin/tests/[id]/questions`, with `review_status` on each question tracking admin review state before publish.
+
 ## 057 — Demo route IDs resolve before API UUID validation
 
 Mock route ids such as `doc-1`, `doc-4`, and `test-*` must not fail generic UUID validation at API boundaries. Known mock test ids return local-demo-flow responses; mapped demo document route ids resolve to seeded Supabase UUIDs via `resolveApiDocumentId()` before auth and data access; mock-only document ids return local-demo-flow responses. Employee take/result pages keep the same mock fallback for non-UUID test ids.

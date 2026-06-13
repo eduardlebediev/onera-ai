@@ -1,25 +1,34 @@
 import type { MockDocumentDetail } from "@/data/mock/documents"
 
+import type { QuestionType } from "@/features/tests/schemas/generated-test-schema"
+
 export type ReviewStatus = "needs_review" | "approved" | "rejected" | "edited"
 export type ReviewDifficulty = "easy" | "medium" | "hard"
 export type ReviewLanguage = "English" | "German"
 
 export interface ReviewQuestion {
   id: string
+  dbQuestionId?: string
+  clientId?: string
   questionText: string
+  questionType: QuestionType
   options: string[]
   correctAnswer: string
   /** When multiple options are correct (e.g. AI multiple_choice). */
   correctAnswers?: string[]
+  /** Expected answer text for open-ended questions. */
+  expectedAnswer?: string
   explanation: string
   topic: string
   sourceChunkReference: string
+  sourceChunkId?: string | null
   sourceDocumentTitle?: string
   testedSkill: string
   pedagogicalGoal: string
   difficulty: ReviewDifficulty
   whyUseful: string
   status: ReviewStatus
+  isAiGenerated: boolean
 }
 
 export interface MockTestReviewData {
@@ -67,6 +76,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Confirm employees know minimum password requirements",
         difficulty: "easy",
         whyUseful: "Reduces account compromise risk through enforceable password standards.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -83,6 +96,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Verify awareness of MFA obligations",
         difficulty: "easy",
         whyUseful: "Ensures employees understand MFA is mandatory, not optional.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -100,6 +117,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         difficulty: "medium",
         whyUseful:
           "Prevents mishandling of customer data that could lead to compliance violations.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "approved",
       },
       {
@@ -120,6 +141,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Reinforce least-privilege access expectations",
         difficulty: "easy",
         whyUseful: "Limits blast radius if credentials are compromised.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -135,6 +160,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Ensure awareness of access review cadence",
         difficulty: "medium",
         whyUseful: "Keeps access permissions aligned with current roles and responsibilities.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -155,6 +184,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Promote correct phishing reporting behavior",
         difficulty: "easy",
         whyUseful: "Reduces successful phishing attacks through timely reporting.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -175,6 +208,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Prevent credential theft via phishing",
         difficulty: "medium",
         whyUseful: "Closes a common social engineering attack vector.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "rejected",
       },
       {
@@ -191,6 +228,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Test ability to classify common data types",
         difficulty: "medium",
         whyUseful: "Helps employees apply classification consistently in daily work.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "approved",
       },
     ],
@@ -225,6 +266,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Reinforce timely hazard reporting behavior",
         difficulty: "easy",
         whyUseful: "Promotes a proactive safety culture and faster risk mitigation.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -240,6 +285,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Ensure operational readiness for evacuation scenarios",
         difficulty: "easy",
         whyUseful: "Validates critical safety knowledge needed in urgent situations.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "approved",
       },
       {
@@ -260,6 +309,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Check understanding of reporting obligations",
         difficulty: "medium",
         whyUseful: "Supports legal and internal compliance consistency.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "needs_review",
       },
       {
@@ -281,6 +334,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Prevent selective underreporting behavior",
         difficulty: "medium",
         whyUseful: "Improves data quality for workplace safety analytics.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "edited",
       },
       {
@@ -301,6 +358,10 @@ const mockReviewByDocumentId: Record<string, MockTestReviewData> = {
         pedagogicalGoal: "Verify operational onboarding safety compliance",
         difficulty: "easy",
         whyUseful: "Confirms essential safety onboarding steps are retained.",
+        questionType: "single_choice",
+
+        isAiGenerated: true,
+
         status: "rejected",
       },
     ],
@@ -327,6 +388,10 @@ function buildFallbackReviewData(document: MockDocumentDetail): MockTestReviewDa
     pedagogicalGoal: "Verify understanding of source content",
     difficulty: "medium",
     whyUseful: "Preserves continuity in the mock review flow across documents.",
+    questionType: "single_choice",
+
+    isAiGenerated: true,
+
     status: "needs_review",
   }))
 

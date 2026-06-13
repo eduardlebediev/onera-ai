@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 41: Review Editor Enhancements
+
 - Feature Spec 40: Production Bugfixes
 
 - Feature Spec 39: Follow-up and Block Retake

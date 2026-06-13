@@ -74,6 +74,7 @@ export function buildGenerateTestPrompt({
     "- single_choice: exactly 4 options and exactly 1 correct option.",
     "- multiple_choice: exactly 4 options and at least 2 correct options.",
     "- true_false: exactly 2 options (prefer True and False) and exactly 1 correct option.",
+    "- open_question: no options; set correctAnswer.expectedAnswer to the model answer text.",
     "- Use stable option ids such as opt-a, opt-b, opt-c, opt-d.",
     "- correctAnswer.optionIds must reference existing option ids.",
     "- explanation must be at least 20 characters and grounded in the source chunk.",

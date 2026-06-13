@@ -18,9 +18,13 @@ function toReviewLanguage(language: "en" | "de"): ReviewLanguage {
 }
 
 function resolveCorrectAnswerTexts(question: GeneratedTestQuestion): string[] {
+  if (question.questionType === "open_question") {
+    return question.correctAnswer.expectedAnswer ? [question.correctAnswer.expectedAnswer] : []
+  }
+
   const optionById = new Map(question.options.map((option) => [option.id, option.text]))
 
-  return question.correctAnswer.optionIds
+  return (question.correctAnswer.optionIds ?? [])
     .map((optionId) => optionById.get(optionId))
     .filter((text): text is string => Boolean(text))
 }
@@ -42,18 +46,22 @@ function mapQuestionToReviewQuestion(
   return {
     id: `ai-${generationRunId}-q-${index + 1}`,
     questionText: question.questionText,
+    questionType: question.questionType,
     options: question.options.map((option) => option.text),
     correctAnswer: primaryCorrectAnswer,
     correctAnswers: correctAnswerTexts.length > 0 ? correctAnswerTexts : [primaryCorrectAnswer],
+    expectedAnswer: question.correctAnswer.expectedAnswer,
     explanation: question.explanation,
     topic: question.topic,
     sourceChunkReference,
+    sourceChunkId: question.sourceChunkId,
     sourceDocumentTitle: documentTitle,
     testedSkill: "Knowledge recall",
     pedagogicalGoal: "Verify understanding of source document content",
     difficulty: question.difficulty as ReviewDifficulty,
     whyUseful: "Grounded in retrieved document chunks for admin review before publishing.",
     status: "needs_review",
+    isAiGenerated: true,
   }
 }
 
@@ -74,10 +82,58 @@ function getReviewCorrectAnswerTexts(question: ReviewQuestion): string[] {
   return [question.correctAnswer]
 }
 
+function mapManualReviewQuestionToPublishQuestion(
+  question: ReviewQuestion,
+  orderIndex: number
+): PublishGeneratedQuestion {
+  const options = question.options.map((text, index) => ({
+    id: `manual-opt-${index + 1}`,
+    text,
+  }))
+  const optionIdByText = new Map(options.map((option) => [option.text, option.id]))
+  const correctTexts =
+    question.correctAnswers && question.correctAnswers.length > 0
+      ? question.correctAnswers
+      : [question.correctAnswer]
+  const optionIds = correctTexts
+    .map((text) => optionIdByText.get(text))
+    .filter((optionId): optionId is string => Boolean(optionId))
+
+  return {
+    questionText: question.questionText,
+    questionType: question.questionType,
+    options,
+    correctAnswer:
+      question.questionType === "open_question"
+        ? { expectedAnswer: question.expectedAnswer ?? question.correctAnswer }
+        : { optionIds: optionIds.length > 0 ? optionIds : options.slice(0, 1).map((o) => o.id) },
+    explanation: question.explanation,
+    topic: question.topic,
+    difficulty: question.difficulty,
+    orderIndex,
+    reviewStatus: question.status === "edited" ? "needs_edit" : "approved",
+  }
+}
+
 function applyReviewEditsToQuestion(
   baseQuestion: GeneratedTestQuestion,
   reviewQuestion: ReviewQuestion
 ): GeneratedTestQuestion {
+  if (reviewQuestion.questionType === "open_question") {
+    return {
+      ...baseQuestion,
+      questionType: "open_question",
+      questionText: reviewQuestion.questionText,
+      options: [],
+      correctAnswer: {
+        expectedAnswer: reviewQuestion.expectedAnswer ?? reviewQuestion.correctAnswer,
+      },
+      explanation: reviewQuestion.explanation,
+      topic: reviewQuestion.topic,
+      difficulty: reviewQuestion.difficulty,
+    }
+  }
+
   const updatedOptions = baseQuestion.options.map((option, index) => ({
     id: option.id,
     text: reviewQuestion.options[index] ?? option.text,
@@ -136,7 +192,9 @@ export function mapReviewedDraftToPublishRequest(
 
   stored.draft.questions.forEach((draftQuestion, index) => {
     const reviewId = `ai-${stored.generationRunId}-q-${index + 1}`
-    const reviewQuestion = reviewById.get(reviewId)
+    const reviewQuestion =
+      reviewById.get(reviewId) ??
+      reviewedQuestions.find((question) => question.dbQuestionId && question.id === reviewId)
 
     if (!reviewQuestion) return
 
@@ -164,6 +222,15 @@ export function mapReviewedDraftToPublishRequest(
       )
     )
   })
+
+  for (const reviewQuestion of reviewedQuestions) {
+    if (reviewQuestion.isAiGenerated) continue
+    if (reviewQuestion.status !== "approved" && reviewQuestion.status !== "edited") continue
+
+    publishQuestions.push(
+      mapManualReviewQuestionToPublishQuestion(reviewQuestion, publishQuestions.length)
+    )
+  }
 
   return {
     generationRunId: stored.generationRunId,

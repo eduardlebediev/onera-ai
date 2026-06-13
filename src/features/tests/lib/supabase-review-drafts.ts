@@ -4,6 +4,7 @@ import { z } from "zod"
 
 import type { DocumentStatus } from "@/data/mock/documents"
 import { mapStoredDraftToReviewData } from "@/features/tests/lib/generated-test-mapper"
+import { getDraftTestForReview } from "@/features/tests/lib/draft-test"
 import {
   GeneratedTestResponseSchema,
   type StoredGeneratedTestDraftValidated,
@@ -14,6 +15,7 @@ import type { Json } from "@/lib/supabase/types"
 type GenerationRunRow = {
   id: string
   document_id: string | null
+  test_id: string | null
   status: string
   output_summary: Json
   created_at: string
@@ -23,6 +25,7 @@ type DocumentRow = {
   id: string
   title: string
   status: string
+  organization_id: string
 }
 
 export type SupabaseReviewDraft = {
@@ -30,6 +33,7 @@ export type SupabaseReviewDraft = {
   sourceDocumentTitle: string
   sourceDocumentStatus: DocumentStatus
   generationRunId: string
+  testId: string | null
   storedDraft: StoredGeneratedTestDraftValidated
 }
 
@@ -64,7 +68,7 @@ export async function getLatestGenerationRunForDocument(
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("ai_generation_runs")
-    .select("id, document_id, status, output_summary, created_at")
+    .select("id, document_id, test_id, status, output_summary, created_at")
     .eq("document_id", documentId)
     .eq("status", "completed")
     .order("created_at", { ascending: false })
@@ -82,7 +86,7 @@ async function getDocumentRow(documentId: string): Promise<DocumentRow | null> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("documents")
-    .select("id, title, status")
+    .select("id, title, status, organization_id")
     .eq("id", documentId)
     .maybeSingle()
 
@@ -118,11 +122,30 @@ export async function getLatestReviewDraftForDocument(
     const documentRow = await getDocumentRow(documentId)
     const primaryDocument = reviewDraft.documents.find((document) => document.id === documentId)
 
+    let reviewQuestions = mapStoredDraftToReviewData(storedDraft).questions
+    let reviewData = mapStoredDraftToReviewData(storedDraft)
+
+    if (generationRun.test_id && documentRow) {
+      const draftFromDb = await getDraftTestForReview(
+        generationRun.test_id,
+        documentRow.organization_id
+      )
+      if (draftFromDb && draftFromDb.questions.length > 0) {
+        reviewQuestions = draftFromDb.questions
+        reviewData = {
+          ...reviewData,
+          questions: reviewQuestions,
+          questionCount: reviewQuestions.length,
+        }
+      }
+    }
+
     return {
-      reviewData: mapStoredDraftToReviewData(storedDraft),
+      reviewData,
       sourceDocumentTitle: documentRow?.title ?? primaryDocument?.title ?? "Source document",
       sourceDocumentStatus: normalizeDocumentStatus(documentRow?.status),
       generationRunId: generationRun.id,
+      testId: generationRun.test_id,
       storedDraft,
     }
   } catch (error) {

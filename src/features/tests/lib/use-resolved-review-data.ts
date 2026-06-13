@@ -24,6 +24,7 @@ export interface ResolvedReviewState {
   questions: ReviewQuestion[]
   isAiDraft: boolean
   generationRunId: string | null
+  draftTestId: string | null
   isHydrated: boolean
   source: ReviewDataSource
 }
@@ -51,6 +52,7 @@ function getServerState(
     questions: fallbackReviewData.questions,
     isAiDraft: fallbackSource === "supabase",
     generationRunId: fallbackSource === "supabase" ? (generationRunId ?? null) : null,
+    draftTestId: null,
     isHydrated: false,
     source: fallbackSource,
   }
@@ -103,6 +105,7 @@ function buildResolvedState(
       questions: mergedQuestions,
       isAiDraft: true,
       generationRunId: runId,
+      draftTestId: stored.testId ?? null,
       isHydrated: true,
       source: "session",
     }
@@ -128,6 +131,7 @@ function buildResolvedState(
     questions: mergedQuestions,
     isAiDraft: fallbackSource === "supabase",
     generationRunId: fallbackGenerationRunId,
+    draftTestId: null,
     isHydrated: true,
     source: fallbackSource,
   }

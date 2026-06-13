@@ -215,7 +215,8 @@ export async function POST(request: Request) {
         ? (chunkDocumentById.get(question.sourceChunkId) ?? null)
         : null,
       is_active: true,
-      source_status: "valid",
+      source_status: question.sourceChunkId ? "valid" : "manual_kept",
+      review_status: question.reviewStatus === "needs_edit" ? "edited" : "approved",
       question_text: question.questionText,
       question_type: question.questionType,
       options: question.options as unknown as Json,

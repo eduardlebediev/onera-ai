@@ -3,7 +3,7 @@ import type { EmployeeSafeQuestion } from "@/features/employee/tests/lib/supabas
 import type { TestQuestion } from "@/features/tests/mock/tests"
 
 export type TestTakingAnswers = Record<string, string>
-export type SupabaseTestTakingAnswers = Record<string, string[]>
+export type SupabaseTestTakingAnswers = Record<string, string[] | string>
 
 export type MockEmployeeTakeableTest = EmployeeAssignedTest & {
   source?: "mock"
@@ -43,9 +43,15 @@ export function isQuestionAnswered(answers: TestTakingAnswers, questionId: strin
 
 export function isSupabaseQuestionAnswered(
   answers: SupabaseTestTakingAnswers,
-  questionId: string
+  questionId: string,
+  questionType?: EmployeeSafeQuestion["questionType"]
 ): boolean {
   const answer = answers[questionId]
+
+  if (questionType === "open_question") {
+    return typeof answer === "string" && answer.trim().length > 0
+  }
+
   return Array.isArray(answer) && answer.length > 0
 }
 
@@ -54,7 +60,7 @@ export function getSupabaseTestTakingProgress(
   answers: SupabaseTestTakingAnswers
 ): TestTakingProgress {
   const answeredCount = questions.filter((question) =>
-    isSupabaseQuestionAnswered(answers, question.id)
+    isSupabaseQuestionAnswered(answers, question.id, question.questionType)
   ).length
   const totalQuestions = questions.length
   const unansweredCount = totalQuestions - answeredCount

@@ -4,6 +4,57 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 42: Admin Analytics Page + Org-Scoped Reads
+
+**Branch:** `feature/42-admin-analytics-and-org-scoping`
+
+Added a dedicated Supabase-backed `/admin/analytics` page and tightened admin analytics reads so dashboard and test progress data are scoped to the authenticated admin's organization.
+
+### Analytics Page
+
+- Added `src/features/analytics/lib/supabase-analytics.ts` to load org-scoped tests, assignments, attempts, answers, questions, and profiles, then derive team average score, completion rate, weak topics, difficult questions, failed employees, best performers, and per-test performance.
+- Added `src/app/(admin)/admin/analytics/page.tsx` and `src/features/analytics/components/admin-analytics-page.tsx` with overview KPI cards, weak topic and difficult question tables, employee performance lists, per-test performance reuse, and the required empty states.
+
+### Org-Scoped Reads
+
+- Updated `getAdminDashboardFromSupabase()` and related dashboard queries to require an organization id and filter org-owned Supabase tables by `organization_id`.
+- Updated `getSupabaseTestProgress()` to require an organization id and filter assignments, attempts, questions, and answers by `organization_id`.
+- Wired dashboard and saved test detail routes to pass the organization id from `requireAdminUser()`.
+
+### Navigation
+
+- Added the admin Analytics nav link and dashboard "View Analytics" quick action.
+- Updated the analytics module manifest route list.
+
+### Review Fixes
+
+- Replaced index-based analytics KPI icon mapping with label-keyed metadata to match the project KPI convention and avoid icon drift if KPI order changes.
+
+### Verification
+
+- `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Context
+
+- Recorded decision 061 in `context/decisions.md`.
+
+### Files changed
+
+- `src/app/(admin)/admin/analytics/page.tsx`
+- `src/app/(admin)/admin/dashboard/page.tsx`
+- `src/app/(admin)/admin/tests/[id]/page.tsx`
+- `src/features/analytics/components/admin-analytics-page.tsx`
+- `src/features/analytics/components/dashboard-header.tsx`
+- `src/features/analytics/lib/supabase-analytics.ts`
+- `src/features/analytics/lib/supabase-admin-dashboard.ts`
+- `src/features/analytics/MODULE.md`
+- `src/features/tests/lib/supabase-test-progress.ts`
+- `src/shared/ui/top-navbar.tsx`
+- `context/feature-specs/42-admin-analytics-and-org-scoping.md`
+- `context/progress-tracker.md`, `context/decisions.md`, `context/history.md`
+
+---
+
 ## Feature Spec 41: Review Editor Enhancements
 
 **Branch:** `feature/41-review-editor-enhancements`

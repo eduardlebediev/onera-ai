@@ -4,8 +4,6 @@ import type { TestResultsSummary } from "@/features/tests/mock/tests"
 import type { TestAssignmentStatus } from "@/features/tests/mock/employees"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-// TODO: Restrict admin progress reads to the authenticated admin's organization once auth/RLS lands.
-
 export type SupabaseEmployeeProgress = {
   assignmentId: string
   userId: string
@@ -156,7 +154,14 @@ function buildWeakTopics(
     .sort((a, b) => a.correctnessPct - b.correctnessPct)
 }
 
-export async function getSupabaseTestProgress(testId: string): Promise<SupabaseTestProgress> {
+export async function getSupabaseTestProgress(
+  testId: string,
+  organizationId: string
+): Promise<SupabaseTestProgress> {
+  if (!organizationId) {
+    throw new Error("Test progress requires an organization scope")
+  }
+
   const supabase = createAdminClient()
 
   const [
@@ -167,14 +172,20 @@ export async function getSupabaseTestProgress(testId: string): Promise<SupabaseT
     supabase
       .from("test_assignments")
       .select("id, user_id, status, deadline")
+      .eq("organization_id", organizationId)
       .eq("test_id", testId)
       .order("created_at", { ascending: false }),
     supabase
       .from("test_attempts")
       .select("id, user_id, assignment_id, status, score, passed, completed_at, created_at")
+      .eq("organization_id", organizationId)
       .eq("test_id", testId)
       .order("completed_at", { ascending: false }),
-    supabase.from("test_questions").select("id, topic").eq("test_id", testId),
+    supabase
+      .from("test_questions")
+      .select("id, topic")
+      .eq("organization_id", organizationId)
+      .eq("test_id", testId),
   ])
 
   if (assignmentsError || attemptsError || questionsError) {
@@ -225,6 +236,7 @@ export async function getSupabaseTestProgress(testId: string): Promise<SupabaseT
     const { data: answers, error: answersError } = await supabase
       .from("test_answers")
       .select("question_id, is_correct")
+      .eq("organization_id", organizationId)
       .in("attempt_id", attemptIds)
 
     if (answersError) {

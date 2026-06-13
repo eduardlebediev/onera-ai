@@ -29,7 +29,8 @@ Owns admin-facing analytics views, KPIs, and performance summaries built from da
 
 ## Related Routes
 
-- `/dashboard`
+- `/admin/dashboard`
+- `/admin/analytics`
 
 ## Future Boundaries
 

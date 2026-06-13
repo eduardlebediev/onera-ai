@@ -12,8 +12,6 @@ import { formatTestDate } from "@/features/tests/lib/test-format"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
-// TODO: Scope dashboard reads to the authenticated admin's organization once auth/RLS lands.
-
 export type AdminDashboardRecentAttempt = {
   id: string
   employeeName: string
@@ -177,6 +175,7 @@ function mapRecentGenerationRunRow(
 
 async function fetchLinkedTestCountsByDocumentId(
   supabase: ReturnType<typeof createAdminClient>,
+  organizationId: string,
   documentIds: string[]
 ): Promise<Map<string, number>> {
   const testCountsByDocumentId = new Map<string, Set<string>>()
@@ -193,8 +192,16 @@ async function fetchLinkedTestCountsByDocumentId(
     { data: sourceTests, error: sourceTestsError },
     { data: testDocumentLinks, error: testDocumentLinksError },
   ] = await Promise.all([
-    supabase.from("tests").select("id, source_document_id").in("source_document_id", documentIds),
-    supabase.from("test_documents").select("test_id, document_id").in("document_id", documentIds),
+    supabase
+      .from("tests")
+      .select("id, source_document_id")
+      .eq("organization_id", organizationId)
+      .in("source_document_id", documentIds),
+    supabase
+      .from("test_documents")
+      .select("test_id, document_id")
+      .eq("organization_id", organizationId)
+      .in("document_id", documentIds),
   ])
 
   if (sourceTestsError || testDocumentLinksError) {
@@ -223,11 +230,13 @@ async function fetchLinkedTestCountsByDocumentId(
 }
 
 async function fetchRecentDocuments(
-  supabase: ReturnType<typeof createAdminClient>
+  supabase: ReturnType<typeof createAdminClient>,
+  organizationId: string
 ): Promise<MockDocument[]> {
   const { data, error } = await supabase
     .from("documents")
     .select("id, title, status, created_at")
+    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
     .limit(5)
 
@@ -238,6 +247,7 @@ async function fetchRecentDocuments(
   const documentRows = (data ?? []) as RecentDocumentRow[]
   const testCountsByDocumentId = await fetchLinkedTestCountsByDocumentId(
     supabase,
+    organizationId,
     documentRows.map((row) => row.id)
   )
 
@@ -245,11 +255,13 @@ async function fetchRecentDocuments(
 }
 
 async function fetchRecentDrafts(
-  supabase: ReturnType<typeof createAdminClient>
+  supabase: ReturnType<typeof createAdminClient>,
+  organizationId: string
 ): Promise<MockAiDraft[]> {
   const { data, error } = await supabase
     .from("ai_generation_runs")
     .select("id, document_id, status, model, created_at, output_summary")
+    .eq("organization_id", organizationId)
     .order("created_at", { ascending: false })
     .limit(5)
 
@@ -268,6 +280,7 @@ async function fetchRecentDrafts(
     const { data: documents, error: documentsError } = await supabase
       .from("documents")
       .select("id, title")
+      .eq("organization_id", organizationId)
       .in("id", documentIds)
 
     if (documentsError) {
@@ -384,26 +397,32 @@ function buildKpiStats(input: {
   ]
 }
 
-export async function getAdminDashboardFromSupabase(): Promise<AdminDashboardSupabaseResult> {
+export async function getAdminDashboardFromSupabase(
+  organizationId: string
+): Promise<AdminDashboardSupabaseResult> {
+  if (!organizationId) {
+    throw new Error("Admin dashboard requires an organization scope")
+  }
+
   const supabase = createAdminClient()
 
   let recentDocuments: MockDocument[] = []
   let recentDrafts: MockAiDraft[] = []
 
   try {
-    recentDocuments = await fetchRecentDocuments(supabase)
+    recentDocuments = await fetchRecentDocuments(supabase, organizationId)
   } catch (error) {
     console.error("Failed to load recent documents for admin dashboard:", error)
   }
 
   try {
-    recentDrafts = await fetchRecentDrafts(supabase)
+    recentDrafts = await fetchRecentDrafts(supabase, organizationId)
   } catch (error) {
     console.error("Failed to load recent AI generation runs for admin dashboard:", error)
   }
 
   try {
-    const metrics = await fetchAdminDashboardMetrics(supabase)
+    const metrics = await fetchAdminDashboardMetrics(supabase, organizationId)
     return {
       metrics,
       recentDocuments,
@@ -420,7 +439,8 @@ export async function getAdminDashboardFromSupabase(): Promise<AdminDashboardSup
 }
 
 async function fetchAdminDashboardMetrics(
-  supabase: ReturnType<typeof createAdminClient>
+  supabase: ReturnType<typeof createAdminClient>,
+  organizationId: string
 ): Promise<AdminDashboardMetrics | null> {
   const [
     { data: tests, error: testsError },
@@ -430,11 +450,16 @@ async function fetchAdminDashboardMetrics(
     supabase
       .from("tests")
       .select("id, title, status, target_role")
+      .eq("organization_id", organizationId)
       .order("created_at", { ascending: false }),
-    supabase.from("test_assignments").select("id, test_id, user_id, status"),
+    supabase
+      .from("test_assignments")
+      .select("id, test_id, user_id, status")
+      .eq("organization_id", organizationId),
     supabase
       .from("test_attempts")
       .select("id, test_id, user_id, status, score, passed, completed_at")
+      .eq("organization_id", organizationId)
       .order("completed_at", { ascending: false }),
   ])
 
@@ -490,6 +515,7 @@ async function fetchAdminDashboardMetrics(
     const { data: wrongAnswers, error: wrongAnswersError } = await supabase
       .from("test_answers")
       .select("question_id")
+      .eq("organization_id", organizationId)
       .eq("is_correct", false)
 
     if (wrongAnswersError) {
@@ -504,6 +530,7 @@ async function fetchAdminDashboardMetrics(
       const { data: questionMeta, error: questionMetaError } = await supabase
         .from("test_questions")
         .select("id, topic, test_id")
+        .eq("organization_id", organizationId)
         .in("id", wrongQuestionIds)
         .in("test_id", testIds)
 

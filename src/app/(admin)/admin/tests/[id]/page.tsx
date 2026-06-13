@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { SavedTestDetailPage } from "@/features/tests/components/saved-test-detail-page"
 import { TestDetailPage } from "@/features/tests/components/test-detail-page"
@@ -25,6 +26,9 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
     notFound()
   }
 
+  const user = await requireAdminUser()
+  const organizationId = user.membership.organizationId
+
   let savedTest = null
 
   try {
@@ -40,7 +44,7 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
 
   const [assignments, progress] = await Promise.all([
     getSupabaseAssignmentSummaryByTestId(savedTest.id),
-    getSupabaseTestProgress(savedTest.id).catch((error) => {
+    getSupabaseTestProgress(savedTest.id, organizationId).catch((error) => {
       console.error(`Failed to load test progress for ${savedTest.id}:`, error)
       return null
     }),

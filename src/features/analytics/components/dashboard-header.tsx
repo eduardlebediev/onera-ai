@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Sparkles, Upload } from "lucide-react"
+import { BarChart3, Sparkles, Upload } from "lucide-react"
 
 import { Button } from "@/shared/ui/button"
 
@@ -16,6 +16,12 @@ export function DashboardHeader() {
         <Button variant="outline" size="lg" disabled title="Not available in this demo">
           <Upload className="size-4" />
           Upload Document
+        </Button>
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/admin/analytics">
+            <BarChart3 className="size-4" />
+            View Analytics
+          </Link>
         </Button>
         <Button variant="default" size="lg" asChild>
           <Link href="/admin/documents/doc-1/generate-test">

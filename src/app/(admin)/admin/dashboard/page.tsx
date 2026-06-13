@@ -10,11 +10,15 @@ import {
   getAdminDashboardFromSupabase,
   type AdminDashboardRecentAttempt,
 } from "@/features/analytics/lib/supabase-admin-dashboard"
+import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { BackendFallbackBanner } from "@/features/documents/components/backend-fallback-banner"
 
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
+  const user = await requireAdminUser()
+  const organizationId = user.membership.organizationId
+
   let dashboardKpiStats = kpiStats
   let dashboardTestPerformance = testPerformance
   let dashboardWeeklyCompletions = weeklyCompletions
@@ -24,7 +28,7 @@ export default async function DashboardPage() {
   let showFallbackBanner = false
 
   try {
-    const result = await getAdminDashboardFromSupabase()
+    const result = await getAdminDashboardFromSupabase(organizationId)
 
     if (result.metrics) {
       dashboardKpiStats = result.metrics.kpiStats

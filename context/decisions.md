@@ -1,5 +1,9 @@
 # Decisions
 
+## 061 — Admin analytics reads require explicit organization scope
+
+Admin dashboard, analytics, and test-progress helpers use the server-only Supabase admin client but must receive `organizationId` from `requireAdminUser()` and filter every org-owned query with `.eq("organization_id", organizationId)`. Missing organization scope throws instead of returning cross-org data.
+
 ## 060 — Open question grading is best-effort on submit
 
 Open-ended answers are graded by AI during attempt submit using the question's stored `expectedAnswer`. If grading fails or times out, the answer is marked incorrect with a "needs manual review" note persisted in `user_answer`. Submit, scoring, and attempt completion must succeed regardless of grading outcome.

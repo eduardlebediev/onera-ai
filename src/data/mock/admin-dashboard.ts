@@ -1,5 +1,5 @@
 export type DocumentStatus = "ready" | "processing" | "failed"
-export type DocumentDisplayStatus = DocumentStatus | "uploaded"
+export type DocumentDisplayStatus = DocumentStatus | "uploaded" | "archived" | "deleted"
 export type TestStatus = "active" | "draft" | "archived"
 export type ActivityType =
   | "document_processed"
@@ -37,6 +37,12 @@ export interface MockAiDraft {
   id: string
   title: string
   questionCount: number
+  documentId?: string
+  status?: string
+  model?: string | null
+  createdAt?: string
+  actionHref?: string
+  actionLabel?: string
 }
 
 export interface WeeklyCompletion {

@@ -1,7 +1,16 @@
 import "server-only"
 
-import type { KpiStat, MockTest, TestStatus, WeeklyCompletion } from "@/data/mock/admin-dashboard"
+import type {
+  KpiStat,
+  MockAiDraft,
+  MockDocument,
+  MockTest,
+  TestStatus,
+  WeeklyCompletion,
+} from "@/data/mock/admin-dashboard"
+import { formatTestDate } from "@/features/tests/lib/test-format"
 import { createAdminClient } from "@/lib/supabase/admin"
+import type { Json } from "@/lib/supabase/types"
 
 // TODO: Scope dashboard reads to the authenticated admin's organization once auth/RLS lands.
 
@@ -14,11 +23,17 @@ export type AdminDashboardRecentAttempt = {
   completedAt: string
 }
 
-export type AdminDashboardSupabaseData = {
+export type AdminDashboardMetrics = {
   kpiStats: KpiStat[]
   testPerformance: MockTest[]
   weeklyCompletions: WeeklyCompletion[]
   recentAttempts: AdminDashboardRecentAttempt[]
+}
+
+export type AdminDashboardSupabaseResult = {
+  metrics: AdminDashboardMetrics | null
+  recentDocuments: MockDocument[]
+  recentDrafts: MockAiDraft[]
 }
 
 type TestRow = {
@@ -61,7 +76,213 @@ type QuestionMetaRow = {
   test_id: string
 }
 
+type RecentDocumentRow = {
+  id: string
+  title: string
+  status: string
+  created_at: string
+}
+
+type LinkedTestRow = {
+  id: string
+  source_document_id: string | null
+}
+
+type TestDocumentLinkRow = {
+  test_id: string
+  document_id: string
+}
+
+type RecentGenerationRunRow = {
+  id: string
+  document_id: string | null
+  status: string
+  model: string | null
+  created_at: string
+  output_summary: Json
+}
+
+type DocumentTitleRow = {
+  id: string
+  title: string
+}
+
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
+
+function mapDocumentStatusToMock(status: string): Pick<MockDocument, "status" | "displayStatus"> {
+  if (status === "uploaded") {
+    return { status: "ready", displayStatus: "uploaded" }
+  }
+
+  if (status === "processing") {
+    return { status: "processing" }
+  }
+
+  if (status === "failed" || status === "deleted") {
+    return status === "deleted"
+      ? { status: "failed", displayStatus: "deleted" }
+      : { status: "failed" }
+  }
+
+  if (status === "archived") {
+    return { status: "ready", displayStatus: "archived" }
+  }
+
+  return { status: "ready" }
+}
+
+function mapRecentDocumentRow(
+  row: RecentDocumentRow,
+  testCountsByDocumentId: Map<string, number>
+): MockDocument {
+  const statusFields = mapDocumentStatusToMock(row.status)
+
+  return {
+    id: row.id,
+    title: row.title,
+    ...statusFields,
+    topics: [],
+    testCount: testCountsByDocumentId.get(row.id) ?? 0,
+    updatedAt: formatTestDate(row.created_at),
+  }
+}
+
+function parseQuestionCountFromSummary(summary: Json): number {
+  if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+    return 0
+  }
+
+  const questionCount = (summary as Record<string, unknown>).question_count
+  return typeof questionCount === "number" && Number.isFinite(questionCount) ? questionCount : 0
+}
+
+function mapRecentGenerationRunRow(
+  row: RecentGenerationRunRow,
+  documentTitlesById: Map<string, string>
+): MockAiDraft {
+  const documentTitle = row.document_id ? documentTitlesById.get(row.document_id) : null
+
+  return {
+    id: row.id,
+    title: documentTitle ?? "Unknown document",
+    questionCount: parseQuestionCountFromSummary(row.output_summary),
+    documentId: row.document_id ?? undefined,
+    status: row.status,
+    model: row.model,
+    createdAt: row.created_at,
+    actionHref: row.document_id ? `/admin/documents/${row.document_id}` : "/admin/tests",
+    actionLabel: "View",
+  }
+}
+
+async function fetchLinkedTestCountsByDocumentId(
+  supabase: ReturnType<typeof createAdminClient>,
+  documentIds: string[]
+): Promise<Map<string, number>> {
+  const testCountsByDocumentId = new Map<string, Set<string>>()
+
+  for (const documentId of documentIds) {
+    testCountsByDocumentId.set(documentId, new Set())
+  }
+
+  if (documentIds.length === 0) {
+    return new Map()
+  }
+
+  const [
+    { data: sourceTests, error: sourceTestsError },
+    { data: testDocumentLinks, error: testDocumentLinksError },
+  ] = await Promise.all([
+    supabase.from("tests").select("id, source_document_id").in("source_document_id", documentIds),
+    supabase.from("test_documents").select("test_id, document_id").in("document_id", documentIds),
+  ])
+
+  if (sourceTestsError || testDocumentLinksError) {
+    throw new Error(
+      sourceTestsError?.message ??
+        testDocumentLinksError?.message ??
+        "Failed to fetch linked test counts"
+    )
+  }
+
+  for (const test of (sourceTests ?? []) as LinkedTestRow[]) {
+    if (!test.source_document_id) continue
+    testCountsByDocumentId.get(test.source_document_id)?.add(test.id)
+  }
+
+  for (const link of (testDocumentLinks ?? []) as TestDocumentLinkRow[]) {
+    testCountsByDocumentId.get(link.document_id)?.add(link.test_id)
+  }
+
+  return new Map(
+    Array.from(testCountsByDocumentId.entries()).map(([documentId, testIds]) => [
+      documentId,
+      testIds.size,
+    ])
+  )
+}
+
+async function fetchRecentDocuments(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<MockDocument[]> {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("id, title, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  if (error) {
+    throw new Error(`Failed to fetch recent documents: ${error.message}`)
+  }
+
+  const documentRows = (data ?? []) as RecentDocumentRow[]
+  const testCountsByDocumentId = await fetchLinkedTestCountsByDocumentId(
+    supabase,
+    documentRows.map((row) => row.id)
+  )
+
+  return documentRows.map((row) => mapRecentDocumentRow(row, testCountsByDocumentId))
+}
+
+async function fetchRecentDrafts(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<MockAiDraft[]> {
+  const { data, error } = await supabase
+    .from("ai_generation_runs")
+    .select("id, document_id, status, model, created_at, output_summary")
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  if (error) {
+    throw new Error(`Failed to fetch recent AI generation runs: ${error.message}`)
+  }
+
+  const runRows = (data ?? []) as RecentGenerationRunRow[]
+  const documentIds = Array.from(
+    new Set(runRows.map((row) => row.document_id).filter((id): id is string => Boolean(id)))
+  )
+
+  const documentTitlesById = new Map<string, string>()
+
+  if (documentIds.length > 0) {
+    const { data: documents, error: documentsError } = await supabase
+      .from("documents")
+      .select("id, title")
+      .in("id", documentIds)
+
+    if (documentsError) {
+      throw new Error(
+        `Failed to fetch AI generation run document titles: ${documentsError.message}`
+      )
+    }
+
+    for (const document of (documents ?? []) as DocumentTitleRow[]) {
+      documentTitlesById.set(document.id, document.title)
+    }
+  }
+
+  return runRows.map((row) => mapRecentGenerationRunRow(row, documentTitlesById))
+}
 
 function mapTestStatus(status: string): TestStatus {
   if (status === "published") return "active"
@@ -163,9 +384,44 @@ function buildKpiStats(input: {
   ]
 }
 
-export async function getAdminDashboardFromSupabase(): Promise<AdminDashboardSupabaseData | null> {
+export async function getAdminDashboardFromSupabase(): Promise<AdminDashboardSupabaseResult> {
   const supabase = createAdminClient()
 
+  let recentDocuments: MockDocument[] = []
+  let recentDrafts: MockAiDraft[] = []
+
+  try {
+    recentDocuments = await fetchRecentDocuments(supabase)
+  } catch (error) {
+    console.error("Failed to load recent documents for admin dashboard:", error)
+  }
+
+  try {
+    recentDrafts = await fetchRecentDrafts(supabase)
+  } catch (error) {
+    console.error("Failed to load recent AI generation runs for admin dashboard:", error)
+  }
+
+  try {
+    const metrics = await fetchAdminDashboardMetrics(supabase)
+    return {
+      metrics,
+      recentDocuments,
+      recentDrafts,
+    }
+  } catch (error) {
+    console.error("Failed to load admin dashboard metrics from Supabase:", error)
+    return {
+      metrics: null,
+      recentDocuments,
+      recentDrafts,
+    }
+  }
+}
+
+async function fetchAdminDashboardMetrics(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<AdminDashboardMetrics | null> {
   const [
     { data: tests, error: testsError },
     { data: assignments, error: assignmentsError },

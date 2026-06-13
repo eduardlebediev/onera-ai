@@ -32,8 +32,10 @@ function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
 }
 
 function getDocumentActionHref(document: MockDocument): string {
-  if (document.status === "failed") return `/admin/documents/${document.id}`
-  if (document.testCount === 0 && document.status === "ready") {
+  const status = getDocumentDisplayStatus(document)
+
+  if (status === "failed") return `/admin/documents/${document.id}`
+  if (document.testCount === 0 && status === "ready") {
     return `/admin/documents/${document.id}/generate-test`
   }
   return `/admin/documents/${document.id}`

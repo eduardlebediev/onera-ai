@@ -8,6 +8,35 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+---
+
+## Feature Spec 37: Admin Dashboard Widgets from Supabase
+
+**Branch:** `feature/37-admin-dashboard-widgets-from-supabase`
+
+Replaced mock recent documents and AI drafts widgets on `/admin/dashboard` with Supabase-backed data, with per-widget mock fallback and `BackendFallbackBanner`.
+
+### Loader and page
+
+- Extended `src/features/analytics/lib/supabase-admin-dashboard.ts` — fetch latest 5 `documents` and `ai_generation_runs`, map to `MockDocument` / `MockAiDraft`, return `AdminDashboardSupabaseResult` with isolated widget and metrics loading.
+- Updated `src/app/(admin)/admin/dashboard/page.tsx` — per-widget real-data fallback for documents, drafts, and metrics; banner when any section falls back.
+
+### UI and types
+
+- Updated `src/data/mock/admin-dashboard.ts` — optional AI draft metadata (`documentId`, `status`, `model`, `createdAt`, action metadata).
+- Updated `src/features/analytics/components/ai-drafts-list.tsx` — show status/model/date in existing row subtitle; real generation runs link to their source document instead of unhydrated mock review data.
+
+### Post-review fixes
+
+- Recent document rows now count linked tests through both `tests.source_document_id` and `test_documents`, so dashboard actions do not treat every real document as testless.
+- Archived/deleted/uploaded recent documents use display-status-aware badges and actions, preventing generate-test links for non-ready rows.
+- Restored Feature Spec 36 in `context/progress-tracker.md` after adding Feature Spec 37.
+
+### Context and validation
+
+- Added `context/feature-specs/37-admin-dashboard-widgets-from-supabase.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 36: AI Test Feedback
 
 **Branch:** `feature/36-ai-test-feedback`

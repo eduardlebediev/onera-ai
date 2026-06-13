@@ -10,11 +10,13 @@ Production Readiness Cleanup
 
 ## Next Up
 
-- Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 37–49 in `context/current-plan.md`.
+- Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 38–49 in `context/current-plan.md`.
 
 ## Open Questions
 
 ## Completed
+
+- Feature Spec 37: Admin Dashboard Widgets from Supabase
 
 - Feature Spec 36: AI Test Feedback
 

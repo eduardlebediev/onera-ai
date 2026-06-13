@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Sparkles } from "lucide-react"
 
 import type { MockAiDraft } from "@/data/mock/admin-dashboard"
+import { formatTestDate } from "@/features/tests/lib/test-format"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 
@@ -9,6 +10,42 @@ const DRAFT_REVIEW_LINKS: Record<string, string> = {
   "draft-1": "/admin/tests/review?documentId=doc-1",
   "draft-2": "/admin/tests/review?documentId=doc-1",
   "draft-3": "/admin/tests/review?documentId=doc-4",
+}
+
+function getDraftReviewHref(draft: MockAiDraft): string {
+  if (draft.actionHref) {
+    return draft.actionHref
+  }
+
+  if (draft.documentId) {
+    const params = new URLSearchParams({
+      documentId: draft.documentId,
+      runId: draft.id,
+    })
+    return `/admin/tests/review?${params.toString()}`
+  }
+
+  return DRAFT_REVIEW_LINKS[draft.id] ?? "/admin/tests/review?documentId=doc-1"
+}
+
+function getDraftActionLabel(draft: MockAiDraft): string {
+  return draft.actionLabel ?? "Review"
+}
+
+function getDraftSubtitle(draft: MockAiDraft): string {
+  if (draft.status || draft.model || draft.createdAt) {
+    const parts = [
+      draft.status ? draft.status : null,
+      draft.model ? draft.model : null,
+      draft.createdAt ? formatTestDate(draft.createdAt) : null,
+    ].filter((part): part is string => Boolean(part))
+
+    if (parts.length > 0) {
+      return parts.join(" · ")
+    }
+  }
+
+  return `${draft.questionCount} AI-generated questions`
 }
 
 interface AiDraftsListProps {
@@ -38,13 +75,11 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
               <div>
                 <p className="typography-small font-medium">{draft.title}</p>
                 <p className="mt-0.5 typography-small text-muted-foreground font-medium">
-                  {draft.questionCount} AI-generated questions
+                  {getDraftSubtitle(draft)}
                 </p>
               </div>
               <Button variant="secondary" size="sm" asChild>
-                <Link href={DRAFT_REVIEW_LINKS[draft.id] ?? "/admin/tests/review?documentId=doc-1"}>
-                  Review
-                </Link>
+                <Link href={getDraftReviewHref(draft)}>{getDraftActionLabel(draft)}</Link>
               </Button>
             </div>
           ))}

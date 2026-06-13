@@ -39,14 +39,26 @@ export function getDocumentStatusBadgeConfig(
       className: "",
       icon: "none",
     },
+    archived: {
+      label: "Archived",
+      className: "bg-slate-100 text-slate-600 border-slate-200",
+      icon: "none",
+    },
+    deleted: {
+      label: "Deleted",
+      className: "bg-slate-100 text-slate-500 border-slate-200",
+      icon: "none",
+    },
   }
 
   return map[status]
 }
 
 export function getDocumentActionLabel(document: MockDocument) {
-  if (document.status === "failed") return "Retry"
-  if (document.testCount === 0 && document.status === "ready") return "Create Test"
+  const status = getDocumentDisplayStatus(document)
+
+  if (status === "failed") return "Retry"
+  if (document.testCount === 0 && status === "ready") return "Create Test"
   return "View"
 }
 

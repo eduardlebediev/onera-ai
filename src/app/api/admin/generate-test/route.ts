@@ -180,6 +180,10 @@ export async function POST(request: Request) {
       return jsonError("Forbidden", 403)
     }
 
+    if (document.status === "archived" || document.status === "deleted") {
+      return jsonError("Archived or deleted documents cannot be used for test generation", 409)
+    }
+
     const supabase = createAdminClient()
     const effectiveSettings: EffectiveGenerationSettings = {
       questionCount: input.questionCount,
@@ -227,6 +231,7 @@ export async function POST(request: Request) {
         id: latestVersion.id,
         title: latestVersion.title,
         organizationId: latestVersion.organization_id,
+        status: "ready",
       }
 
       effectiveSettings.questionCount = clampQuestionCount(

@@ -39,6 +39,12 @@ export function canGenerateTest(document: MockDocumentDetail): boolean {
 }
 
 export function getGenerateBlockReason(document: MockDocumentDetail): string {
+  if (document.status === "archived") {
+    return "Archived documents cannot be used for test generation."
+  }
+  if (document.status === "deleted") {
+    return "Deleted documents cannot be used for test generation."
+  }
   if (document.status === "processing") {
     return "This document is still being processed. Generation will be available once processing is complete."
   }

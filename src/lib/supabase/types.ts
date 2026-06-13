@@ -103,6 +103,11 @@ export type Database = {
           replaced_by_document_id: string | null
           change_message: string | null
           ai_change_summary: string | null
+          archived_at: string | null
+          archived_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -129,6 +134,11 @@ export type Database = {
           replaced_by_document_id?: string | null
           change_message?: string | null
           ai_change_summary?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -155,6 +165,11 @@ export type Database = {
           replaced_by_document_id?: string | null
           change_message?: string | null
           ai_change_summary?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -263,6 +278,10 @@ export type Database = {
           passing_score: number
           created_by: string | null
           published_at: string | null
+          is_active: boolean
+          source_validity: string
+          source_invalid_reason: string | null
+          source_invalid_at: string | null
           created_at: string
           updated_at: string
         }
@@ -280,6 +299,10 @@ export type Database = {
           passing_score?: number
           created_by?: string | null
           published_at?: string | null
+          is_active?: boolean
+          source_validity?: string
+          source_invalid_reason?: string | null
+          source_invalid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -297,6 +320,10 @@ export type Database = {
           passing_score?: number
           created_by?: string | null
           published_at?: string | null
+          is_active?: boolean
+          source_validity?: string
+          source_invalid_reason?: string | null
+          source_invalid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -316,6 +343,10 @@ export type Database = {
           topic: string | null
           difficulty: string | null
           order_index: number
+          source_document_id: string | null
+          is_active: boolean
+          source_status: string
+          source_invalid_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -332,6 +363,10 @@ export type Database = {
           topic?: string | null
           difficulty?: string | null
           order_index?: number
+          source_document_id?: string | null
+          is_active?: boolean
+          source_status?: string
+          source_invalid_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -348,6 +383,10 @@ export type Database = {
           topic?: string | null
           difficulty?: string | null
           order_index?: number
+          source_document_id?: string | null
+          is_active?: boolean
+          source_status?: string
+          source_invalid_reason?: string | null
           created_at?: string
           updated_at?: string
         }

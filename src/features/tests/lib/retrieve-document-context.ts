@@ -39,6 +39,7 @@ export type DocumentSummary = {
   id: string
   title: string
   organizationId: string
+  status: string
 }
 
 export async function fetchDocumentById(documentId: string): Promise<DocumentSummary | null> {
@@ -46,7 +47,7 @@ export async function fetchDocumentById(documentId: string): Promise<DocumentSum
 
   const { data: document, error } = await supabase
     .from("documents")
-    .select("id, title, organization_id")
+    .select("id, title, organization_id, status")
     .eq("id", documentId)
     .maybeSingle()
 
@@ -62,6 +63,7 @@ export async function fetchDocumentById(documentId: string): Promise<DocumentSum
     id: document.id,
     title: document.title,
     organizationId: document.organization_id,
+    status: document.status,
   }
 }
 

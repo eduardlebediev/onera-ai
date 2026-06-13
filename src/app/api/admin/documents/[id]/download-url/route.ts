@@ -36,7 +36,7 @@ export async function POST(_request: Request, { params }: DownloadUrlRouteContex
 
     const { data: document, error } = await supabase
       .from("documents")
-      .select("storage_path")
+      .select("storage_path, status")
       .eq("id", id)
       .maybeSingle()
 
@@ -44,7 +44,7 @@ export async function POST(_request: Request, { params }: DownloadUrlRouteContex
       throw new Error(`Failed to load document: ${error.message}`)
     }
 
-    if (!document?.storage_path) {
+    if (!document?.storage_path || document.status === "deleted") {
       return jsonError("Original file is not available for this document", 404)
     }
 

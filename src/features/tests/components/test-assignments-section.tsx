@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import type { TestAssignmentsSummary, TestStatus } from "@/features/tests/mock/tests"
+import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
@@ -8,6 +9,9 @@ interface TestAssignmentsSectionProps {
   assignments: TestAssignmentsSummary
   testId: string
   testStatus: TestStatus
+  isActive?: boolean
+  sourceValidity?: string
+  sourceInvalidReason?: string | null
 }
 
 function AssignmentStat({ label, value }: { label: string; value: number }) {
@@ -23,7 +27,16 @@ export function TestAssignmentsSection({
   assignments,
   testId,
   testStatus,
+  isActive = true,
+  sourceValidity = "valid",
+  sourceInvalidReason,
 }: TestAssignmentsSectionProps) {
+  const canAssign = isTestAssignable({
+    status: testStatus,
+    isActive,
+    sourceValidity,
+  })
+
   return (
     <Card>
       <CardHeader>
@@ -37,7 +50,7 @@ export function TestAssignmentsSection({
           <AssignmentStat label="Not Started" value={assignments.notStarted} />
           <AssignmentStat label="Failed" value={assignments.failed ?? 0} />
         </div>
-        {testStatus === "published" ? (
+        {canAssign ? (
           <Button asChild className="w-full">
             <Link href={`/admin/tests/${testId}/assign`}>Assign to Employees</Link>
           </Button>
@@ -45,7 +58,12 @@ export function TestAssignmentsSection({
           <Button
             className="w-full"
             disabled
-            title="Publish this test before assigning it to employees."
+            title={
+              sourceInvalidReason ??
+              (testStatus !== "published"
+                ? "Publish this test before assigning it to employees."
+                : "This test is inactive because its source document is invalid.")
+            }
           >
             Assign to Employees
           </Button>

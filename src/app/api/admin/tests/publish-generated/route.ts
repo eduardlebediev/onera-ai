@@ -126,6 +126,10 @@ export async function POST(request: Request) {
       return jsonError("Forbidden", 403)
     }
 
+    if (document.status === "archived" || document.status === "deleted") {
+      return jsonError("Archived or deleted documents cannot be used to publish tests", 409)
+    }
+
     const sourceChunkError = await validateSourceChunkIds(
       document.id,
       document.organizationId,
@@ -171,6 +175,8 @@ export async function POST(request: Request) {
         passing_score: input.passingScore,
         created_by: null,
         published_at: publishedAt,
+        is_active: true,
+        source_validity: "valid",
       })
       .select("id")
       .single()
@@ -184,6 +190,9 @@ export async function POST(request: Request) {
       organization_id: document.organizationId,
       test_id: savedTest.id,
       source_chunk_id: question.sourceChunkId ?? null,
+      source_document_id: document.id,
+      is_active: true,
+      source_status: "valid",
       question_text: question.questionText,
       question_type: question.questionType,
       options: question.options as unknown as Json,

@@ -1,6 +1,10 @@
 import "server-only"
 
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
+import {
+  INACTIVE_TEST_START_MESSAGE,
+  isTestAssignable,
+} from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -250,7 +254,7 @@ async function getExistingAnswerCount(attemptId: string): Promise<number> {
   return count ?? 0
 }
 
-export type StartAttemptErrorCode = "not_found" | "assignment_finished"
+export type StartAttemptErrorCode = "not_found" | "assignment_finished" | "test_inactive"
 
 export class StartAttemptError extends Error {
   constructor(
@@ -278,7 +282,7 @@ export async function startEmployeeTestAttempt(
 
   const { data: test, error: testError } = await supabase
     .from("tests")
-    .select("id, organization_id, status")
+    .select("id, organization_id, status, is_active, source_validity")
     .eq("id", testId)
     .eq("organization_id", organizationId)
     .maybeSingle()
@@ -288,6 +292,19 @@ export async function startEmployeeTestAttempt(
   }
 
   if (!test || test.status !== "published") return null
+
+  const isActive = test.is_active ?? true
+  const sourceValidity = test.source_validity ?? "valid"
+
+  if (
+    !isTestAssignable({
+      status: test.status,
+      isActive,
+      sourceValidity,
+    })
+  ) {
+    throw new StartAttemptError(INACTIVE_TEST_START_MESSAGE, "test_inactive")
+  }
 
   if (assignment.status === "not_started") {
     const { error: assignmentUpdateError } = await supabase
@@ -384,6 +401,28 @@ export async function submitEmployeeTestAttempt(input: {
   }
 
   const supabase = createAdminClient()
+
+  const { data: testRow, error: testError } = await supabase
+    .from("tests")
+    .select("status, is_active, source_validity")
+    .eq("id", input.testId)
+    .eq("organization_id", organizationId)
+    .maybeSingle()
+
+  if (testError) {
+    throw new Error(`Failed to fetch test: ${testError.message}`)
+  }
+
+  if (
+    !testRow ||
+    !isTestAssignable({
+      status: testRow.status,
+      isActive: testRow.is_active ?? true,
+      sourceValidity: testRow.source_validity ?? "valid",
+    })
+  ) {
+    throw new SubmitAttemptError(INACTIVE_TEST_START_MESSAGE, "forbidden")
+  }
 
   const { data: questions, error: questionsError } = await supabase
     .from("test_questions")

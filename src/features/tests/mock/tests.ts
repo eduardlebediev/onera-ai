@@ -65,6 +65,9 @@ export interface MockTest {
   createdAt: string
   assignedEmployeesCount: number
   attemptsCount: number
+  isActive?: boolean
+  sourceValidity?: string
+  sourceInvalidReason?: string | null
   sourceDocument: TestSourceDocumentRef
   questions: TestQuestion[]
   assignments: TestAssignmentsSummary

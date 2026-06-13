@@ -38,6 +38,10 @@ type DocumentRow = {
   replaced_by_document_id: string | null
   change_message: string | null
   ai_change_summary: string | null
+  archived_at: string | null
+  deleted_at: string | null
+  deletion_reason: string | null
+  supports_archive_delete: boolean
   created_by: string | null
 }
 
@@ -65,7 +69,7 @@ type SupabaseQueryError = {
   message?: string
 }
 
-const DOCUMENT_SELECT = [
+const LEGACY_DOCUMENT_SELECT = [
   "id",
   "title",
   "description",
@@ -91,12 +95,55 @@ const DOCUMENT_SELECT = [
   "created_by",
 ].join(", ")
 
+const DOCUMENT_SELECT = [
+  LEGACY_DOCUMENT_SELECT,
+  "archived_at",
+  "deleted_at",
+  "deletion_reason",
+].join(", ")
+
 function isMissingDocumentTopicsTableError(error: SupabaseQueryError): boolean {
   const message = error.message ?? ""
 
   return (
     error.code === "PGRST205" ||
     (message.includes("document_topics") && message.includes("schema cache"))
+  )
+}
+
+function isMissingDocumentArchiveColumnsError(error: SupabaseQueryError): boolean {
+  const message = error.message ?? ""
+
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    ((message.includes("archived_at") ||
+      message.includes("deleted_at") ||
+      message.includes("deletion_reason")) &&
+      (message.includes("does not exist") || message.includes("schema cache")))
+  )
+}
+
+function normalizeDocumentRows(
+  rows: unknown[] | null,
+  supportsArchiveDelete: boolean
+): DocumentRow[] {
+  return (rows ?? []).map((row) => {
+    const document = row as Partial<DocumentRow>
+
+    return {
+      ...document,
+      archived_at: document.archived_at ?? null,
+      deleted_at: document.deleted_at ?? null,
+      deletion_reason: document.deletion_reason ?? null,
+      supports_archive_delete: supportsArchiveDelete,
+    } as DocumentRow
+  })
+}
+
+function warnMissingArchiveColumnsFallback(): void {
+  console.warn(
+    "Document archive/delete columns are not available yet; falling back to the pre-00006 document select. Apply supabase/migrations/00006_document_archive_delete_and_test_inactivation.sql to enable archive/delete metadata."
   )
 }
 
@@ -130,7 +177,9 @@ function normalizeDocumentStatus(status: string): DocumentStatus {
     status === "ready" ||
     status === "processing" ||
     status === "failed" ||
-    status === "uploaded"
+    status === "uploaded" ||
+    status === "archived" ||
+    status === "deleted"
   ) {
     return status
   }
@@ -227,7 +276,11 @@ function mapDocumentToDetail(
     processingError: document.processing_error,
     processedAt: document.processed_at ?? undefined,
     hasEmbeddedChunks,
-    canDownloadOriginal: Boolean(document.storage_path),
+    canDownloadOriginal: status !== "deleted" && Boolean(document.storage_path),
+    supportsArchiveDelete: document.supports_archive_delete,
+    archivedAt: document.archived_at,
+    deletedAt: document.deleted_at,
+    deletionReason: document.deletion_reason,
     versionNumber: document.version_number,
     isLatestVersion: document.is_latest,
     latestDocumentId: latestVersion?.id ?? document.id,
@@ -338,11 +391,28 @@ async function fetchVersionRowsByRootIds(rootIds: string[]): Promise<Map<string,
     .order("version_number", { ascending: false })
     .order("created_at", { ascending: false })
 
-  if (error) {
+  let rows = normalizeDocumentRows(data as unknown[] | null, true)
+
+  if (error && isMissingDocumentArchiveColumnsError(error)) {
+    warnMissingArchiveColumnsFallback()
+
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("documents")
+      .select(LEGACY_DOCUMENT_SELECT)
+      .or(`id.in.(${rootList}),parent_document_id.in.(${rootList})`)
+      .order("version_number", { ascending: false })
+      .order("created_at", { ascending: false })
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch document version history: ${legacyError.message}`)
+    }
+
+    rows = normalizeDocumentRows(legacyData as unknown[] | null, false)
+  } else if (error) {
     throw new Error(`Failed to fetch document version history: ${error.message}`)
   }
 
-  for (const version of (data ?? []) as unknown as DocumentRow[]) {
+  for (const version of rows) {
     const rootId = getDocumentRootId(version)
     const existing = versionsByRootId.get(rootId) ?? []
     existing.push(version)
@@ -361,11 +431,25 @@ export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
     .eq("is_latest", true)
     .order("updated_at", { ascending: false })
 
-  if (error) {
+  let documentRows = normalizeDocumentRows(documents as unknown[] | null, true)
+
+  if (error && isMissingDocumentArchiveColumnsError(error)) {
+    warnMissingArchiveColumnsFallback()
+
+    const { data: legacyDocuments, error: legacyError } = await supabase
+      .from("documents")
+      .select(LEGACY_DOCUMENT_SELECT)
+      .eq("is_latest", true)
+      .order("updated_at", { ascending: false })
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch documents: ${legacyError.message}`)
+    }
+
+    documentRows = normalizeDocumentRows(legacyDocuments as unknown[] | null, false)
+  } else if (error) {
     throw new Error(`Failed to fetch documents: ${error.message}`)
   }
-
-  const documentRows = (documents ?? []) as unknown as DocumentRow[]
 
   if (documentRows.length === 0) {
     return { documents: [], source: "supabase" }
@@ -409,11 +493,27 @@ export async function getDocumentDetailById(
     .eq("id", apiDocumentId)
     .maybeSingle()
 
-  if (documentError) {
+  let documentRow = normalizeDocumentRows(document ? [document] : [], true)[0] ?? null
+
+  if (documentError && isMissingDocumentArchiveColumnsError(documentError)) {
+    warnMissingArchiveColumnsFallback()
+
+    const { data: legacyDocument, error: legacyError } = await supabase
+      .from("documents")
+      .select(LEGACY_DOCUMENT_SELECT)
+      .eq("id", apiDocumentId)
+      .maybeSingle()
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch document detail: ${legacyError.message}`)
+    }
+
+    documentRow = normalizeDocumentRows(legacyDocument ? [legacyDocument] : [], false)[0] ?? null
+  } else if (documentError) {
     throw new Error(`Failed to fetch document detail: ${documentError.message}`)
   }
 
-  if (!document) {
+  if (!documentRow) {
     return null
   }
 
@@ -427,7 +527,6 @@ export async function getDocumentDetailById(
     throw new Error(`Failed to fetch document chunks: ${chunksError.message}`)
   }
 
-  const documentRow = document as unknown as DocumentRow
   const [topicsByDocumentId, versionsByRootId] = await Promise.all([
     fetchTopicsByDocumentIds([apiDocumentId]),
     fetchVersionRowsByRootIds([getDocumentRootId(documentRow)]),

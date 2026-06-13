@@ -38,6 +38,17 @@ const DOCUMENT_STATUS_BADGE: Record<
     icon: null,
     className: "bg-muted text-muted-foreground hover:bg-muted",
   },
+  archived: {
+    label: "Archived",
+    icon: <Clock className="mr-1 size-3" />,
+    className:
+      "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  deleted: {
+    label: "Deleted",
+    icon: <XCircle className="mr-1 size-3" />,
+    className: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
+  },
 }
 
 export function TestSourceDocumentsSection({ source }: TestSourceDocumentsSectionProps) {

@@ -1,9 +1,11 @@
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import {
   formatEmployeeTestStatus,
+  getEmployeeTestAction,
   getEmployeeTestDisplayStatus,
   isEmployeeTestFinished,
   isEmployeeTestOverdue,
+  isEmployeeTestTakeBlocked,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import {
@@ -57,7 +59,9 @@ function getNextTestPriority(test: EmployeeAssignedTest): number {
 }
 
 export function getNextRequiredTest(tests: EmployeeAssignedTest[]): NextRequiredTest | null {
-  const actionable = tests.filter((test) => !isEmployeeTestFinished(test))
+  const actionable = tests.filter(
+    (test) => !isEmployeeTestFinished(test) && !isEmployeeTestTakeBlocked(test)
+  )
   if (actionable.length === 0) return null
 
   const sorted = [...actionable].sort((a, b) => {
@@ -69,12 +73,13 @@ export function getNextRequiredTest(tests: EmployeeAssignedTest[]): NextRequired
   })
 
   const test = sorted[0]
+  const action = getEmployeeTestAction(test)
   const actionLabel = test.status === "in_progress" ? "Continue Test" : "Start Test"
 
   return {
     test,
     actionLabel,
-    actionHref: `/employee/tests/${test.id}/take`,
+    actionHref: action.href ?? "/employee/tests",
     statusLabel: formatEmployeeTestStatus(getEmployeeTestDisplayStatus(test)),
   }
 }

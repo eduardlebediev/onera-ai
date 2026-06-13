@@ -29,6 +29,9 @@ type TestRow = {
   passing_score: number
   published_at: string | null
   created_at: string
+  is_active: boolean
+  source_validity: string
+  source_invalid_reason: string | null
 }
 
 type DocumentRow = {
@@ -94,6 +97,8 @@ export type CreateAssignmentsResult = {
     title: string
     status: string
     organizationId: string
+    isActive: boolean
+    sourceValidity: string
   }
   invalidUserIds: string[]
   created: CreatedAssignment[]
@@ -138,7 +143,9 @@ function mapDocumentStatus(status: string): DocumentStatus {
     status === "ready" ||
     status === "processing" ||
     status === "failed" ||
-    status === "uploaded"
+    status === "uploaded" ||
+    status === "archived" ||
+    status === "deleted"
   ) {
     return status
   }
@@ -207,6 +214,9 @@ function mapTestRowToResolvedTest(
     createdAt: (test.published_at ?? test.created_at).slice(0, 10),
     assignedEmployeesCount: assignmentSummary.assigned,
     attemptsCount: 0,
+    isActive: test.is_active ?? true,
+    sourceValidity: test.source_validity ?? "valid",
+    sourceInvalidReason: test.source_invalid_reason,
     sourceDocument: {
       documentId: sourceDocumentId,
       topicsUsed: [],
@@ -231,7 +241,7 @@ async function getTestRowById(testId: string): Promise<TestRow | null> {
   const { data, error } = await supabase
     .from("tests")
     .select(
-      "id, organization_id, source_document_id, title, description, status, difficulty, language, target_role, question_count, passing_score, published_at, created_at"
+      "id, organization_id, source_document_id, title, description, status, difficulty, language, target_role, question_count, passing_score, published_at, created_at, is_active, source_validity, source_invalid_reason"
     )
     .eq("id", testId)
     .maybeSingle()
@@ -419,6 +429,8 @@ export async function createSupabaseTestAssignments({
         title: test.title,
         status: test.status,
         organizationId: test.organization_id,
+        isActive: test.is_active ?? true,
+        sourceValidity: test.source_validity ?? "valid",
       },
       invalidUserIds: [],
       created: [],
@@ -452,6 +464,8 @@ export async function createSupabaseTestAssignments({
         title: test.title,
         status: test.status,
         organizationId: test.organization_id,
+        isActive: test.is_active ?? true,
+        sourceValidity: test.source_validity ?? "valid",
       },
       invalidUserIds,
       created: [],
@@ -503,6 +517,8 @@ export async function createSupabaseTestAssignments({
       title: test.title,
       status: test.status,
       organizationId: test.organization_id,
+      isActive: test.is_active ?? true,
+      sourceValidity: test.source_validity ?? "valid",
     },
     invalidUserIds,
     created,

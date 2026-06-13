@@ -15,6 +15,10 @@ export type SavedTestQuestion = {
   difficulty: string | null
   orderIndex: number
   sourceChunkId: string | null
+  sourceDocumentId: string | null
+  isActive: boolean
+  sourceStatus: string
+  sourceInvalidReason: string | null
 }
 
 export type SavedTestDetail = {
@@ -28,6 +32,9 @@ export type SavedTestDetail = {
   passingScore: number
   questionCount: number
   publishedAt: string | null
+  isActive: boolean
+  sourceValidity: string
+  sourceInvalidReason: string | null
   sourceDocumentId: string | null
   sourceDocumentTitle: string | null
   sourceDocumentVersionNumber: number | null
@@ -78,7 +85,7 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
   const { data: test, error: testError } = await supabase
     .from("tests")
     .select(
-      "id, title, description, status, difficulty, language, target_role, passing_score, question_count, published_at, source_document_id"
+      "id, title, description, status, difficulty, language, target_role, passing_score, question_count, published_at, source_document_id, is_active, source_validity, source_invalid_reason"
     )
     .eq("id", testId)
     .maybeSingle()
@@ -95,7 +102,7 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
   const { data: questions, error: questionsError } = await supabase
     .from("test_questions")
     .select(
-      "id, question_text, question_type, options, correct_answer, explanation, topic, difficulty, order_index, source_chunk_id"
+      "id, question_text, question_type, options, correct_answer, explanation, topic, difficulty, order_index, source_chunk_id, source_document_id, is_active, source_status, source_invalid_reason"
     )
     .eq("test_id", testId)
     .order("order_index", { ascending: true })
@@ -146,6 +153,9 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     passingScore: test.passing_score,
     questionCount: test.question_count ?? questions?.length ?? 0,
     publishedAt: test.published_at,
+    isActive: test.is_active ?? true,
+    sourceValidity: test.source_validity ?? "valid",
+    sourceInvalidReason: test.source_invalid_reason,
     sourceDocumentId,
     sourceDocumentTitle,
     sourceDocumentVersionNumber,
@@ -162,6 +172,10 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
       difficulty: question.difficulty,
       orderIndex: question.order_index,
       sourceChunkId: question.source_chunk_id,
+      sourceDocumentId: question.source_document_id,
+      isActive: question.is_active ?? true,
+      sourceStatus: question.source_status ?? "valid",
+      sourceInvalidReason: question.source_invalid_reason,
     })),
   }
 }

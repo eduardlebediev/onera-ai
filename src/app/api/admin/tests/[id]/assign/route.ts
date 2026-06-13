@@ -8,6 +8,7 @@ import {
   verifyTestInOrganization,
 } from "@/features/auth/lib/require-auth"
 import { createSupabaseTestAssignments } from "@/features/tests/lib/supabase-assignments"
+import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 
 const AssignTestRequestSchema = z.object({
   userIds: z.array(z.string().uuid()).min(1, "Select at least one employee"),
@@ -68,6 +69,16 @@ export async function POST(request: Request, { params }: AssignTestRouteContext)
 
     if (result.test.status !== "published") {
       return jsonError("Only published tests can be assigned", 409)
+    }
+
+    if (
+      !isTestAssignable({
+        status: result.test.status,
+        isActive: result.test.isActive,
+        sourceValidity: result.test.sourceValidity,
+      })
+    ) {
+      return jsonError("This test is inactive because its source document is invalid", 409)
     }
 
     if (result.invalidUserIds.length > 0) {

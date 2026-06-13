@@ -1,5 +1,17 @@
 # Decisions
 
+## 051 — Supabase loaders tolerate unreleased migration schema drift
+
+When new Supabase columns are added in a migration that may not yet be applied to every target database, read paths must not hard-fail on missing columns. Document and test loaders attempt the full post-migration select first, then fall back to a legacy select and normalize new fields to safe defaults. Write paths that require the new schema (archive, delete, source invalidation) return a migration-required error instead of a generic server failure, and the UI disables those actions when archive/delete metadata is unavailable.
+
+## 050 — Source-invalid tests become inactive until reviewed
+
+When a source document is archived or deleted, dependent tests become inactive and receive a source validity state. Affected questions are marked inactive with an invalid source status. Existing completed results remain available, but new assignments and new attempts are blocked until an admin reviews or repairs the test.
+
+## 049 — Document deletion is archive-first and tombstone-based
+
+Documents must be archived before permanent deletion. Permanent deletion removes the uploaded file, extracted text, chunks, and topics, but keeps a lightweight document tombstone so tests can show that their source document was deleted.
+
 ## 048 — Regeneration from a new document version creates a new draft, not a mutation of published tests
 
 When a new document version is uploaded, existing tests generated from older versions remain unchanged and valid. Admins may generate a new AI draft from the latest version, but the system does not delete old questions, rewrite published tests, change assignments, or alter completed results automatically.

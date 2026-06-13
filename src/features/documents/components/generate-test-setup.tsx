@@ -48,6 +48,8 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
   processing: "Processing",
   failed: "Failed",
   uploaded: "Uploaded",
+  archived: "Archived",
+  deleted: "Deleted",
 }
 
 const STATUS_BADGE_CLASSES: Record<DocumentStatus, string> = {
@@ -55,6 +57,8 @@ const STATUS_BADGE_CLASSES: Record<DocumentStatus, string> = {
   processing: "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-50",
   failed: "bg-red-50 text-red-600 border-red-200 hover:bg-red-50",
   uploaded: "bg-muted text-muted-foreground hover:bg-muted",
+  archived: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50",
+  deleted: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50",
 }
 
 export function GenerateTestSetup({ document, routeDocumentId }: GenerateTestSetupProps) {

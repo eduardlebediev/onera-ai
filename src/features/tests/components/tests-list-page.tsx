@@ -8,6 +8,11 @@ import type { TestStatus } from "@/features/tests/mock/tests"
 import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import {
+  isSourceBlockingValidity,
+  normalizeTestSourceValidity,
+  TEST_SOURCE_VALIDITY_STYLE,
+} from "@/features/tests/lib/test-source-validity-style"
 import { TestsKpiSection } from "@/features/tests/components/tests-kpi-section"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
@@ -115,6 +120,8 @@ export function TestsListPage({ tests, banner }: TestsListPageProps) {
                 {visibleTests.length > 0 ? (
                   visibleTests.map((test) => {
                     const statusStyle = TEST_STATUS_STYLE[test.status]
+                    const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
+                    const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
                     return (
                       <TableRow key={test.id} className="group hover:bg-muted/30 transition-colors">
                         <TableCell className="py-4">
@@ -126,15 +133,30 @@ export function TestsListPage({ tests, banner }: TestsListPageProps) {
                           </Link>
                         </TableCell>
                         <TableCell className="py-4">
-                          <Badge
-                            variant="outline"
-                            className={cn("status-badge", statusStyle.listBadgeClass)}
-                          >
-                            <span
-                              className={`mr-1 size-1.5 rounded-full ${statusStyle.dotClass}`}
-                            />
-                            {statusStyle.label}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn("status-badge", statusStyle.listBadgeClass)}
+                            >
+                              <span
+                                className={`mr-1 size-1.5 rounded-full ${statusStyle.dotClass}`}
+                              />
+                              {statusStyle.label}
+                            </Badge>
+                            {test.isActive === false ? (
+                              <Badge
+                                variant="outline"
+                                className="border-amber-200 bg-amber-50 text-amber-700"
+                              >
+                                Inactive
+                              </Badge>
+                            ) : null}
+                            {isSourceBlockingValidity(sourceValidity) ? (
+                              <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
+                                {sourceValidityStyle.label}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell className="py-4 capitalize">{test.difficulty}</TableCell>
                         <TableCell className="py-4">{test.targetRole}</TableCell>

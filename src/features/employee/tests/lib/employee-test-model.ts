@@ -1,3 +1,4 @@
+import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 
@@ -23,8 +24,20 @@ export const EMPLOYEE_TEST_FILTER_OPTIONS: Array<{
 
 export interface EmployeeTestAction {
   label: string
-  href: string
+  href?: string
   variant: "default" | "outline"
+  disabled?: boolean
+  disabledReason?: string
+}
+
+export function isEmployeeTestTakeBlocked(test: EmployeeAssignedTest): boolean {
+  if (isEmployeeTestFinished(test)) return false
+
+  return !isTestAssignable({
+    status: "published",
+    isActive: test.testIsActive ?? true,
+    sourceValidity: test.sourceValidity ?? "valid",
+  })
 }
 
 export function isEmployeeTestFinished(test: EmployeeAssignedTest): boolean {
@@ -112,6 +125,17 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
     test.latestAttemptId != null
       ? `/employee/tests/${test.id}/result?attemptId=${test.latestAttemptId}`
       : `/employee/tests/${test.id}/result`
+
+  if (isEmployeeTestTakeBlocked(test)) {
+    return {
+      label: "Unavailable",
+      variant: "outline",
+      disabled: true,
+      disabledReason:
+        test.sourceInvalidReason ??
+        "This test is no longer active because its source document is invalid.",
+    }
+  }
 
   if (displayStatus === "not_started" || displayStatus === "overdue") {
     return {

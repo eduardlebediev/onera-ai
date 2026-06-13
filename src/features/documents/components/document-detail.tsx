@@ -17,6 +17,10 @@ import Link from "next/link"
 
 import type { DocumentStatus, DocumentTopic, MockDocumentDetail } from "@/data/mock/documents"
 import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
+import {
+  DocumentLifecycleActions,
+  type DocumentLifecycleCompleteHandler,
+} from "@/features/documents/components/document-lifecycle-actions"
 import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
 import { DocumentVersionHistory } from "@/features/documents/components/document-version-history"
 import { canGenerateTest } from "@/features/documents/components/generate-test-model"
@@ -35,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 
 interface DocumentDetailProps {
   document: MockDocumentDetail
+  onLifecycleComplete?: DocumentLifecycleCompleteHandler
 }
 
 const STATUS_CONFIG: Record<
@@ -62,6 +67,17 @@ const STATUS_CONFIG: Record<
     label: "Uploaded",
     icon: null,
     className: "bg-muted text-muted-foreground hover:bg-muted",
+  },
+  archived: {
+    label: "Archived",
+    icon: <AlertTriangle className="mr-1 size-3" />,
+    className:
+      "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  },
+  deleted: {
+    label: "Deleted",
+    icon: <Trash2 className="mr-1 size-3" />,
+    className: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
   },
 }
 
@@ -102,14 +118,17 @@ function formatConfidence(confidence: number | null | undefined): string | null 
   return `${Math.round(confidence * 100)}%`
 }
 
-export function DocumentDetail({ document }: DocumentDetailProps) {
+export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetailProps) {
   const statusConfig = STATUS_CONFIG[document.status]
-  const isReady = canGenerateTest(document)
-  const canDownload = document.canDownloadOriginal === true
+  const isDeleted = document.status === "deleted"
+  const isArchived = document.status === "archived"
+  const isReady = !isDeleted && !isArchived && canGenerateTest(document)
+  const canDownload = !isDeleted && document.canDownloadOriginal === true
   const versionNumber = document.versionNumber ?? document.versions[0]?.version ?? 1
   const isLatestVersion = document.isLatestVersion !== false
   const latestDocumentId = document.latestDocumentId ?? document.id
-  const canUploadNewVersion = document.sourceType === "upload" && isLatestVersion
+  const canUploadNewVersion =
+    !isDeleted && !isArchived && document.sourceType === "upload" && isLatestVersion
   const documentTopics = getDocumentTopics(document)
   const fileSizeLabel =
     document.fileSizeMb >= 1
@@ -153,39 +172,64 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <DocumentDownloadButton documentId={document.id} disabled={!canDownload} />
-          <Button asChild={isReady} disabled={!isReady}>
-            {isReady ? (
-              <Link href={`/admin/documents/${document.id}/generate-test`}>
-                <Sparkles />
-                Generate Test
-              </Link>
-            ) : (
-              <>
-                <Sparkles />
-                Generate Test
-              </>
-            )}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" aria-label="More actions">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <UpdateDocumentDropdownItem
-                documentId={document.id}
-                disabled={!canUploadNewVersion}
-              />
-              <DropdownMenuItem disabled>Edit Metadata (coming soon)</DropdownMenuItem>
-              <DropdownMenuItem disabled>Share (coming soon)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isDeleted ? (
+            <DocumentDownloadButton documentId={document.id} disabled={!canDownload} />
+          ) : null}
+          {!isDeleted ? (
+            <Button asChild={isReady} disabled={!isReady}>
+              {isReady ? (
+                <Link href={`/admin/documents/${document.id}/generate-test`}>
+                  <Sparkles />
+                  Generate Test
+                </Link>
+              ) : (
+                <>
+                  <Sparkles />
+                  Generate Test
+                </>
+              )}
+            </Button>
+          ) : null}
+          {!isDeleted ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" aria-label="More actions">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <UpdateDocumentDropdownItem
+                  documentId={document.id}
+                  disabled={!canUploadNewVersion}
+                />
+                <DropdownMenuItem disabled>Edit Metadata (coming soon)</DropdownMenuItem>
+                <DropdownMenuItem disabled>Share (coming soon)</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </div>
 
-      {!isLatestVersion ? (
+      {isDeleted ? (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+          <p className="font-medium">This document was permanently deleted.</p>
+          <p className="mt-1">
+            The uploaded file, extracted text, chunks, and topics were removed. This page remains as
+            a reference for tests that used this source document.
+          </p>
+          {document.deletionReason ? (
+            <p className="mt-2 text-muted-foreground">Reason: {document.deletionReason}</p>
+          ) : null}
+        </div>
+      ) : isArchived ? (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+          <p className="font-medium">This document is archived.</p>
+          <p className="mt-1">
+            It is no longer available for test generation. Dependent tests are inactive until
+            reviewed. Completed results remain available.
+          </p>
+        </div>
+      ) : !isLatestVersion ? (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -207,8 +251,10 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger>
-          <TabsTrigger value="topics">Topics ({documentTopics.length})</TabsTrigger>
+          {!isDeleted ? <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger> : null}
+          {!isDeleted ? (
+            <TabsTrigger value="topics">Topics ({documentTopics.length})</TabsTrigger>
+          ) : null}
           <TabsTrigger value="metadata">Metadata</TabsTrigger>
           <TabsTrigger value="versions">Versions ({document.versions.length})</TabsTrigger>
         </TabsList>
@@ -409,26 +455,25 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
                     </div>
                   </div>
                   <div className="mt-6 border-t border-border pt-4">
-                    <UploadDocumentVersionButton
-                      documentId={document.id}
-                      disabled={!canUploadNewVersion}
-                    />
-                    {!canUploadNewVersion ? (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        New versions can be uploaded from the latest uploaded document version.
-                      </p>
+                    {!isDeleted ? (
+                      <>
+                        <UploadDocumentVersionButton
+                          documentId={document.id}
+                          disabled={!canUploadNewVersion}
+                        />
+                        {!canUploadNewVersion ? (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            New versions can be uploaded from the latest uploaded document version.
+                          </p>
+                        ) : null}
+                      </>
                     ) : null}
                   </div>
                   <div className="mt-6 border-t border-border pt-4">
-                    <Button
-                      variant="outline"
-                      disabled
-                      className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      title="Delete (coming soon)"
-                    >
-                      <Trash2 className="mr-2 size-4" />
-                      Delete Document
-                    </Button>
+                    <DocumentLifecycleActions
+                      document={document}
+                      onLifecycleComplete={onLifecycleComplete}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -436,104 +481,108 @@ export function DocumentDetail({ document }: DocumentDetailProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="extracted-text">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <FileText className="size-4 text-muted-foreground" />
-                <CardTitle>Full Extracted Text</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {document.extractedText ? (
-                <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {document.extractedText}
+        {!isDeleted ? (
+          <TabsContent value="extracted-text">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-muted-foreground" />
+                  <CardTitle>Full Extracted Text</CardTitle>
                 </div>
-              ) : document.chunks.length > 0 ? (
-                <div className="space-y-6">
-                  {document.chunks.map((chunk, index) => (
-                    <div key={chunk.id}>
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Chunk {index + 1}
-                        </span>
-                        <span className="text-xs text-muted-foreground">·</span>
-                        <span className="text-xs font-medium text-foreground">{chunk.topic}</span>
+              </CardHeader>
+              <CardContent>
+                {document.extractedText ? (
+                  <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {document.extractedText}
+                  </div>
+                ) : document.chunks.length > 0 ? (
+                  <div className="space-y-6">
+                    {document.chunks.map((chunk, index) => (
+                      <div key={chunk.id}>
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Chunk {index + 1}
+                          </span>
+                          <span className="text-xs text-muted-foreground">·</span>
+                          <span className="text-xs font-medium text-foreground">{chunk.topic}</span>
+                        </div>
+                        <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                          {chunk.content}
+                        </div>
                       </div>
-                      <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
-                        {chunk.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {document.status === "processing"
-                    ? "Text extraction is in progress."
-                    : document.status === "failed"
-                      ? "Text extraction failed for this document."
-                      : "No extracted text available."}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {document.status === "processing"
+                      ? "Text extraction is in progress."
+                      : document.status === "failed"
+                        ? "Text extraction failed for this document."
+                        : "No extracted text available."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
 
-        <TabsContent value="topics">
-          <Card>
-            <CardHeader>
-              <CardTitle>AI-extracted topics</CardTitle>
-              <CardDescription>
-                Key learning topics extracted from this document after processing.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {documentTopics.length > 0 ? (
-                <div className="flex flex-col gap-4">
-                  {documentTopics.map((topicItem, i) => {
-                    const confidenceLabel = formatConfidence(topicItem.confidence)
-                    const topicChunks = document.chunks.filter((c) => c.topic === topicItem.topic)
+        {!isDeleted ? (
+          <TabsContent value="topics">
+            <Card>
+              <CardHeader>
+                <CardTitle>AI-extracted topics</CardTitle>
+                <CardDescription>
+                  Key learning topics extracted from this document after processing.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {documentTopics.length > 0 ? (
+                  <div className="flex flex-col gap-4">
+                    {documentTopics.map((topicItem, i) => {
+                      const confidenceLabel = formatConfidence(topicItem.confidence)
+                      const topicChunks = document.chunks.filter((c) => c.topic === topicItem.topic)
 
-                    return (
-                      <div
-                        key={topicItem.id ?? topicItem.topic}
-                        className="rounded-lg border border-border p-4"
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`mt-1.5 size-2 shrink-0 rounded-full ${TOPIC_BADGE_COLORS[i % TOPIC_BADGE_COLORS.length].split(" ")[0].replace("bg-", "bg-").replace("-50", "-500")}`}
-                            />
-                            <div className="space-y-1">
-                              <div className="font-medium text-foreground">{topicItem.topic}</div>
-                              {topicItem.description ? (
-                                <p className="text-sm text-muted-foreground">
-                                  {topicItem.description}
-                                </p>
+                      return (
+                        <div
+                          key={topicItem.id ?? topicItem.topic}
+                          className="rounded-lg border border-border p-4"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex items-start gap-3">
+                              <div
+                                className={`mt-1.5 size-2 shrink-0 rounded-full ${TOPIC_BADGE_COLORS[i % TOPIC_BADGE_COLORS.length].split(" ")[0].replace("bg-", "bg-").replace("-50", "-500")}`}
+                              />
+                              <div className="space-y-1">
+                                <div className="font-medium text-foreground">{topicItem.topic}</div>
+                                {topicItem.description ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    {topicItem.description}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                              {confidenceLabel ? (
+                                <Badge variant="outline">Confidence {confidenceLabel}</Badge>
+                              ) : null}
+                              {topicChunks.length > 0 ? (
+                                <span>
+                                  {topicChunks.length} chunk{topicChunks.length !== 1 ? "s" : ""}
+                                </span>
                               ) : null}
                             </div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                            {confidenceLabel ? (
-                              <Badge variant="outline">Confidence {confidenceLabel}</Badge>
-                            ) : null}
-                            {topicChunks.length > 0 ? (
-                              <span>
-                                {topicChunks.length} chunk{topicChunks.length !== 1 ? "s" : ""}
-                              </span>
-                            ) : null}
-                          </div>
                         </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No topics extracted yet.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No topics extracted yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="metadata">
           <Card>

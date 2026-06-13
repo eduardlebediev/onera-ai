@@ -32,3 +32,38 @@ export const DocumentDownloadUrlResponseSchema = z.object({
 })
 
 export type DocumentDownloadUrlResponse = z.infer<typeof DocumentDownloadUrlResponseSchema>
+
+export const DocumentImpactAffectedTestSchema = z.object({
+  testId: z.string().uuid(),
+  title: z.string().min(1),
+  status: z.string().min(1),
+  sourceValidity: z.string().min(1),
+  affectedQuestionCount: z.number().int().min(0),
+  activeAssignmentCount: z.number().int().min(0),
+  completedAttemptCount: z.number().int().min(0),
+})
+
+export const DocumentImpactSummarySchema = z.object({
+  documentId: z.string().uuid(),
+  affectedTestCount: z.number().int().min(0),
+  affectedQuestionCount: z.number().int().min(0),
+  activeAssignmentCount: z.number().int().min(0),
+  completedAttemptCount: z.number().int().min(0),
+  affectedTests: z.array(DocumentImpactAffectedTestSchema),
+})
+
+export const ArchiveDocumentResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  status: z.literal("archived"),
+  impact: DocumentImpactSummarySchema,
+})
+
+export type ArchiveDocumentResponse = z.infer<typeof ArchiveDocumentResponseSchema>
+
+export const DeleteDocumentResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  status: z.literal("deleted"),
+  impact: DocumentImpactSummarySchema,
+})
+
+export type DeleteDocumentResponse = z.infer<typeof DeleteDocumentResponseSchema>

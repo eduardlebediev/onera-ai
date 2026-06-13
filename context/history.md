@@ -4,6 +4,44 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+---
+
+## Feature Spec 34: Archive Document, Permanent Delete and Inactivate Dependent Tests
+
+**Branch:** `feature/34-archive-delete-document-and-inactivate-dependent-tests`
+
+Added archive-first document lifecycle, permanent tombstone delete, dependent test/question source invalidation, and assignment/start protections while preserving completed results.
+
+### Database and types
+
+- Added `supabase/migrations/00006_document_archive_delete_and_test_inactivation.sql` — `documents` archive/delete audit columns, extended `documents.status` values (`archived`, `deleted`), `tests` activity/source-validity fields, `test_questions` source-document tracking, backfill of `source_document_id`, and indexes including `archived_by` / `deleted_by`.
+- Extended `src/lib/supabase/types.ts`, `src/data/mock/documents.ts`, and test mock/domain types for archived/deleted documents and source validity.
+
+### Server logic and APIs
+
+- Added server-only helpers: `document-impact.ts`, `document-archive.ts`, `document-delete.ts`, `document-archive-delete-schema.ts`, `test-source-invalidation.ts`, `test-source-validity-style.ts`.
+- Added `POST /api/admin/documents/[id]/archive` and `DELETE /api/admin/documents/[id]` with impact summaries.
+- Blocked archived/deleted documents from generation, publish, and permanent-delete download; blocked inactive tests from assignment and employee starts with `409`.
+- Applied migration `00006` to the live Supabase project (`document_archive_delete_and_test_inactivation`, `document_archive_delete_actor_indexes`).
+
+### Admin and employee UI
+
+- Added `DocumentLifecycleActions` with archive/delete confirmation dialogs, impact summary, and result dialog.
+- Updated document detail, drawer, table (status filters: Active/Archived/Deleted/All), generate-test guards, and test list/detail/assignment UI for source validity and inactive states.
+- Updated employee dashboard, test cards, and start/take paths to block inactive tests while preserving completed results.
+
+### Post-implementation fixes
+
+- Added Supabase migration-safety rules to `context/ai-workflow-rules.md` and schema-drift fallbacks in `supabase-documents.ts` and `supabase-tests.ts` (decision 051).
+- Migration-aware archive/delete guards: disable actions when pre-`00006` fallback is active; API returns migration-required `409`.
+- Fixed stale document drawer/list state after successful archive/delete by applying lifecycle status overrides locally before `router.refresh()`.
+
+### Context and validation
+
+- Added `context/feature-specs/34-archive-delete-document-and-inactivate-dependent-tests.md`.
+- Updated `context/architecture.md`; recorded decisions 049, 050, and 051.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
 ## Feature Spec 33: Document Versioning and Change History
 
 Added immutable document versions, version history, new-version uploads, affected-test awareness, and outdated source warnings without mutating existing tests or historical chunks.

@@ -30,4 +30,16 @@ export const DOCUMENT_STATUS_STYLE: Record<DocumentStatus, DocumentStatusStyle> 
     dotClass: "bg-muted-foreground",
     badgeClass: "border-border bg-muted text-muted-foreground",
   },
+  archived: {
+    label: "Archived",
+    dotClass: "bg-amber-500",
+    badgeClass:
+      "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-400",
+  },
+  deleted: {
+    label: "Deleted",
+    dotClass: "bg-red-500",
+    badgeClass:
+      "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400",
+  },
 }

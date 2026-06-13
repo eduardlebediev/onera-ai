@@ -16,6 +16,7 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 34: Archive Document, Permanent Delete and Inactivate Dependent Tests
 - Feature Spec 33: Document Versioning and Change History
 - Feature Spec 32: AI Document Topic Extraction
 - Feature Spec 31: Real Document Upload, Download Link and AI Text Extraction

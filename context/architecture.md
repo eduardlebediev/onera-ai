@@ -120,7 +120,12 @@ Fields:
 - extraction_method
 - processing_error
 - processed_at
-- status — uploaded | processing | ready | failed
+- status — uploaded | processing | ready | failed | archived | deleted
+- archived_at
+- archived_by
+- deleted_at
+- deleted_by
+- deletion_reason
 - parent_document_id — null for v1, root v1 id for later versions
 - version_number
 - is_latest
@@ -193,6 +198,10 @@ Fields:
 - passing_score
 - language — en | de
 - status — draft | review | published | archived
+- is_active — whether the test can be assigned or started
+- source_validity — valid | outdated | source_archived | source_deleted | needs_review
+- source_invalid_reason
+- source_invalid_at
 - created_by
 - created_at
 - updated_at
@@ -208,6 +217,10 @@ Fields:
 - id
 - test_id
 - source_chunk_id
+- source_document_id
+- is_active
+- source_status — valid | document_outdated | document_archived | document_deleted | source_missing | manual_kept
+- source_invalid_reason
 - question_text
 - question_type — single_choice | multiple_choice | true_false | open_question
 - options

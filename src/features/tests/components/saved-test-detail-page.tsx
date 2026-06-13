@@ -8,6 +8,12 @@ import {
   formatAssignmentDeadline,
   formatAssignmentStatus,
 } from "@/features/tests/lib/assign-employees-model"
+import {
+  isSourceBlockingValidity,
+  normalizeTestSourceValidity,
+  TEST_SOURCE_VALIDITY_STYLE,
+} from "@/features/tests/lib/test-source-validity-style"
+import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import type { SupabaseAssignmentSummary } from "@/features/tests/lib/supabase-assignments"
 import type { SavedTestDetail } from "@/features/tests/lib/supabase-test-detail"
 import type { SupabaseEmployeeProgress } from "@/features/tests/lib/supabase-test-progress"
@@ -67,6 +73,15 @@ export function SavedTestDetailPage({
   results,
 }: SavedTestDetailPageProps) {
   const resultsSummary = results ?? emptyResults()
+  const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
+  const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
+  const canAssign =
+    test.status === "published" &&
+    isTestAssignable({
+      status: test.status,
+      isActive: test.isActive,
+      sourceValidity: test.sourceValidity,
+    })
 
   return (
     <div className="page-shell-narrow">
@@ -81,6 +96,16 @@ export function SavedTestDetailPage({
               <Badge variant="outline" className="capitalize">
                 {test.status}
               </Badge>
+              {!test.isActive ? (
+                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                  Inactive
+                </Badge>
+              ) : null}
+              {isSourceBlockingValidity(sourceValidity) ? (
+                <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
+                  {sourceValidityStyle.label}
+                </Badge>
+              ) : null}
               <Badge variant="outline" className="capitalize">
                 {test.difficulty}
               </Badge>
@@ -89,7 +114,7 @@ export function SavedTestDetailPage({
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {test.status === "published" ? (
+            {canAssign ? (
               <>
                 <Button asChild>
                   <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
@@ -98,6 +123,10 @@ export function SavedTestDetailPage({
                   <Link href="#results">View results</Link>
                 </Button>
               </>
+            ) : test.status === "published" ? (
+              <Button disabled title={test.sourceInvalidReason ?? "This test is inactive."}>
+                Assign to Employees
+              </Button>
             ) : null}
             <Button asChild variant="outline">
               <Link href="/admin/tests">Back to Tests</Link>
@@ -135,6 +164,27 @@ export function SavedTestDetailPage({
                   documentId={test.latestSourceDocumentId}
                   templateTestId={test.id}
                 />
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {isSourceBlockingValidity(sourceValidity) ? (
+          <Card className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/20">
+            <CardContent className="flex flex-col gap-3 p-4 text-sm text-red-800 dark:text-red-300">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <div>
+                  <p className="font-medium">
+                    {sourceValidity === "source_archived"
+                      ? "Source document was archived"
+                      : "Source document was deleted"}
+                  </p>
+                  <p className="mt-1">
+                    {test.sourceInvalidReason ??
+                      "This test is inactive until an admin reviews or repairs it."}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -226,6 +276,9 @@ export function SavedTestDetailPage({
               assignments={assignmentSummary}
               testId={test.id}
               testStatus={test.status === "published" ? "published" : "draft"}
+              isActive={test.isActive}
+              sourceValidity={test.sourceValidity}
+              sourceInvalidReason={test.sourceInvalidReason}
             />
           ) : null}
 

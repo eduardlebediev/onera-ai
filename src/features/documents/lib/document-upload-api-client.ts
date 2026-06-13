@@ -1,4 +1,6 @@
 import {
+  ArchiveDocumentResponseSchema,
+  DeleteDocumentResponseSchema,
   DocumentDownloadUrlResponseSchema,
   UploadDocumentResponseSchema,
   UploadDocumentVersionResponseSchema,
@@ -134,4 +136,93 @@ export async function requestDocumentDownloadUrl(documentId: string): Promise<st
   }
 
   return parsed.data.signedUrl
+}
+
+function getDocumentActionErrorMessage(status: number, serverMessage?: string): string {
+  if (serverMessage?.trim()) {
+    return serverMessage.trim()
+  }
+
+  if (status === 401 || status === 403) {
+    return "You do not have permission to manage this document."
+  }
+
+  return "Could not complete this document action."
+}
+
+export async function archiveDocument(documentId: string) {
+  const response = await fetch(`/api/admin/documents/${documentId}/archive`, {
+    method: "POST",
+  })
+
+  let payload: unknown = null
+
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof (payload as { error?: unknown }).error === "string"
+        ? (payload as { error: string }).error
+        : undefined
+
+    throw new Error(getDocumentActionErrorMessage(response.status, serverMessage))
+  }
+
+  const parsed = ArchiveDocumentResponseSchema.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(getDocumentActionErrorMessage(response.status))
+  }
+
+  return parsed.data
+}
+
+export async function permanentlyDeleteDocument(input: {
+  documentId: string
+  deletionReason?: string
+}) {
+  const response = await fetch(`/api/admin/documents/${input.documentId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      deletionReason: input.deletionReason,
+    }),
+  })
+
+  let payload: unknown = null
+
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof (payload as { error?: unknown }).error === "string"
+        ? (payload as { error: string }).error
+        : undefined
+
+    throw new Error(getDocumentActionErrorMessage(response.status, serverMessage))
+  }
+
+  const parsed = DeleteDocumentResponseSchema.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(getDocumentActionErrorMessage(response.status))
+  }
+
+  return parsed.data
 }

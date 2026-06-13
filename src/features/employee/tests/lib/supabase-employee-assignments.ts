@@ -23,6 +23,10 @@ type TestRow = {
   difficulty: string
   question_count: number | null
   passing_score: number
+  status: string
+  is_active: boolean
+  source_validity: string
+  source_invalid_reason: string | null
 }
 
 type DocumentRow = {
@@ -144,7 +148,9 @@ async function getTestsById(testIds: string[]): Promise<Map<string, TestRow>> {
 
   const { data, error } = await supabase
     .from("tests")
-    .select("id, source_document_id, title, description, difficulty, question_count, passing_score")
+    .select(
+      "id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity, source_invalid_reason"
+    )
     .in("id", testIds)
 
   if (error) {
@@ -240,6 +246,9 @@ export async function getSupabaseEmployeeAssignments(
           passed,
           required: true,
           progressPercent: getProgressPercent(status),
+          testIsActive: test.is_active ?? true,
+          sourceValidity: test.source_validity ?? "valid",
+          sourceInvalidReason: test.source_invalid_reason,
         } satisfies EmployeeAssignedTest
       })
   )

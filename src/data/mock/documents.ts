@@ -1,4 +1,4 @@
-export type DocumentStatus = "ready" | "processing" | "failed" | "uploaded"
+export type DocumentStatus = "ready" | "processing" | "failed" | "uploaded" | "archived" | "deleted"
 export type DocumentFileType = "pdf" | "docx" | "pptx" | "txt" | "md"
 
 export interface DocumentChunk {
@@ -51,6 +51,7 @@ export interface MockDocumentDetail {
   processedAt?: string | null
   hasEmbeddedChunks?: boolean
   canDownloadOriginal?: boolean
+  supportsArchiveDelete?: boolean
   sourceType?: string
   versionNumber?: number
   isLatestVersion?: boolean
@@ -58,6 +59,9 @@ export interface MockDocumentDetail {
   newerVersionId?: string | null
   changeMessage?: string | null
   aiChangeSummary?: string | null
+  archivedAt?: string | null
+  deletedAt?: string | null
+  deletionReason?: string | null
   /** @deprecated use topics.length instead */
   topicsCount: number
   topics: string[]

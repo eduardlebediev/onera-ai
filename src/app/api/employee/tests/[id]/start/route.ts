@@ -41,7 +41,7 @@ export async function POST(_request: Request, { params }: StartAttemptRouteConte
     }
 
     if (error instanceof StartAttemptError) {
-      if (error.code === "assignment_finished") {
+      if (error.code === "assignment_finished" || error.code === "test_inactive") {
         return jsonError(error.message, 409)
       }
     }

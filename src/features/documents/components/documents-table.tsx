@@ -24,6 +24,7 @@ import {
   canGenerateTest,
   getGenerateBlockReason,
 } from "@/features/documents/components/generate-test-model"
+import type { DocumentLifecycleStatus } from "@/features/documents/components/document-lifecycle-actions"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
@@ -32,7 +33,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils"
 import { DocumentDrawer } from "./document-drawer"
 
-type StatusFilter = "all" | DocumentStatus
+type StatusFilter = "active" | "archived" | "deleted" | "all"
 type SortKey = "title" | "status" | "uploadedAt"
 type SortDirection = "asc" | "desc"
 
@@ -41,14 +42,15 @@ const STATUS_LABELS: Record<DocumentStatus, string> = {
   processing: "Processing",
   failed: "Failed",
   uploaded: "Uploaded",
+  archived: "Archived",
+  deleted: "Deleted",
 }
 
 const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
+  { label: "Active", value: "active" },
+  { label: "Archived", value: "archived" },
+  { label: "Deleted", value: "deleted" },
   { label: "All", value: "all" },
-  { label: "Ready", value: "ready" },
-  { label: "Processing", value: "processing" },
-  { label: "Failed", value: "failed" },
-  { label: "Uploaded", value: "uploaded" },
 ]
 
 const STATUS_VARIANTS: Record<DocumentStatus, "default" | "secondary" | "destructive" | "outline"> =
@@ -57,6 +59,8 @@ const STATUS_VARIANTS: Record<DocumentStatus, "default" | "secondary" | "destruc
     processing: "secondary",
     failed: "destructive",
     uploaded: "outline",
+    archived: "secondary",
+    deleted: "destructive",
   }
 
 const FILE_ICON_STYLES: Record<DocumentFileType, string> = {
@@ -90,18 +94,41 @@ interface DocumentsTableProps {
   documents: MockDocumentDetail[]
 }
 
+type LifecycleStatusOverrides = Record<
+  string,
+  {
+    status: DocumentLifecycleStatus
+    timestamp: string
+  }
+>
+
 export function DocumentsTable({ documents }: DocumentsTableProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [sortKey, setSortKey] = useState<SortKey>("uploadedAt")
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [selectedDocument, setSelectedDocument] = useState<MockDocumentDetail | null>(null)
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [lifecycleStatusOverrides, setLifecycleStatusOverrides] =
+    useState<LifecycleStatusOverrides>({})
 
   const handleOpenDrawer = useCallback((document: MockDocumentDetail) => {
-    setSelectedDocument(document)
+    setSelectedDocumentId(document.id)
     setIsDrawerOpen(true)
   }, [])
+
+  const handleLifecycleComplete = useCallback(
+    (documentId: string, status: DocumentLifecycleStatus) => {
+      setLifecycleStatusOverrides((currentOverrides) => ({
+        ...currentOverrides,
+        [documentId]: {
+          status,
+          timestamp: new Date().toISOString(),
+        },
+      }))
+    },
+    []
+  )
 
   const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value)
@@ -123,13 +150,46 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     })
   }, [])
 
+  const effectiveDocuments = useMemo(
+    () =>
+      documents.map((document) => {
+        const override = lifecycleStatusOverrides[document.id]
+
+        if (!override) return document
+
+        return {
+          ...document,
+          status: override.status,
+          archivedAt:
+            override.status === "archived"
+              ? (document.archivedAt ?? override.timestamp)
+              : document.archivedAt,
+          deletedAt:
+            override.status === "deleted"
+              ? (document.deletedAt ?? override.timestamp)
+              : document.deletedAt,
+          canDownloadOriginal: override.status === "deleted" ? false : document.canDownloadOriginal,
+        }
+      }),
+    [documents, lifecycleStatusOverrides]
+  )
+
+  const selectedDocument = selectedDocumentId
+    ? (effectiveDocuments.find((document) => document.id === selectedDocumentId) ?? null)
+    : null
+
   const visibleDocuments = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
 
-    return [...documents]
+    return [...effectiveDocuments]
       .filter((document) => {
         const matchesSearch = document.title.toLowerCase().includes(normalizedQuery)
-        const matchesStatus = statusFilter === "all" || document.status === statusFilter
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "active" &&
+            document.status !== "archived" &&
+            document.status !== "deleted") ||
+          document.status === statusFilter
 
         return matchesSearch && matchesStatus
       })
@@ -146,14 +206,14 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
 
         return sortDirection === "asc" ? comparison : -comparison
       })
-  }, [documents, searchQuery, sortDirection, sortKey, statusFilter])
+  }, [effectiveDocuments, searchQuery, sortDirection, sortKey, statusFilter])
 
   return (
     <>
       <DataTableShell
         icon={FileText}
         title="All Documents"
-        countLabel={`${documents.length} total`}
+        countLabel={`${effectiveDocuments.length} total`}
         toolbar={
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
@@ -421,6 +481,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         document={selectedDocument}
         open={isDrawerOpen}
         onOpenChange={setIsDrawerOpen}
+        onLifecycleComplete={handleLifecycleComplete}
       />
     </>
   )

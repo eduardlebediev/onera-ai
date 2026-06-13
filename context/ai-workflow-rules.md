@@ -34,6 +34,13 @@ For large or ambiguous changes, do not edit files immediately. First propose a p
 - Do not perform broad refactors unless explicitly requested.
 - Do not modify unrelated UI or architecture.
 
+## Supabase Migration Safety
+
+- When code starts selecting, inserting, updating, or filtering on new Supabase columns, the matching migration must be applied to every database used by the app before the code path is exercised.
+- Do not mark a Supabase-backed feature complete only because TypeScript/build checks pass. Also verify that the target database schema contains the new columns/tables, or document that the migration still needs to be applied before using the feature.
+- If the app must remain usable before a migration is applied, add an explicit missing-column/table fallback around the query. Avoid broad `select()` lists that include newly added columns unless the schema is guaranteed to be up to date.
+- Repeated errors like `column <table>.<column> does not exist` usually mean schema drift, not a frontend bug. Stop retrying the same page, apply the migration or add a temporary compatibility fallback, then verify with a real query.
+
 ## When to Split Work
 
 Split an implementation step if it combines:

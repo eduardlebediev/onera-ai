@@ -12,6 +12,7 @@ import {
   getEmployeeTestAction,
   getEmployeeTestDisplayStatus,
   getEmployeeTestStatusBadgeClass,
+  isEmployeeTestTakeBlocked,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import { Badge } from "@/shared/ui/badge"
@@ -28,6 +29,7 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
   const action = getEmployeeTestAction(test)
   const indicators = getEmployeeTestPriorityIndicators(test)
   const passFailLabel = formatPassFailStatus(test.score, test.passed)
+  const isBlocked = isEmployeeTestTakeBlocked(test)
 
   return (
     <Card className="transition-colors hover:bg-muted/20">
@@ -42,11 +44,20 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
               >
                 {formatEmployeeTestStatus(displayStatus)}
               </Badge>
+              {isBlocked ? (
+                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                  Unavailable
+                </Badge>
+              ) : null}
             </div>
 
             <p className="typography-small text-muted-foreground line-clamp-2">
               {test.description}
             </p>
+
+            {isBlocked ? (
+              <p className="text-sm text-amber-700 dark:text-amber-300">{action.disabledReason}</p>
+            ) : null}
 
             {indicators.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -67,9 +78,21 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
             ) : null}
           </div>
 
-          <Button asChild variant={action.variant} size="sm" className="shrink-0 rounded-full">
-            <Link href={action.href}>{action.label}</Link>
-          </Button>
+          {action.disabled || !action.href ? (
+            <Button
+              variant={action.variant}
+              size="sm"
+              className="shrink-0 rounded-full"
+              disabled
+              title={action.disabledReason}
+            >
+              {action.label}
+            </Button>
+          ) : (
+            <Button asChild variant={action.variant} size="sm" className="shrink-0 rounded-full">
+              <Link href={action.href}>{action.label}</Link>
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">

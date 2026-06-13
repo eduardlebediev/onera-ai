@@ -34,6 +34,9 @@ export interface EmployeeAssignedTest {
   passed: boolean | null
   required: boolean
   progressPercent: number
+  testIsActive?: boolean
+  sourceValidity?: string
+  sourceInvalidReason?: string | null
 }
 
 const mockCurrentEmployeeAssignments: EmployeeAssignmentRecord[] = [

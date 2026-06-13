@@ -1,5 +1,9 @@
 # Decisions
 
+## 055 — Completed generation runs persist review-draft recovery data
+
+Completed AI generation runs store the validated draft, source document summaries, and retrieved chunk summaries in `ai_generation_runs.output_summary.review_draft`. Review and publish pages recover the latest `completed` run for a document when sessionStorage is unavailable; summary-only, failed, or pending runs fall back to visible demo data.
+
 ## 054 — Employee attempt feedback is persisted with best-effort generation on submit
 
 After an employee submits a test, AI feedback is generated once from scored answers and persisted to `test_attempts.ai_feedback` as a versioned JSON envelope. Generation runs best-effort with a bounded timeout; submit and scoring must succeed even when feedback generation, validation, or persistence fails. Result pages read stored feedback first and fall back to `buildDynamicAiFeedback()` template output.

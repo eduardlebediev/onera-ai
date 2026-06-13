@@ -1,9 +1,11 @@
 import { mockDocuments } from "@/data/mock/documents"
 import {
+  resolveApiDocumentId,
   resolveMockDocumentByRouteId,
   resolveReviewDocumentRouteId,
 } from "@/features/documents/lib/demo-document-ids"
 import { PublishTestPage } from "@/features/tests/components/publish-test-page"
+import { getLatestReviewDraftForDocument } from "@/features/tests/lib/supabase-review-drafts"
 import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
 
 interface PublishTestRouteProps {
@@ -17,14 +19,20 @@ export default async function PublishTestRoute({ searchParams }: PublishTestRout
   const sourceDocument =
     (documentId ? resolveMockDocumentByRouteId(documentId) : undefined) ?? defaultDocument
   const reviewDocumentId = documentId ? resolveReviewDocumentRouteId(documentId) : sourceDocument.id
-  const reviewData = getMockTestReviewData(sourceDocument)
+  const apiDocumentId = documentId ? resolveApiDocumentId(documentId) : null
+  const supabaseReviewDraft = apiDocumentId
+    ? await getLatestReviewDraftForDocument(apiDocumentId)
+    : null
+  const reviewData = supabaseReviewDraft?.reviewData ?? getMockTestReviewData(sourceDocument)
 
   return (
     <PublishTestPage
       document={sourceDocument}
       reviewData={reviewData}
       documentId={reviewDocumentId}
-      generationRunId={runId ?? null}
+      generationRunId={supabaseReviewDraft?.generationRunId ?? runId ?? null}
+      reviewDataSource={supabaseReviewDraft ? "supabase" : "mock"}
+      recoveredDraft={supabaseReviewDraft?.storedDraft ?? null}
     />
   )
 }

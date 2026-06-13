@@ -4,6 +4,47 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 38: Review Page Supabase Backing
+
+**Branch:** `feature/38-review-page-supabase-backing`
+
+Added Supabase-backed review-page recovery for completed AI generation runs when the sessionStorage draft is unavailable.
+
+### Generation persistence
+
+- Updated `src/app/api/admin/generate-test/route.ts` — completed `ai_generation_runs.output_summary` now includes `review_draft` with the validated draft, source document summaries, and retrieved chunk summaries while preserving existing summary fields.
+
+### Review fallback
+
+- Added `src/features/tests/lib/supabase-review-drafts.ts` — server-only helper `getLatestGenerationRunForDocument(documentId)` and validated mapper for latest completed run recovery.
+- Updated `src/app/(admin)/admin/tests/review/page.tsx` — loads Supabase review data for API-backed document ids and falls back to mock review data when no recoverable completed run exists.
+- Updated `src/features/tests/lib/use-resolved-review-data.ts` and `src/features/tests/components/test-review-page.tsx` — sessionStorage remains highest priority, Supabase fallback is treated as an AI draft, and mock fallback shows the required demo banner.
+
+### Context and validation
+
+- Updated `context/progress-tracker.md`; recorded decision 055 in `context/decisions.md`.
+- Validation: `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Post-review fixes
+
+- Filtered recovered review runs to latest `completed` generation run so failed/pending runs do not hide a valid draft.
+- Passed recovered generation `runId` through the review-to-publish link.
+- Updated `src/app/(admin)/admin/tests/publish/page.tsx` and `src/features/tests/components/publish-test-page.tsx` — publish uses validated Supabase `review_draft` when sessionStorage is unavailable.
+
+### Files changed
+
+- `context/feature-specs/38-review-page-supabase-backing.md`
+- `src/app/api/admin/generate-test/route.ts`
+- `src/features/tests/lib/supabase-review-drafts.ts`
+- `src/app/(admin)/admin/tests/review/page.tsx`
+- `src/app/(admin)/admin/tests/publish/page.tsx`
+- `src/features/tests/lib/use-resolved-review-data.ts`
+- `src/features/tests/components/test-review-page.tsx`
+- `src/features/tests/components/publish-test-page.tsx`
+- `context/progress-tracker.md`, `context/decisions.md`, `context/history.md`
+
+---
+
 ---
 
 ---

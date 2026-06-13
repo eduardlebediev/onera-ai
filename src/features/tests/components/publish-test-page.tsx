@@ -29,7 +29,9 @@ import {
   type PublishTestContext,
 } from "@/features/tests/lib/publish-test-model"
 import { useResolvedReviewData } from "@/features/tests/lib/use-resolved-review-data"
+import type { ReviewDataSource } from "@/features/tests/lib/use-resolved-review-data"
 import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
+import type { StoredGeneratedTestDraft } from "@/features/tests/types/generated-test"
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -39,6 +41,8 @@ interface PublishTestPageProps {
   reviewData: MockTestReviewData
   documentId: string
   generationRunId?: string | null
+  reviewDataSource?: Exclude<ReviewDataSource, "session">
+  recoveredDraft?: StoredGeneratedTestDraft | null
 }
 
 export function PublishTestPage({
@@ -46,6 +50,8 @@ export function PublishTestPage({
   reviewData: initialReviewData,
   documentId,
   generationRunId: routeGenerationRunId,
+  reviewDataSource = "mock",
+  recoveredDraft = null,
 }: PublishTestPageProps) {
   const router = useRouter()
   const [published, setPublished] = useState(false)
@@ -59,7 +65,7 @@ export function PublishTestPage({
     questions,
     isAiDraft,
     isHydrated,
-  } = useResolvedReviewData(documentId, initialReviewData, routeGenerationRunId)
+  } = useResolvedReviewData(documentId, initialReviewData, routeGenerationRunId, reviewDataSource)
 
   const reviewData = useMemo(
     () => ({
@@ -101,7 +107,7 @@ export function PublishTestPage({
     setIsPublishing(true)
 
     if (isAiDraft) {
-      const storedDraft = loadGeneratedTestDraft()
+      const storedDraft = loadGeneratedTestDraft() ?? recoveredDraft
 
       if (!storedDraft) {
         setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)

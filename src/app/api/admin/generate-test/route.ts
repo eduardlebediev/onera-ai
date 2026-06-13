@@ -435,6 +435,24 @@ export async function POST(request: Request) {
     }
 
     const topics = [...new Set(validatedDraft.data.questions.map((question) => question.topic))]
+    const responseDocuments = effectiveSettings.documentIds.flatMap((documentId) => {
+      const document = effectiveSettings.documentsById.get(documentId)
+
+      if (!document) {
+        return []
+      }
+
+      return [{ id: document.id, title: document.title }]
+    })
+    const retrievedChunks = context.chunks.map((chunk) => ({
+      id: chunk.id,
+      documentId: chunk.documentId,
+      documentTitle:
+        effectiveSettings.documentsById.get(chunk.documentId)?.title ?? "Unknown document",
+      title: chunk.title,
+      topic: chunk.topic,
+      similarity: chunk.similarity,
+    }))
 
     const { error: completeRunError } = await supabase
       .from("ai_generation_runs")
@@ -445,6 +463,12 @@ export async function POST(request: Request) {
           topics,
           source_chunk_count: retrievedChunkIds.length,
           document_ids: effectiveSettings.documentIds,
+          review_draft: {
+            document: responseDocuments[0],
+            documents: responseDocuments,
+            draft: validatedDraft.data,
+            retrievedChunks,
+          },
         } satisfies Json,
         completed_at: new Date().toISOString(),
       })
@@ -454,30 +478,12 @@ export async function POST(request: Request) {
       throw new Error(`Failed to complete ai_generation_runs row: ${completeRunError.message}`)
     }
 
-    const responseDocuments = effectiveSettings.documentIds.flatMap((documentId) => {
-      const document = effectiveSettings.documentsById.get(documentId)
-
-      if (!document) {
-        return []
-      }
-
-      return [{ id: document.id, title: document.title }]
-    })
-
     return NextResponse.json({
       generationRunId,
       document: responseDocuments[0],
       documents: responseDocuments,
       draft: validatedDraft.data,
-      retrievedChunks: context.chunks.map((chunk) => ({
-        id: chunk.id,
-        documentId: chunk.documentId,
-        documentTitle:
-          effectiveSettings.documentsById.get(chunk.documentId)?.title ?? "Unknown document",
-        title: chunk.title,
-        topic: chunk.topic,
-        similarity: chunk.similarity,
-      })),
+      retrievedChunks,
     })
   } catch (error) {
     if (error instanceof AuthError) {

@@ -1,9 +1,11 @@
 import { mockDocuments } from "@/data/mock/documents"
 import {
+  resolveApiDocumentId,
   resolveMockDocumentByRouteId,
   resolveReviewDocumentRouteId,
 } from "@/features/documents/lib/demo-document-ids"
 import { TestReviewPage } from "@/features/tests/components/test-review-page"
+import { getLatestReviewDraftForDocument } from "@/features/tests/lib/supabase-review-drafts"
 import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
 
 interface TestReviewRouteProps {
@@ -17,15 +19,20 @@ export default async function TestReviewRoute({ searchParams }: TestReviewRouteP
   const sourceDocument =
     (documentId ? resolveMockDocumentByRouteId(documentId) : undefined) ?? defaultDocument
   const reviewDocumentId = documentId ? resolveReviewDocumentRouteId(documentId) : sourceDocument.id
-  const reviewData = getMockTestReviewData(sourceDocument)
+  const apiDocumentId = documentId ? resolveApiDocumentId(documentId) : null
+  const supabaseReviewDraft = apiDocumentId
+    ? await getLatestReviewDraftForDocument(apiDocumentId)
+    : null
+  const reviewData = supabaseReviewDraft?.reviewData ?? getMockTestReviewData(sourceDocument)
 
   return (
     <TestReviewPage
-      sourceDocumentTitle={sourceDocument.title}
-      sourceDocumentStatus={sourceDocument.status}
+      sourceDocumentTitle={supabaseReviewDraft?.sourceDocumentTitle ?? sourceDocument.title}
+      sourceDocumentStatus={supabaseReviewDraft?.sourceDocumentStatus ?? sourceDocument.status}
       reviewData={reviewData}
       documentId={reviewDocumentId}
-      generationRunId={runId ?? null}
+      generationRunId={supabaseReviewDraft?.generationRunId ?? runId ?? null}
+      reviewDataSource={supabaseReviewDraft ? "supabase" : "mock"}
     />
   )
 }

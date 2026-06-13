@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
+import { AlertCircle, ArrowLeft, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
 
@@ -8,7 +8,10 @@ import type { DocumentStatus } from "@/data/mock/documents"
 import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
 import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
 import { saveReviewSession } from "@/features/tests/lib/review-session"
-import { useResolvedReviewData } from "@/features/tests/lib/use-resolved-review-data"
+import {
+  useResolvedReviewData,
+  type ReviewDataSource,
+} from "@/features/tests/lib/use-resolved-review-data"
 import {
   ReviewFilterBar,
   type ReviewStatusFilter,
@@ -25,6 +28,7 @@ interface TestReviewPageProps {
   reviewData: MockTestReviewData
   documentId: string
   generationRunId?: string | null
+  reviewDataSource?: Exclude<ReviewDataSource, "session">
 }
 
 function countByStatus(questions: ReviewQuestion[], status: ReviewStatus): number {
@@ -37,6 +41,7 @@ export function TestReviewPage({
   reviewData: fallbackReviewData,
   documentId,
   generationRunId: routeGenerationRunId,
+  reviewDataSource = "mock",
 }: TestReviewPageProps) {
   const {
     reviewData,
@@ -44,7 +49,8 @@ export function TestReviewPage({
     isAiDraft,
     generationRunId,
     isHydrated,
-  } = useResolvedReviewData(documentId, fallbackReviewData, routeGenerationRunId)
+    source,
+  } = useResolvedReviewData(documentId, fallbackReviewData, routeGenerationRunId, reviewDataSource)
 
   const [questionsOverride, setQuestionsOverride] = useState<ReviewQuestion[] | null>(null)
   const questions = questionsOverride ?? resolvedQuestions
@@ -89,6 +95,7 @@ export function TestReviewPage({
   const selectedQuestion = selectedQuestionIndex !== -1 ? questions[selectedQuestionIndex] : null
 
   const canPublish = approvedQuestions > 0
+  const showDemoFallbackBanner = isHydrated && source === "mock"
 
   useEffect(() => {
     if (!isHydrated) return
@@ -132,6 +139,15 @@ export function TestReviewPage({
   }
 
   const statusBadge = DOCUMENT_STATUS_STYLE[sourceDocumentStatus]
+  const publishHref = useMemo(() => {
+    const params = new URLSearchParams({ documentId })
+
+    if (generationRunId) {
+      params.set("runId", generationRunId)
+    }
+
+    return `/admin/tests/publish?${params.toString()}`
+  }, [documentId, generationRunId])
 
   return (
     <div className="page-shell flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
@@ -202,6 +218,13 @@ export function TestReviewPage({
                 </span>
               )}
             </div>
+
+            {showDemoFallbackBanner ? (
+              <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span>Showing demo data. Generate a test to see real AI-generated questions.</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -217,10 +240,7 @@ export function TestReviewPage({
               className="h-10 px-4 bg-foreground text-background"
             >
               {canPublish ? (
-                <Link
-                  href={`/admin/tests/publish?documentId=${encodeURIComponent(documentId)}`}
-                  onClick={handleContinueToPublish}
-                >
+                <Link href={publishHref} onClick={handleContinueToPublish}>
                   <Rocket className="mr-2 size-4" />
                   Continue to Publish
                 </Link>

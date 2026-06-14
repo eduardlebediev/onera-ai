@@ -75,9 +75,9 @@ export async function permanentlyDeleteArchivedDocument(input: {
     throw new DeleteDocumentError("Document is already deleted", "already_deleted")
   }
 
-  if (row.status !== "archived") {
+  if (row.status !== "archived" && row.status !== "failed") {
     throw new DeleteDocumentError(
-      "Only archived documents can be permanently deleted",
+      "Only archived or failed documents can be permanently deleted",
       "not_archived"
     )
   }

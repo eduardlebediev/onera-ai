@@ -4,6 +4,64 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 47: Background Ingestion + Demo Login + Dead-UI Cleanup
+
+**Branch:** `feature/47-background-ingestion-and-demo-login`
+
+Moved initial document ingestion off the upload response path, added gated one-click demo login, and removed residual dead UI controls.
+
+### Background Ingestion
+
+- Split initial upload into fast storage via `storeUploadedDocument()` and background processing via `ingestDocument()`.
+- Upload now creates the document row, stores the original file in the private `documents` bucket, returns `processing`, and starts fire-and-forget extraction, chunking, embeddings, and topic extraction.
+- Background ingestion reads from the stored original file so failed processing can be retried without another browser upload.
+
+### Processing UI and Failed Actions
+
+- Added polling-based route refresh for document list and detail pages while documents are `processing`.
+- Added failed-document Retry through `POST /api/admin/documents/[id]/retry`.
+- Enabled failed-document Delete by allowing failed uploads through the existing permanent-delete path while preserving archive-first deletion for ready documents.
+
+### Demo Login and Dead-UI Cleanup
+
+- Added `NEXT_PUBLIC_ENABLE_DEMO_LOGIN` to gate demo buttons on the login page.
+- Added one-click Demo admin and Demo employee forms using seeded credentials through the existing `loginAction`.
+- Removed or replaced residual dead controls on document detail, documents table, tests list, dashboard, and legacy test detail; deleted the unused `PlaceholderPage`.
+
+### Review Fixes
+
+- Retry now marks the document `processing` before returning so immediate route refreshes do not briefly render stale `failed` state.
+
+### Verification
+
+- `npm run lint` passes.
+- `npm run typecheck` passes.
+- `npm run build` passes.
+- `npm run format:check` still fails on pre-existing unrelated `.docs/48-mock-cleanup-real-product-feel.md`.
+
+### Files changed
+
+- `.env.example`
+- `src/app/api/admin/documents/upload/route.ts`
+- `src/app/api/admin/documents/[id]/retry/route.ts`
+- `src/app/(admin)/admin/documents/page.tsx`
+- `src/app/(admin)/admin/documents/[id]/page.tsx`
+- `src/features/documents/lib/upload-document.ts`
+- `src/features/documents/lib/document-delete.ts`
+- `src/features/documents/lib/document-upload-api-client.ts`
+- `src/features/documents/schemas/document-upload-schema.ts`
+- `src/features/documents/components/document-processing-refresher.tsx`
+- `src/features/documents/components/documents-table.tsx`
+- `src/features/documents/components/document-detail.tsx`
+- `src/features/auth/components/login-form.tsx`
+- `src/features/analytics/components/dashboard-header.tsx`
+- `src/features/tests/components/tests-list-page.tsx`
+- `src/features/tests/components/test-detail-page.tsx`
+- `src/shared/ui/placeholder-page.tsx`
+- `context/architecture.md`, `context/decisions.md`, `context/progress-tracker.md`, `context/history.md`
+
+---
+
 ## Feature Spec 46: Retake + Transactional Reliability
 
 **Branch:** `feature/46-retake-and-transactional-reliability`

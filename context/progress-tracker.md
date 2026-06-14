@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 47: Background Ingestion + Demo Login + Dead-UI Cleanup
+
 - Feature Spec 46: Retake + Transactional Reliability
 
 - Feature Spec 45: Test Lifecycle Management

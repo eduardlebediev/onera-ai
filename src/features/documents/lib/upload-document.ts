@@ -48,6 +48,15 @@ export type ProcessDocumentUploadResult =
       processingError: string
     }
 
+type StoredDocumentForIngestion = {
+  id: string
+  organization_id: string
+  title: string
+  file_name: string | null
+  file_type: string | null
+  storage_path: string | null
+}
+
 function deriveTitleFromFileName(fileName: string): string {
   const withoutExtension = fileName.replace(/\.[^.]+$/, "")
   const normalized = withoutExtension.replace(/[_-]+/g, " ").trim()
@@ -66,6 +75,7 @@ function toSafeProcessingError(error: unknown): string {
       message.includes("AI extraction") ||
       message.includes("embedding") ||
       message.includes("storage") ||
+      message.includes("download") ||
       message.includes("chunk")
     ) {
       return message
@@ -92,6 +102,101 @@ async function removeStorageObject(storagePath: string): Promise<void> {
   const supabase = createAdminClient()
 
   await supabase.storage.from(DOCUMENTS_STORAGE_BUCKET).remove([storagePath])
+}
+
+async function storeDocumentFileForDocument(input: {
+  documentId: string
+  organizationId: string
+  preparedFile: PreparedDocumentUploadFile
+}): Promise<string> {
+  const { documentId, organizationId, preparedFile } = input
+  const supabase = createAdminClient()
+  const storagePath = `${organizationId}/${documentId}/${preparedFile.safeFileName}`
+
+  const { error: storageError } = await supabase.storage
+    .from(DOCUMENTS_STORAGE_BUCKET)
+    .upload(storagePath, preparedFile.buffer, {
+      contentType: preparedFile.mimeType,
+      upsert: false,
+    })
+
+  if (storageError) {
+    throw new Error("Storage upload failed")
+  }
+
+  const { error: storagePathError } = await supabase
+    .from("documents")
+    .update({ storage_path: storagePath })
+    .eq("id", documentId)
+    .eq("organization_id", organizationId)
+
+  if (storagePathError) {
+    await removeStorageObject(storagePath)
+    throw new Error("Could not save storage path for uploaded document")
+  }
+
+  return storagePath
+}
+
+async function clearDocumentIngestionArtifacts(input: {
+  documentId: string
+  organizationId: string
+}): Promise<void> {
+  const supabase = createAdminClient()
+
+  const { error: chunksError } = await supabase
+    .from("document_chunks")
+    .delete()
+    .eq("document_id", input.documentId)
+    .eq("organization_id", input.organizationId)
+
+  if (chunksError) {
+    throw new Error("Could not reset document chunks before ingestion")
+  }
+
+  const { error: topicsError } = await supabase
+    .from("document_topics")
+    .delete()
+    .eq("document_id", input.documentId)
+    .eq("organization_id", input.organizationId)
+
+  if (topicsError) {
+    const message = topicsError.message ?? ""
+
+    if (
+      topicsError.code !== "PGRST205" &&
+      !(message.includes("document_topics") && message.includes("schema cache"))
+    ) {
+      throw new Error("Could not reset document topics before ingestion")
+    }
+  }
+}
+
+function resolveStoredFileExtension(
+  document: StoredDocumentForIngestion
+): SupportedUploadExtension {
+  const extension = isSupportedUploadExtension(document.file_type)
+    ? document.file_type
+    : getExtensionFromFileName(document.file_name ?? "")
+
+  if (!isSupportedUploadExtension(extension)) {
+    throw new Error("Unsupported file type. Allowed: .pdf, .docx, .pptx, .txt, .md")
+  }
+
+  return extension
+}
+
+async function downloadStoredDocumentBuffer(storagePath: string): Promise<Buffer> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_STORAGE_BUCKET)
+    .download(storagePath)
+
+  if (error || !data) {
+    throw new Error("Could not download stored document for ingestion")
+  }
+
+  return Buffer.from(await data.arrayBuffer())
 }
 
 export async function prepareDocumentUploadFile(file: File): Promise<PreparedDocumentUploadFile> {
@@ -134,44 +239,27 @@ export async function prepareDocumentUploadFile(file: File): Promise<PreparedDoc
   }
 }
 
-export async function processDocumentUploadForDocument(input: {
+async function runDocumentIngestion(input: {
   documentId: string
   organizationId: string
-  preparedFile: PreparedDocumentUploadFile
+  title: string
+  safeFileName: string
+  extension: SupportedUploadExtension
+  buffer: Buffer
 }): Promise<ProcessDocumentUploadResult> {
-  const { documentId, organizationId, preparedFile } = input
-
+  const { documentId, organizationId, title, safeFileName, extension, buffer } = input
   const supabase = createAdminClient()
-  const storagePath = `${organizationId}/${documentId}/${preparedFile.safeFileName}`
 
   try {
-    const { error: storageError } = await supabase.storage
-      .from(DOCUMENTS_STORAGE_BUCKET)
-      .upload(storagePath, preparedFile.buffer, {
-        contentType: preparedFile.mimeType,
-        upsert: false,
-      })
-
-    if (storageError) {
-      throw new Error("Storage upload failed")
-    }
-
-    const { error: storagePathError } = await supabase
-      .from("documents")
-      .update({ storage_path: storagePath })
-      .eq("id", documentId)
-
-    if (storagePathError) {
-      throw new Error("Could not save storage path for uploaded document")
-    }
+    await clearDocumentIngestionArtifacts({ documentId, organizationId })
 
     const extractedText = await extractDocumentText({
-      buffer: preparedFile.buffer,
-      fileName: preparedFile.safeFileName,
-      extension: preparedFile.extension,
+      buffer,
+      fileName: safeFileName,
+      extension,
     })
 
-    const aiChunks = await chunkExtractedTextAi(extractedText, preparedFile.title)
+    const aiChunks = await chunkExtractedTextAi(extractedText, title)
     const chunks = aiChunks ?? chunkExtractedText(extractedText)
 
     if (chunks.length === 0) {
@@ -185,7 +273,7 @@ export async function processDocumentUploadForDocument(input: {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     const embeddedChunks = await embedDocumentChunks({
       chunks,
-      fileType: preparedFile.extension,
+      fileType: extension,
       openai,
     })
 
@@ -209,7 +297,7 @@ export async function processDocumentUploadForDocument(input: {
     await persistDocumentTopicsBestEffort({
       organizationId,
       documentId,
-      title: preparedFile.title,
+      title,
       extractedText,
       chunkTopics: embeddedChunks
         .map((chunk) => chunk.topic)
@@ -225,6 +313,7 @@ export async function processDocumentUploadForDocument(input: {
         processed_at: new Date().toISOString(),
       })
       .eq("id", documentId)
+      .eq("organization_id", organizationId)
 
     if (readyError) {
       throw new Error("Could not finalize document processing")
@@ -239,11 +328,39 @@ export async function processDocumentUploadForDocument(input: {
 
     await markDocumentFailed(documentId, processingError)
 
-    try {
-      await removeStorageObject(storagePath)
-    } catch {
-      // Best-effort cleanup only.
+    return {
+      status: "failed",
+      processingError,
     }
+  }
+}
+
+export async function processDocumentUploadForDocument(input: {
+  documentId: string
+  organizationId: string
+  preparedFile: PreparedDocumentUploadFile
+}): Promise<ProcessDocumentUploadResult> {
+  const { documentId, organizationId, preparedFile } = input
+
+  try {
+    await storeDocumentFileForDocument({
+      documentId,
+      organizationId,
+      preparedFile,
+    })
+
+    return runDocumentIngestion({
+      documentId,
+      organizationId,
+      title: preparedFile.title,
+      safeFileName: preparedFile.safeFileName,
+      extension: preparedFile.extension,
+      buffer: preparedFile.buffer,
+    })
+  } catch (error) {
+    const processingError = toSafeProcessingError(error)
+
+    await markDocumentFailed(documentId, processingError)
 
     return {
       status: "failed",
@@ -252,7 +369,70 @@ export async function processDocumentUploadForDocument(input: {
   }
 }
 
-export async function uploadAndIngestDocument(input: {
+export async function ingestDocument(input: {
+  documentId: string
+  organizationId: string
+}): Promise<ProcessDocumentUploadResult> {
+  const supabase = createAdminClient()
+
+  const { data: document, error } = await supabase
+    .from("documents")
+    .select("id, organization_id, title, file_name, file_type, storage_path")
+    .eq("id", input.documentId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Could not load document for ingestion: ${error.message}`)
+  }
+
+  if (!document) {
+    throw new Error("Document not found")
+  }
+
+  const storedDocument = document as StoredDocumentForIngestion
+  const storagePath = storedDocument.storage_path
+
+  if (!storagePath) {
+    const processingError = "Stored document file is missing. Please upload the document again."
+    await markDocumentFailed(input.documentId, processingError)
+
+    return {
+      status: "failed",
+      processingError,
+    }
+  }
+
+  const extension = resolveStoredFileExtension(storedDocument)
+  const safeFileName = storedDocument.file_name ?? `${storedDocument.id}.${extension}`
+
+  const { error: processingError } = await supabase
+    .from("documents")
+    .update({
+      status: "processing",
+      processing_error: null,
+      processed_at: null,
+    })
+    .eq("id", input.documentId)
+    .eq("organization_id", input.organizationId)
+
+  if (processingError) {
+    throw new Error(`Could not mark document as processing: ${processingError.message}`)
+  }
+
+  const buffer = await downloadStoredDocumentBuffer(storagePath)
+
+  return runDocumentIngestion({
+    documentId: input.documentId,
+    organizationId: input.organizationId,
+    title: storedDocument.title,
+    safeFileName,
+    extension,
+    buffer,
+  })
+}
+
+export async function storeUploadedDocument(input: {
   admin: CurrentUser
   file: File
 }): Promise<UploadDocumentResult> {
@@ -283,13 +463,14 @@ export async function uploadAndIngestDocument(input: {
   }
 
   const documentId = document.id
-  const result = await processDocumentUploadForDocument({
-    documentId,
-    organizationId,
-    preparedFile,
-  })
 
-  if (result.status === "ready") {
+  try {
+    await storeDocumentFileForDocument({
+      documentId,
+      organizationId,
+      preparedFile,
+    })
+
     await createDocumentVersionEvent({
       organizationId,
       documentId,
@@ -297,11 +478,16 @@ export async function uploadAndIngestDocument(input: {
       createdBy: input.admin.userId,
       changeMessage: "Initial upload",
     })
+  } catch (error) {
+    const processingError = toSafeProcessingError(error)
+
+    await markDocumentFailed(documentId, processingError)
+    throw new Error(processingError)
   }
 
   return {
     documentId,
-    status: result.status,
+    status: "processing",
     redirectTo: `/admin/documents/${documentId}`,
   }
 }

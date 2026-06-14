@@ -478,11 +478,12 @@ There is at most one answer per follow-up question.
 1. Admin uploads a supported file through `POST /api/admin/documents/upload`.
 2. The server creates a `documents` row with `status = processing`.
 3. The original file is uploaded to private Supabase Storage at `{organizationId}/{documentId}/{safeFileName}`.
-4. Text is extracted, AI chunking is attempted, and deterministic chunking is used as fallback.
-5. Chunks are embedded with `text-embedding-3-small` and inserted into `document_chunks`.
-6. Document topics are extracted best-effort into `document_topics`.
-7. The document is marked `ready` with `extracted_text`, or `failed` with a safe processing error and best-effort storage cleanup.
-8. Initial uploads and new versions write `document_version_events`.
+4. The upload route returns immediately with `processing` and starts fire-and-forget ingestion from the stored file.
+5. Background ingestion downloads the stored original, extracts text, attempts AI chunking, and uses deterministic chunking as fallback.
+6. Chunks are embedded with `text-embedding-3-small` and inserted into `document_chunks`.
+7. Document topics are extracted best-effort into `document_topics`.
+8. The document is marked `ready` with `extracted_text`, or `failed` with a safe processing error while keeping the stored original available for Retry.
+9. Initial uploads and new versions write `document_version_events`.
 
 ### Test Generation and Review
 

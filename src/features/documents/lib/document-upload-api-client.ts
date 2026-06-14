@@ -2,6 +2,7 @@ import {
   ArchiveDocumentResponseSchema,
   DeleteDocumentResponseSchema,
   DocumentDownloadUrlResponseSchema,
+  RetryDocumentResponseSchema,
   UploadDocumentResponseSchema,
   UploadDocumentVersionResponseSchema,
 } from "@/features/documents/schemas/document-upload-schema"
@@ -136,6 +137,40 @@ export async function requestDocumentDownloadUrl(documentId: string): Promise<st
   }
 
   return parsed.data.signedUrl
+}
+
+export async function retryDocumentIngestion(documentId: string) {
+  const response = await fetch(`/api/admin/documents/${documentId}/retry`, {
+    method: "POST",
+  })
+
+  let payload: unknown = null
+
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+
+  if (!response.ok) {
+    const serverMessage =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof (payload as { error?: unknown }).error === "string"
+        ? (payload as { error: string }).error
+        : undefined
+
+    throw new Error(getDocumentActionErrorMessage(response.status, serverMessage))
+  }
+
+  const parsed = RetryDocumentResponseSchema.safeParse(payload)
+
+  if (!parsed.success) {
+    throw new Error(getDocumentActionErrorMessage(response.status))
+  }
+
+  return parsed.data
 }
 
 function getDocumentActionErrorMessage(status: number, serverMessage?: string): string {

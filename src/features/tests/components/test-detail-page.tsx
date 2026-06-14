@@ -32,12 +32,6 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
               <Button disabled title="Publish this test before assigning it to employees.">
                 Assign to Employees
               </Button>
-              <Button disabled title="Coming soon">
-                Publish
-              </Button>
-              <Button variant="outline" disabled title="Coming soon">
-                Archive
-              </Button>
             </>
           )}
           {test.status === "published" && (
@@ -48,15 +42,7 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
               <Button asChild variant="outline">
                 <Link href="#results">View results</Link>
               </Button>
-              <Button variant="outline" disabled title="Coming soon">
-                Archive
-              </Button>
             </>
-          )}
-          {test.status === "archived" && (
-            <Button variant="outline" disabled title="Coming soon">
-              Restore
-            </Button>
           )}
         </div>
       </div>

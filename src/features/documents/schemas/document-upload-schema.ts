@@ -8,6 +8,13 @@ export const UploadDocumentResponseSchema = z.object({
 
 export type UploadDocumentResponse = z.infer<typeof UploadDocumentResponseSchema>
 
+export const RetryDocumentResponseSchema = z.object({
+  documentId: z.string().uuid(),
+  status: z.literal("processing"),
+})
+
+export type RetryDocumentResponse = z.infer<typeof RetryDocumentResponseSchema>
+
 export const AffectedDocumentVersionTestSchema = z.object({
   testId: z.string().uuid(),
   title: z.string().min(1),

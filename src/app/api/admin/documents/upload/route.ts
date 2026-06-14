@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
-import { uploadAndIngestDocument } from "@/features/documents/lib/upload-document"
+import { ingestDocument, storeUploadedDocument } from "@/features/documents/lib/upload-document"
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
@@ -25,11 +25,17 @@ export async function POST(request: Request) {
       return jsonError("A file is required", 400)
     }
 
-    // TODO: Move extraction, chunking, and embedding to a background job before production.
     // TODO: Add virus scanning before production uploads are enabled.
-    const result = await uploadAndIngestDocument({
+    const result = await storeUploadedDocument({
       admin,
       file,
+    })
+
+    void ingestDocument({
+      documentId: result.documentId,
+      organizationId: admin.membership.organizationId,
+    }).catch((error) => {
+      console.error(`Background document ingestion failed for ${result.documentId}:`, error)
     })
 
     return NextResponse.json(result)

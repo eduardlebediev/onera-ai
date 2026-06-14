@@ -53,8 +53,8 @@ export function TestsListPage({ tests, banner }: TestsListPageProps) {
             Manage AI-generated knowledge tests for your team.
           </p>
         </div>
-        <Button className="shrink-0 rounded-full" disabled title="Coming soon">
-          Create Test
+        <Button asChild className="shrink-0 rounded-full">
+          <Link href="/admin/documents">New Test</Link>
         </Button>
       </div>
 

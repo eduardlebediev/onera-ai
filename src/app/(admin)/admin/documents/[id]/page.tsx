@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { mockDocuments } from "@/data/mock/documents"
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { DocumentDetail } from "@/features/documents/components/document-detail"
+import { DocumentProcessingRefresher } from "@/features/documents/components/document-processing-refresher"
 import { resolveMockDocumentByRouteId } from "@/features/documents/lib/demo-document-ids"
 import { getDocumentDetailById } from "@/features/documents/lib/supabase-documents"
 
@@ -34,5 +35,10 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
     notFound()
   }
 
-  return <DocumentDetail document={document} />
+  return (
+    <>
+      <DocumentProcessingRefresher enabled={document.status === "processing"} />
+      <DocumentDetail document={document} />
+    </>
+  )
 }

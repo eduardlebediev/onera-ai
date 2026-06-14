@@ -5,10 +5,8 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  ExternalLink,
   FileText,
   MoreHorizontal,
-  Pencil,
   Sparkles,
   Trash2,
   XCircle,
@@ -29,12 +27,7 @@ import { UploadDocumentVersionButton } from "@/features/documents/components/upl
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 
 interface DocumentDetailProps {
@@ -202,8 +195,6 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
                   documentId={document.id}
                   disabled={!canUploadNewVersion}
                 />
-                <DropdownMenuItem disabled>Edit Metadata (coming soon)</DropdownMenuItem>
-                <DropdownMenuItem disabled>Share (coming soon)</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -349,10 +340,6 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
                           </p>
                         )}
                       </div>
-                      <Button variant="outline" size="sm" className="mt-4" disabled>
-                        View full text
-                        <ExternalLink className="ml-1 size-3" />
-                      </Button>
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground">
@@ -369,12 +356,8 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
 
             <div className="space-y-2">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardHeader className="pb-2">
                   <CardTitle>AI-extracted topics</CardTitle>
-                  <Button variant="outline" size="sm" className="h-7 text-xs" disabled>
-                    <Pencil className="mr-1 size-3" />
-                    Edit topics
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4 text-sm text-muted-foreground">

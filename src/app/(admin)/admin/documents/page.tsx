@@ -1,5 +1,6 @@
 import { mockDocuments } from "@/data/mock/documents"
 import { BackendFallbackBanner } from "@/features/documents/components/backend-fallback-banner"
+import { DocumentProcessingRefresher } from "@/features/documents/components/document-processing-refresher"
 import { DocumentUploadButton } from "@/features/documents/components/document-upload-button"
 import { DocumentsKpiSection } from "@/features/documents/components/documents-kpi-section"
 import { DocumentsTable } from "@/features/documents/components/documents-table"
@@ -26,6 +27,9 @@ export default async function DocumentsPage() {
 
   return (
     <div className="page-shell">
+      <DocumentProcessingRefresher
+        enabled={documents.some((document) => document.status === "processing")}
+      />
       {showFallbackBanner ? <BackendFallbackBanner /> : null}
 
       <div className="flex items-center justify-between gap-4">

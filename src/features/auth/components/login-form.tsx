@@ -7,6 +7,22 @@ import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
 import { Logo } from "@/shared/ui/logo"
 
+const DEMO_LOGIN_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true"
+const DEMO_PASSWORD = "demo-only-password"
+
+const DEMO_ACCOUNTS = [
+  {
+    label: "Demo admin",
+    email: "admin@demo.ontera.ai",
+    description: "Upload documents, generate tests, and review analytics.",
+  },
+  {
+    label: "Demo employee",
+    email: "employee@demo.ontera.ai",
+    description: "Take assigned tests and review personalized feedback.",
+  },
+]
+
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState<LoginState, FormData>(loginAction, null)
 
@@ -21,6 +37,41 @@ export function LoginForm() {
           </p>
         </div>
       </div>
+
+      {DEMO_LOGIN_ENABLED ? (
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="space-y-2 text-center">
+            <p className="typography-small font-medium text-foreground">
+              See how Ontera AI turns internal documents into reviewed knowledge tests, employee
+              attempts, AI feedback, and admin analytics.
+            </p>
+            <p className="typography-small text-muted-foreground">
+              Use a seeded demo account to jump straight into the product.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            {DEMO_ACCOUNTS.map((account) => (
+              <form key={account.email} action={formAction}>
+                <input type="hidden" name="email" value={account.email} />
+                <input type="hidden" name="password" value={DEMO_PASSWORD} />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="h-auto w-full"
+                  disabled={isPending}
+                >
+                  <span className="flex flex-col items-start gap-0.5 py-1 text-left">
+                    <span>{account.label}</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {account.description}
+                    </span>
+                  </span>
+                </Button>
+              </form>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <form action={formAction} className="space-y-4 rounded-2xl border border-border bg-card p-6">
         <div className="space-y-2">

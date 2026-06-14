@@ -1,5 +1,9 @@
 # Decisions
 
+## 066 — Document uploads store first and ingest in background
+
+Initial document uploads create the document row, store the original file in the private `documents` bucket, and return `processing` before extraction, chunking, embeddings, and topic extraction run fire-and-forget. Background ingestion reads the stored original file so failed upload processing can be retried without another browser upload.
+
 ## 065 — Publish and submit multi-row writes use transactional RPCs
 
 Publishing generated tests uses `publish_generated_test` to atomically insert the published test, source document joins, and questions with `created_by` set to the acting admin. Employee submit uses `complete_test_attempt` to atomically insert answers, complete the attempt, and update assignment status; best-effort AI feedback stays outside the critical transaction.

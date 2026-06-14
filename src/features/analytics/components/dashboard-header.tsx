@@ -13,9 +13,11 @@ export function DashboardHeader() {
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-3">
-        <Button variant="outline" size="lg" disabled title="Not available in this demo">
-          <Upload className="size-4" />
-          Upload Document
+        <Button variant="outline" size="lg" asChild>
+          <Link href="/admin/documents">
+            <Upload className="size-4" />
+            Upload Document
+          </Link>
         </Button>
         <Button variant="outline" size="lg" asChild>
           <Link href="/admin/analytics">

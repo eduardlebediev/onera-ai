@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import {
   type DocumentFileType,
@@ -25,6 +26,10 @@ import {
   getGenerateBlockReason,
 } from "@/features/documents/components/generate-test-model"
 import type { DocumentLifecycleStatus } from "@/features/documents/components/document-lifecycle-actions"
+import {
+  permanentlyDeleteDocument,
+  retryDocumentIngestion,
+} from "@/features/documents/lib/document-upload-api-client"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
@@ -102,7 +107,13 @@ type LifecycleStatusOverrides = Record<
   }
 >
 
+type PendingDocumentAction = {
+  documentId: string
+  action: "retry" | "delete"
+}
+
 export function DocumentsTable({ documents }: DocumentsTableProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [sortKey, setSortKey] = useState<SortKey>("uploadedAt")
@@ -111,6 +122,10 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [lifecycleStatusOverrides, setLifecycleStatusOverrides] =
     useState<LifecycleStatusOverrides>({})
+  const [pendingDocumentAction, setPendingDocumentAction] = useState<PendingDocumentAction | null>(
+    null
+  )
+  const [documentActionError, setDocumentActionError] = useState<string | null>(null)
 
   const handleOpenDrawer = useCallback((document: MockDocumentDetail) => {
     setSelectedDocumentId(document.id)
@@ -149,6 +164,54 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       return nextSortKey
     })
   }, [])
+
+  const handleRetryFailedDocument = useCallback(
+    async (documentId: string) => {
+      setDocumentActionError(null)
+      setPendingDocumentAction({ documentId, action: "retry" })
+
+      try {
+        await retryDocumentIngestion(documentId)
+        router.refresh()
+      } catch (error) {
+        setDocumentActionError(
+          error instanceof Error ? error.message : "Could not retry document processing."
+        )
+      } finally {
+        setPendingDocumentAction(null)
+      }
+    },
+    [router]
+  )
+
+  const handleDeleteFailedDocument = useCallback(
+    async (documentId: string) => {
+      const confirmed = window.confirm("Delete this failed document upload?")
+
+      if (!confirmed) {
+        return
+      }
+
+      setDocumentActionError(null)
+      setPendingDocumentAction({ documentId, action: "delete" })
+
+      try {
+        await permanentlyDeleteDocument({
+          documentId,
+          deletionReason: "Deleted failed upload from the documents table.",
+        })
+        handleLifecycleComplete(documentId, "deleted")
+        router.refresh()
+      } catch (error) {
+        setDocumentActionError(
+          error instanceof Error ? error.message : "Could not delete this failed document."
+        )
+      } finally {
+        setPendingDocumentAction(null)
+      }
+    },
+    [handleLifecycleComplete, router]
+  )
 
   const effectiveDocuments = useMemo(
     () =>
@@ -242,6 +305,11 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
           </div>
         }
       >
+        {documentActionError ? (
+          <div className="border-b border-border/50 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {documentActionError}
+          </div>
+        ) : null}
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="hover:bg-transparent">
@@ -282,6 +350,13 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                 const isFailed = document.status === "failed"
                 const isProcessing = document.status === "processing"
                 const isGeneratable = canGenerateTest(document)
+                const isRetryPending =
+                  pendingDocumentAction?.documentId === document.id &&
+                  pendingDocumentAction.action === "retry"
+                const isDeletePending =
+                  pendingDocumentAction?.documentId === document.id &&
+                  pendingDocumentAction.action === "delete"
+                const hasPendingAction = pendingDocumentAction !== null
 
                 return (
                   <TableRow key={document.id} className="group hover:bg-muted/30 transition-colors">
@@ -378,19 +453,24 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                               variant="outline"
                               size="sm"
                               className="h-8 text-xs"
-                              disabled
-                              title="Retry (coming soon)"
+                              disabled={hasPendingAction}
+                              onClick={() => void handleRetryFailedDocument(document.id)}
                             >
-                              Retry
+                              {isRetryPending ? "Retrying..." : "Retry"}
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
                               className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10"
-                              disabled
-                              title="Delete (coming soon)"
+                              disabled={hasPendingAction}
+                              aria-label="Delete failed document"
+                              onClick={() => void handleDeleteFailedDocument(document.id)}
                             >
-                              <Trash2 className="size-4" />
+                              {isDeletePending ? (
+                                <span className="size-3 animate-pulse rounded-full bg-current" />
+                              ) : (
+                                <Trash2 className="size-4" />
+                              )}
                             </Button>
                           </>
                         ) : isProcessing ? (

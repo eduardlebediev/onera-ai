@@ -2,11 +2,12 @@
 
 import { ClipboardList } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import type { TestStatus } from "@/features/tests/mock/tests"
 import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { TestDrawer } from "@/features/tests/components/test-drawer"
 import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
 import {
   isSourceBlockingValidity,
@@ -69,11 +70,22 @@ function TestsLoadErrorState() {
 
 export function TestsListPage({ tests, loadError = false }: TestsListPageProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   const visibleTests = useMemo(() => {
     if (statusFilter === "all") return tests
     return tests.filter((test) => test.status === statusFilter)
   }, [tests, statusFilter])
+
+  const selectedTest = selectedTestId
+    ? (tests.find((test) => test.id === selectedTestId) ?? null)
+    : null
+
+  const handleOpenDrawer = useCallback((test: ResolvedMockTest) => {
+    setSelectedTestId(test.id)
+    setIsDrawerOpen(true)
+  }, [])
 
   return (
     <div className="page-shell">
@@ -163,15 +175,20 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
                       return (
                         <TableRow
                           key={test.id}
-                          className="group hover:bg-muted/30 transition-colors"
+                          onClick={() => handleOpenDrawer(test)}
+                          className="group cursor-pointer hover:bg-muted/30 transition-colors"
                         >
                           <TableCell className="py-4">
-                            <Link
-                              href={`/admin/tests/${test.id}`}
-                              className="typography-small font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1"
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleOpenDrawer(test)
+                              }}
+                              className="typography-small line-clamp-1 text-left font-medium text-foreground transition-colors group-hover:text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                             >
                               {test.title}
-                            </Link>
+                            </button>
                           </TableCell>
                           <TableCell className="py-4">
                             <div className="flex flex-wrap items-center gap-2">
@@ -216,7 +233,11 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
                           </TableCell>
                           <TableCell className="py-4">{test.assignedEmployeesCount}</TableCell>
                           <TableCell className="py-4">{test.attemptsCount}</TableCell>
-                          <TableCell className="py-4 text-right">
+                          <TableCell
+                            className="py-4 text-right"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
                             <Button asChild variant="outline" size="sm" className="h-8 text-xs">
                               <Link href={`/admin/tests/${test.id}`}>View details</Link>
                             </Button>
@@ -239,6 +260,7 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
           </DataTableShell>
         )}
       </div>
+      <TestDrawer test={selectedTest} open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
     </div>
   )
 }

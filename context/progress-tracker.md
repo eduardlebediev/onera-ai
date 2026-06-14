@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 50: Table Row Preview Drawer + Breadcrumbs on Full Pages
+
 - Feature Spec 49: Breadcrumbs
 
 - Feature Spec 48: Mock Cleanup — Real Product Feel

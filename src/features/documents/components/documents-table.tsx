@@ -359,11 +359,18 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                 const hasPendingAction = pendingDocumentAction !== null
 
                 return (
-                  <TableRow key={document.id} className="group hover:bg-muted/30 transition-colors">
+                  <TableRow
+                    key={document.id}
+                    onClick={() => handleOpenDrawer(document)}
+                    className="group cursor-pointer hover:bg-muted/30 transition-colors"
+                  >
                     <TableCell className="py-4">
                       <button
                         type="button"
-                        onClick={() => handleOpenDrawer(document)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleOpenDrawer(document)
+                        }}
                         className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                       >
                         <DocumentFileIcon fileType={document.fileType} />
@@ -445,7 +452,11 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                         {formatRelativeDate(document.uploadedAt)}
                       </p>
                     </TableCell>
-                    <TableCell className="py-4 text-right">
+                    <TableCell
+                      className="py-4 text-right"
+                      onClick={(event) => event.stopPropagation()}
+                      onKeyDown={(event) => event.stopPropagation()}
+                    >
                       <div className="flex items-center justify-end gap-2">
                         {isFailed ? (
                           <>

@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 interface DocumentDetailProps {
   document: MockDocumentDetail
   onLifecycleComplete?: DocumentLifecycleCompleteHandler
+  showBreadcrumbs?: boolean
 }
 
 const STATUS_CONFIG: Record<
@@ -111,7 +112,11 @@ function formatConfidence(confidence: number | null | undefined): string | null 
   return `${Math.round(confidence * 100)}%`
 }
 
-export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetailProps) {
+export function DocumentDetail({
+  document,
+  onLifecycleComplete,
+  showBreadcrumbs = true,
+}: DocumentDetailProps) {
   const statusConfig = STATUS_CONFIG[document.status]
   const isDeleted = document.status === "deleted"
   const isArchived = document.status === "archived"
@@ -193,10 +198,12 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
         </div>
       </div>
 
-      <Breadcrumbs
-        className="mb-6"
-        items={[{ label: "Documents", href: "/admin/documents" }, { label: document.title }]}
-      />
+      {showBreadcrumbs ? (
+        <Breadcrumbs
+          className="mb-6"
+          items={[{ label: "Documents", href: "/admin/documents" }, { label: document.title }]}
+        />
+      ) : null}
 
       {isDeleted ? (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">

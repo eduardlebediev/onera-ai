@@ -37,11 +37,18 @@ function DrawerOverlay({
   )
 }
 
+type DrawerContentProps = React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  leftAction?: React.ReactNode
+  rightAction?: React.ReactNode
+}
+
 function DrawerContent({
   className,
   children,
+  leftAction,
+  rightAction,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+}: DrawerContentProps) {
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
@@ -53,7 +60,22 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div className="relative hidden shrink-0 px-4 pt-4 group-data-[vaul-drawer-direction=bottom]/drawer-content:block">
+          {leftAction ? (
+            <div data-slot="drawer-left-action" className="absolute left-4 top-2 flex items-center">
+              {leftAction}
+            </div>
+          ) : null}
+          <div className="mx-auto h-1 w-[100px] rounded-full bg-muted" />
+          {rightAction ? (
+            <div
+              data-slot="drawer-right-action"
+              className="absolute right-4 top-2 flex items-center"
+            >
+              {rightAction}
+            </div>
+          ) : null}
+        </div>
         {children}
       </DrawerPrimitive.Content>
     </DrawerPortal>

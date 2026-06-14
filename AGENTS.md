@@ -14,9 +14,8 @@ Read the following files in order before implementing or making any architectura
 5. `context/ai-workflow-rules.md` — development workflow, scoping rules, and delivery approach
 6. `context/progress-tracker.md` — current goal, in progress, completed, next steps, open questions
 7. `context/decisions.md` — architecture and design decisions archive
-8. `context/history.md` — detailed implementation history
 
-Update `context/progress-tracker.md` after each meaningful implementation change. Update `context/decisions.md` when making a new architecture or design decision (newest entry at top). Update `context/history.md` when completing a feature spec (detailed record at top).
+Update `context/progress-tracker.md` after each meaningful implementation change. Update `context/decisions.md` when making a new architecture or design decision (newest entry at top).
 
 If implementation changes the architecture, scope, or standards documented in the context files, update the relevant file before continuing.
 

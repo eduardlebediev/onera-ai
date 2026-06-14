@@ -33,6 +33,7 @@ import type { ReviewDataSource } from "@/features/tests/lib/use-resolved-review-
 import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
 import type { StoredGeneratedTestDraft } from "@/features/tests/types/generated-test"
 import type { MockDocumentDetail } from "@/data/mock/documents"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -154,6 +155,18 @@ export function PublishTestPage({
           This test was generated from selected document topics and source chunks.
         </p>
       </div>
+
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: "Tests", href: "/admin/tests" },
+          {
+            label: "Review",
+            href: `/admin/tests/review?documentId=${encodeURIComponent(documentId)}`,
+          },
+          { label: "Publish" },
+        ]}
+      />
 
       {draftSaved ? (
         <Card className="mb-2 border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/20">

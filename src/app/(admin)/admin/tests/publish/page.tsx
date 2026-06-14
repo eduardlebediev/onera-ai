@@ -7,6 +7,7 @@ import {
 import { getDocumentDetailById } from "@/features/documents/lib/supabase-documents"
 import { PublishTestPage } from "@/features/tests/components/publish-test-page"
 import { getLatestReviewDraftForDocument } from "@/features/tests/lib/supabase-review-drafts"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -17,6 +18,14 @@ interface PublishTestRouteProps {
 function EmptyPublishState() {
   return (
     <div className="page-shell-narrow">
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: "Tests", href: "/admin/tests" },
+          { label: "Review", href: "/admin/tests/review" },
+          { label: "Publish" },
+        ]}
+      />
       <Card>
         <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
           <div>

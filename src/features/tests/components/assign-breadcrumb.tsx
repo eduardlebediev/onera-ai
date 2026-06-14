@@ -1,7 +1,4 @@
-import { ChevronRight } from "lucide-react"
-import Link from "next/link"
-
-import { cn } from "@/lib/utils"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 
 interface AssignBreadcrumbProps {
   testId: string
@@ -11,16 +8,13 @@ interface AssignBreadcrumbProps {
 
 export function AssignBreadcrumb({ testId, testTitle, className }: AssignBreadcrumbProps) {
   return (
-    <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
-      <Link href="/admin/tests" className="hover:text-foreground">
-        Tests
-      </Link>
-      <ChevronRight className="size-4" />
-      <Link href={`/admin/tests/${testId}`} className="hover:text-foreground">
-        {testTitle}
-      </Link>
-      <ChevronRight className="size-4" />
-      <span className="text-foreground">Assign</span>
-    </div>
+    <Breadcrumbs
+      className={className}
+      items={[
+        { label: "Tests", href: "/admin/tests" },
+        { label: testTitle, href: `/admin/tests/${testId}` },
+        { label: "Assign" },
+      ]}
+    />
   )
 }

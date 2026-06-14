@@ -7,6 +7,7 @@ import type {
 } from "@/features/employee/tests/lib/supabase-employee-progress"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import { cn } from "@/lib/utils"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { KpiCard } from "@/shared/ui/kpi-card"
@@ -161,6 +162,11 @@ export function EmployeeProgressPage({ progress, loadError = false }: EmployeePr
           Track completed tests, topic strengths, weak topics, and your full attempt history.
         </p>
       </div>
+
+      <Breadcrumbs
+        className="mt-6"
+        items={[{ label: "Dashboard", href: "/employee/dashboard" }, { label: "Progress" }]}
+      />
 
       {loadError ? (
         <Card className="mt-8">

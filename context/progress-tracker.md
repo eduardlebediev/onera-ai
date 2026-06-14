@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 49: Breadcrumbs
+
 - Feature Spec 48: Mock Cleanup — Real Product Feel
 
 - Feature Spec 47: Background Ingestion + Demo Login + Dead-UI Cleanup

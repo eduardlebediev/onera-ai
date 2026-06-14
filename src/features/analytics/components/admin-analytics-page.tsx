@@ -8,6 +8,7 @@ import type {
 } from "@/features/analytics/lib/supabase-analytics"
 import { getScoreColorClass } from "@/features/analytics/lib/dashboard-formatters"
 import { TestPerformanceTable } from "@/features/analytics/components/test-performance-table"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
@@ -209,6 +210,11 @@ export function AdminAnalyticsPage({ analytics }: AdminAnalyticsPageProps) {
           </p>
         </div>
       </div>
+
+      <Breadcrumbs
+        className="mt-6"
+        items={[{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Analytics" }]}
+      />
 
       {!analytics.hasActivity ? (
         <EmptyAnalyticsState />

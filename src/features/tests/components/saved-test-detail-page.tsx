@@ -26,6 +26,7 @@ import type { SupabaseEmployeeProgress } from "@/features/tests/lib/supabase-tes
 import type { TestLifecycleImpact } from "@/features/tests/lib/test-lifecycle-api-client"
 import type { TestResultsSummary } from "@/features/tests/mock/tests"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
@@ -153,6 +154,8 @@ export function SavedTestDetailPage({
               <SavedTestLifecycleActionsMenu />
             </div>
           </div>
+
+          <Breadcrumbs items={[{ label: "Tests", href: "/admin/tests" }, { label: test.title }]} />
 
           <SavedTestLifecycleActionsPanel />
 

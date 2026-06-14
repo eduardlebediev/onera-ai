@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, ArrowLeft, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
+import { AlertCircle, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
 
@@ -23,6 +23,7 @@ import {
 import { ReviewQuestionDetail } from "@/features/tests/components/review-question-detail"
 import { ReviewQuestionList } from "@/features/tests/components/review-question-list"
 import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 
@@ -319,14 +320,6 @@ export function TestReviewPage({
   return (
     <div className="page-shell flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
       <div className="mb-6 shrink-0">
-        <Link
-          href={`/admin/documents/${documentId}`}
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-4"
-        >
-          <ArrowLeft className="mr-2 size-4" />
-          Back to Document
-        </Link>
-
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
             <div>
@@ -425,6 +418,11 @@ export function TestReviewPage({
             </Button>
           </div>
         </div>
+
+        <Breadcrumbs
+          className="mt-4"
+          items={[{ label: "Tests", href: "/admin/tests" }, { label: "Review" }]}
+        />
       </div>
 
       <div className="flex flex-col flex-1 min-h-0 bg-card rounded-xl border border-border/50 shadow-sm">

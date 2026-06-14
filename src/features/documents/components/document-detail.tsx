@@ -3,7 +3,6 @@
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronRight,
   Clock,
   FileText,
   MoreHorizontal,
@@ -27,6 +26,7 @@ import { UploadDocumentVersionButton } from "@/features/documents/components/upl
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 
@@ -130,14 +130,6 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
 
   return (
     <div className="page-shell-narrow">
-      <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/admin/documents" className="hover:text-foreground">
-          Documents
-        </Link>
-        <ChevronRight className="size-4" />
-        <span className="text-foreground">{document.title}</span>
-      </div>
-
       <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
           <div className="mb-2 flex items-center gap-3">
@@ -200,6 +192,11 @@ export function DocumentDetail({ document, onLifecycleComplete }: DocumentDetail
           ) : null}
         </div>
       </div>
+
+      <Breadcrumbs
+        className="mb-6"
+        items={[{ label: "Documents", href: "/admin/documents" }, { label: document.title }]}
+      />
 
       {isDeleted ? (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">

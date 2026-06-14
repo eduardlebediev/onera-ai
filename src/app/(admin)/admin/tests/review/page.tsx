@@ -6,6 +6,7 @@ import {
 } from "@/features/documents/lib/demo-document-ids"
 import { TestReviewPage } from "@/features/tests/components/test-review-page"
 import { getLatestReviewDraftForDocument } from "@/features/tests/lib/supabase-review-drafts"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -16,6 +17,10 @@ interface TestReviewRouteProps {
 function EmptyReviewState() {
   return (
     <div className="page-shell-narrow">
+      <Breadcrumbs
+        className="mb-6"
+        items={[{ label: "Tests", href: "/admin/tests" }, { label: "Review" }]}
+      />
       <Card>
         <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
           <div>

@@ -239,11 +239,11 @@ export function AssignEmployeesPage({
     <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mb-4" />
           <h1 className="typography-h1">Assign to Employees</h1>
           <p className="mt-1 typography-p text-muted-foreground">
             Select employees, set a deadline, and confirm the assignment.
           </p>
+          <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mt-4" />
         </div>
         <Button asChild variant="outline" className="shrink-0">
           <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>

@@ -13,6 +13,7 @@ import {
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import type { MockEmployee } from "@/features/tests/mock/employees"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -56,6 +57,8 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <Breadcrumbs className="mt-6" items={[{ label: "My Tests" }]} />
 
       <div className="mt-8">
         <EmployeeTestsKpiSection tests={tests} />

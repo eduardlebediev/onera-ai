@@ -22,6 +22,7 @@ import {
   type TestTakingAnswers,
 } from "@/features/employee/tests/lib/test-taking-state"
 import { saveTakeSession } from "@/features/employee/tests/lib/take-session"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -255,6 +256,10 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
   if (isSupabase && isStartingAttempt) {
     return (
       <div className="page-shell">
+        <Breadcrumbs
+          className="mb-6"
+          items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
+        />
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
           <Loader2 className="size-8 animate-spin text-primary" />
           <p className="typography-p text-muted-foreground">Starting your test attempt...</p>
@@ -267,6 +272,9 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     return (
       <div className="page-shell">
         <div className="space-y-4">
+          <Breadcrumbs
+            items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
+          />
           <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
             <Link href="/employee/tests">
               <ArrowLeft className="size-4" />
@@ -290,18 +298,17 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     <div className="page-shell">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-            <Link href="/employee/tests">
-              <ArrowLeft className="size-4" />
-              Back to My Tests
-            </Link>
-          </Button>
           <div>
             <h1 className="typography-h1">{test.title}</h1>
             <p className="mt-1 typography-p text-muted-foreground">{test.description}</p>
           </div>
         </div>
       </div>
+
+      <Breadcrumbs
+        className="mt-6"
+        items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
+      />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">

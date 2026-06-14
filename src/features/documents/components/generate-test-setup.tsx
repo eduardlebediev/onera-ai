@@ -27,6 +27,7 @@ import { GenerateTestSummary } from "@/features/documents/components/generate-te
 import { MultiDocumentSelector } from "@/features/documents/components/multi-document-selector"
 import { generateTestFromDocument } from "@/features/tests/lib/generated-test-api-client"
 import { saveGeneratedTestDraft } from "@/features/tests/lib/generated-test-session"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 
 interface GenerateTestSetupProps {
@@ -353,6 +354,15 @@ export function GenerateTestSetup({
           </Button>
         </div>
       </div>
+
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: "Documents", href: "/admin/documents" },
+          { label: document.title, href: `/admin/documents/${routeDocumentId}` },
+          { label: "Generate Test" },
+        ]}
+      />
 
       {generationError ? (
         <div className="mb-6 space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">

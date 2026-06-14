@@ -1,8 +1,6 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 
 import { TestAiFeedback } from "@/features/employee/tests/components/test-ai-feedback"
 import { TestAnswerReview } from "@/features/employee/tests/components/test-answer-review"
@@ -12,7 +10,7 @@ import { TestResultSummary } from "@/features/employee/tests/components/test-res
 import { TestWeakTopics } from "@/features/employee/tests/components/test-weak-topics"
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
 import type { FollowUpTopicStatus } from "@/features/employee/tests/mock/follow-up-questions"
-import { Button } from "@/shared/ui/button"
+import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 
 interface TestResultPageProps {
   result: EmployeeTestResult
@@ -63,14 +61,14 @@ export function TestResultPage({ result }: TestResultPageProps) {
 
   return (
     <div className="page-shell">
-      <div className="mb-6">
-        <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-          <Link href="/employee/tests">
-            <ArrowLeft className="size-4" />
-            Back to My Tests
-          </Link>
-        </Button>
-      </div>
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: "My Tests", href: "/employee/tests" },
+          { label: result.title, href: `/employee/tests/${result.id}/take` },
+          { label: "Result" },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">

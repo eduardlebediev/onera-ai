@@ -533,6 +533,84 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_questions: {
+        Row: {
+          id: string
+          organization_id: string
+          attempt_id: string
+          original_question_id: string
+          question_text: string
+          options: Json
+          correct_answer: Json
+          topic: string
+          explanation_before_question: string
+          explanation_after_answer: string
+          learning_goal: string
+          difficulty: string
+          source_chunk_reference: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          attempt_id: string
+          original_question_id: string
+          question_text: string
+          options?: Json
+          correct_answer?: Json
+          topic: string
+          explanation_before_question: string
+          explanation_after_answer: string
+          learning_goal: string
+          difficulty: string
+          source_chunk_reference?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          attempt_id?: string
+          original_question_id?: string
+          question_text?: string
+          options?: Json
+          correct_answer?: Json
+          topic?: string
+          explanation_before_question?: string
+          explanation_after_answer?: string
+          learning_goal?: string
+          difficulty?: string
+          source_chunk_reference?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      follow_up_answers: {
+        Row: {
+          id: string
+          organization_id: string
+          follow_up_question_id: string
+          user_answer: Json
+          is_correct: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          follow_up_question_id: string
+          user_answer?: Json
+          is_correct: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          follow_up_question_id?: string
+          user_answer?: Json
+          is_correct?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           id: string

@@ -35,6 +35,35 @@ export const FollowUpQuestionOutputSchema = z
 
 export type FollowUpQuestionOutput = z.infer<typeof FollowUpQuestionOutputSchema>
 
+export const FollowUpQuestionPublicOutputSchema = z.object({
+  id: z.string().trim().min(1),
+  originalQuestionId: z.string().trim().min(1),
+  topic: z.string().trim().min(1).max(120),
+  sourceChunkReference: z.string().trim().min(1).max(160),
+  explanationBeforeQuestion: z.string().trim().min(20).max(700),
+  questionText: z.string().trim().min(12).max(500),
+  options: z.array(FollowUpQuestionOptionSchema).length(4),
+  explanationAfterAnswer: z.string().trim().min(20).max(700),
+  learningGoal: z.string().trim().min(8).max(180),
+  difficulty: FollowUpDifficultySchema,
+})
+
+export type FollowUpQuestionPublicOutput = z.infer<typeof FollowUpQuestionPublicOutputSchema>
+
+export const SubmitFollowUpAnswerRequestSchema = z.object({
+  selectedOptionId: z.string().trim().min(1, "selectedOptionId is required"),
+})
+
+export type SubmitFollowUpAnswerRequest = z.infer<typeof SubmitFollowUpAnswerRequestSchema>
+
+export const FollowUpAnswerResultSchema = z.object({
+  isCorrect: z.boolean(),
+  correctOptionId: z.string().trim().min(1),
+  explanationAfterAnswer: z.string().trim().min(1),
+})
+
+export type FollowUpAnswerResult = z.infer<typeof FollowUpAnswerResultSchema>
+
 export const FollowUpQuestionLlmSchema = z.object({
   explanationBeforeQuestion: z.string(),
   questionText: z.string(),

@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Sparkles, XCircle } from "lucide-react"
 import { FollowUpQuestionCard } from "@/features/employee/tests/components/follow-up-question-card"
 import { generateFollowUpQuestionForAnswer } from "@/features/employee/tests/lib/follow-up-question-api-client"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
+import type { PersistedFollowUpState } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
 import {
   getFollowUpQuestionByOriginalQuestionId,
@@ -20,14 +21,49 @@ type FollowUpGenerationState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; followUp: FollowUpQuestion }
+  | {
+      status: "ready"
+      followUp: FollowUpQuestion
+      submittedAnswer?: PersistedFollowUpState["submittedAnswer"]
+    }
 
 interface TestAnswerReviewProps {
   answerReview: AnswerReviewItem[]
   testId: string
   attemptId?: string
   sourceDocumentId: string
+  followUpsByOriginalQuestionId?: Record<string, PersistedFollowUpState>
   onFollowUpComplete: (topic: string, isCorrect: boolean) => void
+}
+
+function buildInitialFollowUpState(
+  answerReview: AnswerReviewItem[],
+  followUpsByOriginalQuestionId?: Record<string, PersistedFollowUpState>
+): {
+  expandedQuestionId: string | null
+  followUpStateByQuestionId: Record<string, FollowUpGenerationState>
+} {
+  if (!followUpsByOriginalQuestionId) {
+    return { expandedQuestionId: null, followUpStateByQuestionId: {} }
+  }
+
+  const followUpStateByQuestionId: Record<string, FollowUpGenerationState> = {}
+  let expandedQuestionId: string | null = null
+
+  for (const item of answerReview) {
+    const persisted = followUpsByOriginalQuestionId[item.questionId]
+
+    if (!persisted) continue
+
+    followUpStateByQuestionId[item.questionId] = {
+      status: "ready",
+      followUp: persisted.followUp,
+      submittedAnswer: persisted.submittedAnswer,
+    }
+    expandedQuestionId = item.questionId
+  }
+
+  return { expandedQuestionId, followUpStateByQuestionId }
 }
 
 export function TestAnswerReview({
@@ -35,12 +71,16 @@ export function TestAnswerReview({
   testId,
   attemptId,
   sourceDocumentId,
+  followUpsByOriginalQuestionId,
   onFollowUpComplete,
 }: TestAnswerReviewProps) {
-  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null)
+  const initialState = buildInitialFollowUpState(answerReview, followUpsByOriginalQuestionId)
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
+    initialState.expandedQuestionId
+  )
   const [followUpStateByQuestionId, setFollowUpStateByQuestionId] = useState<
     Record<string, FollowUpGenerationState>
-  >({})
+  >(initialState.followUpStateByQuestionId)
 
   async function handleFollowUpClick(item: AnswerReviewItem) {
     const currentState = followUpStateByQuestionId[item.questionId]
@@ -87,6 +127,40 @@ export function TestAnswerReview({
     }
   }
 
+  function handleFollowUpSubmitted(
+    questionId: string,
+    answer: {
+      selectedOptionId: string
+      isCorrect: boolean
+      correctOptionId: string
+      explanationAfterAnswer: string
+    }
+  ) {
+    setFollowUpStateByQuestionId((current) => {
+      const existing = current[questionId]
+
+      if (existing?.status !== "ready") {
+        return current
+      }
+
+      return {
+        ...current,
+        [questionId]: {
+          ...existing,
+          submittedAnswer: {
+            selectedOptionId: answer.selectedOptionId,
+            isCorrect: answer.isCorrect,
+          },
+          followUp: {
+            ...existing.followUp,
+            correctOptionId: answer.correctOptionId,
+            explanationAfterAnswer: answer.explanationAfterAnswer,
+          },
+        },
+      }
+    })
+  }
+
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
@@ -107,6 +181,7 @@ export function TestAnswerReview({
             const showFollowUp = !item.isCorrect
             const isFollowUpExpanded = expandedQuestionId === item.questionId
             const followUpState = followUpStateByQuestionId[item.questionId] ?? { status: "idle" }
+            const hasPersistedFollowUp = Boolean(followUpsByOriginalQuestionId?.[item.questionId])
 
             return (
               <li
@@ -173,7 +248,7 @@ export function TestAnswerReview({
                         onClick={() => void handleFollowUpClick(item)}
                       >
                         <Sparkles className="size-4" />
-                        Check understanding
+                        {hasPersistedFollowUp ? "View follow-up" : "Check understanding"}
                       </Button>
                     ) : null}
 
@@ -203,10 +278,13 @@ export function TestAnswerReview({
                     {isFollowUpExpanded && followUpState.status === "ready" ? (
                       <FollowUpQuestionCard
                         followUp={followUpState.followUp}
+                        testId={attemptId ? testId : undefined}
                         sourceDocumentId={sourceDocumentId}
+                        initialSubmittedAnswer={followUpState.submittedAnswer}
                         onComplete={(_topic, isCorrect) =>
                           onFollowUpComplete(item.topic, isCorrect)
                         }
+                        onSubmitted={(answer) => handleFollowUpSubmitted(item.questionId, answer)}
                         onBackToResults={() => setExpandedQuestionId(null)}
                       />
                     ) : null}

@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 43: Adaptive Follow-up Persistence
+
 - Feature Spec 42: Admin Analytics Page + Org-Scoped Reads
 
 - Feature Spec 41: Review Editor Enhancements

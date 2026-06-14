@@ -8,7 +8,14 @@ import {
   isFollowUpQuestionTimeoutError,
 } from "@/features/employee/tests/lib/generate-follow-up-question"
 import {
+  getFollowUpQuestionByAttemptAndOriginalQuestion,
+  insertFollowUpQuestion,
+  mapFollowUpQuestionRowToFollowUp,
+  stripCorrectAnswerFromFollowUp,
+} from "@/features/employee/tests/lib/supabase-employee-follow-ups"
+import {
   FollowUpQuestionOutputSchema,
+  FollowUpQuestionPublicOutputSchema,
   GenerateFollowUpQuestionRequestSchema,
 } from "@/features/employee/tests/schemas/follow-up-question-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
@@ -45,6 +52,18 @@ function formatSourceChunkReference(sourceChunkId: string | null): string {
   return sourceChunkId ? `Chunk (${sourceChunkId.slice(0, 8)}...)` : "Source document"
 }
 
+function toPublicFollowUpResponse(followUp: ReturnType<typeof mapFollowUpQuestionRowToFollowUp>) {
+  const parsed = FollowUpQuestionPublicOutputSchema.safeParse(
+    stripCorrectAnswerFromFollowUp(followUp)
+  )
+
+  if (!parsed.success) {
+    return null
+  }
+
+  return parsed.data
+}
+
 export async function POST(request: Request, { params }: GenerateFollowUpRouteContext) {
   try {
     const employee = await requireEmployeeApiUser()
@@ -75,6 +94,7 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
 
     const supabase = createAdminClient()
     const { attemptId, questionId } = parsedRequest.data
+    const organizationId = employee.membership.organizationId
 
     const { data: attempt, error: attemptError } = await supabase
       .from("test_attempts")
@@ -82,7 +102,7 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
       .eq("id", attemptId)
       .eq("test_id", testId)
       .eq("user_id", employee.userId)
-      .eq("organization_id", employee.membership.organizationId)
+      .eq("organization_id", organizationId)
       .maybeSingle()
 
     if (attemptError) {
@@ -94,6 +114,24 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
       return jsonError("Completed attempt not found", 404)
     }
 
+    const existingFollowUp = await getFollowUpQuestionByAttemptAndOriginalQuestion({
+      attemptId,
+      originalQuestionId: questionId,
+      organizationId,
+    })
+
+    if (existingFollowUp) {
+      const publicResponse = toPublicFollowUpResponse(
+        mapFollowUpQuestionRowToFollowUp(existingFollowUp, false)
+      )
+
+      if (!publicResponse) {
+        return jsonError("Could not load follow-up question", 500)
+      }
+
+      return NextResponse.json(publicResponse)
+    }
+
     const [{ data: answer, error: answerError }, { data: question, error: questionError }] =
       await Promise.all([
         supabase
@@ -101,14 +139,14 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
           .select("is_correct")
           .eq("attempt_id", attemptId)
           .eq("question_id", questionId)
-          .eq("organization_id", employee.membership.organizationId)
+          .eq("organization_id", organizationId)
           .maybeSingle(),
         supabase
           .from("test_questions")
           .select("id, question_text, explanation, topic, source_chunk_id")
           .eq("id", questionId)
           .eq("test_id", testId)
-          .eq("organization_id", employee.membership.organizationId)
+          .eq("organization_id", organizationId)
           .maybeSingle(),
       ])
 
@@ -137,19 +175,35 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
       questionRow.explanation ?? ""
     )
 
-    const response = FollowUpQuestionOutputSchema.safeParse({
+    const validatedGenerated = FollowUpQuestionOutputSchema.safeParse({
       ...generated,
-      id: `follow-up-${questionRow.id}`,
+      id: "pending-follow-up",
       originalQuestionId: questionRow.id,
       topic: questionRow.topic ?? generated.topic,
       sourceChunkReference: formatSourceChunkReference(questionRow.source_chunk_id),
     })
 
-    if (!response.success) {
+    if (!validatedGenerated.success) {
       return jsonError("Could not generate question. Try again.", 502)
     }
 
-    return NextResponse.json(response.data)
+    const persisted = await insertFollowUpQuestion({
+      organizationId,
+      attemptId,
+      originalQuestionId: questionRow.id,
+      generated: validatedGenerated.data,
+      sourceChunkReference: formatSourceChunkReference(questionRow.source_chunk_id),
+    })
+
+    const publicResponse = toPublicFollowUpResponse(
+      mapFollowUpQuestionRowToFollowUp(persisted, false)
+    )
+
+    if (!publicResponse) {
+      return jsonError("Could not save follow-up question", 500)
+    }
+
+    return NextResponse.json(publicResponse)
   } catch (error) {
     if (error instanceof AuthError) {
       return jsonError(error.message, error.status)

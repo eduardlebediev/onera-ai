@@ -2,6 +2,7 @@ import {
   getEmployeeAssignedTestById,
   type EmployeeAssignedTest,
 } from "@/features/employee/tests/mock/employee-tests"
+import type { PersistedFollowUpState } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import {
   getEmployeeTestAttemptByTestId,
   type ResultAiFeedbackRecord,
@@ -47,6 +48,7 @@ export interface EmployeeTestResult {
   answerReview: AnswerReviewItem[]
   weakTopics: ResultWeakTopic[]
   aiFeedback: ResultAiFeedback
+  followUpsByOriginalQuestionId?: Record<string, PersistedFollowUpState>
 }
 
 function buildAnswerReviewItem(question: TestQuestion, employeeAnswer: string): AnswerReviewItem {

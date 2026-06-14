@@ -19,15 +19,32 @@ interface TestResultPageProps {
 }
 
 function buildInitialFollowUpStatus(
-  weakTopics: EmployeeTestResult["weakTopics"]
+  weakTopics: EmployeeTestResult["weakTopics"],
+  followUpsByOriginalQuestionId?: EmployeeTestResult["followUpsByOriginalQuestionId"]
 ): Record<string, FollowUpTopicStatus> {
-  return Object.fromEntries(weakTopics.map((topic) => [topic.topic, "needs_review" as const]))
+  const statusByTopic: Record<string, FollowUpTopicStatus> = Object.fromEntries(
+    weakTopics.map((topic) => [topic.topic, "needs_review" as const])
+  )
+
+  if (!followUpsByOriginalQuestionId) {
+    return statusByTopic
+  }
+
+  for (const persisted of Object.values(followUpsByOriginalQuestionId)) {
+    if (!persisted.submittedAnswer) continue
+
+    statusByTopic[persisted.followUp.topic] = persisted.submittedAnswer.isCorrect
+      ? "topic_understood"
+      : "follow_up_completed"
+  }
+
+  return statusByTopic
 }
 
 export function TestResultPage({ result }: TestResultPageProps) {
   const [followUpStatusByTopic, setFollowUpStatusByTopic] = useState<
     Record<string, FollowUpTopicStatus>
-  >(() => buildInitialFollowUpStatus(result.weakTopics))
+  >(() => buildInitialFollowUpStatus(result.weakTopics, result.followUpsByOriginalQuestionId))
 
   const handleFollowUpComplete = useCallback((topic: string, isCorrect: boolean) => {
     setFollowUpStatusByTopic((current) => ({
@@ -74,6 +91,7 @@ export function TestResultPage({ result }: TestResultPageProps) {
             testId={result.id}
             attemptId={result.attemptId}
             sourceDocumentId={result.sourceDocumentId}
+            followUpsByOriginalQuestionId={result.followUpsByOriginalQuestionId}
             onFollowUpComplete={handleFollowUpComplete}
           />
 

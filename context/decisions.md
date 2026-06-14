@@ -1,5 +1,9 @@
 # Decisions
 
+## 062 — Follow-up questions and answers persist per attempt
+
+Adaptive follow-ups are stored in `follow_up_questions` and `follow_up_answers`, keyed by `(attempt_id, original_question_id)` with one answer per follow-up. Generate persists after successful AI validation and returns a public payload without `correctOptionId`; answer validates ownership, persists once, and returns correctness plus explanation. Result loaders hydrate persisted follow-ups so reload restores generated and answered state.
+
 ## 061 — Admin analytics reads require explicit organization scope
 
 Admin dashboard, analytics, and test-progress helpers use the server-only Supabase admin client but must receive `organizationId` from `requireAdminUser()` and filter every org-owned query with `.eq("organization_id", organizationId)`. Missing organization scope throws instead of returning cross-org data.

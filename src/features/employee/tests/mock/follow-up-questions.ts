@@ -15,7 +15,7 @@ export interface FollowUpQuestion {
   explanationBeforeQuestion: string
   questionText: string
   options: FollowUpQuestionOption[]
-  correctOptionId: string
+  correctOptionId?: string
   explanationAfterAnswer: string
   learningGoal: string
   difficulty: FollowUpDifficulty

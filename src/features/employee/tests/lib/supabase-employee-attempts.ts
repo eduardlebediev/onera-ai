@@ -5,6 +5,7 @@ import {
   generateAttemptFeedbackBestEffort,
   type AttemptFeedbackAnswerInput,
 } from "@/features/employee/tests/lib/generate-attempt-feedback"
+import { getPersistedFollowUpsForAttempt } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import { gradeOpenQuestionAnswer } from "@/features/employee/tests/lib/grade-open-question"
 import {
   parseAttemptFeedbackEnvelope,
@@ -850,6 +851,11 @@ export async function getPersistedEmployeeTestResult(
   const timeSpentMinutes =
     startedAt && completedAt ? Math.max(1, Math.round((completedAt - startedAt) / 60000)) : 10
 
+  const followUpsByOriginalQuestionId = await getPersistedFollowUpsForAttempt(
+    attemptId,
+    organizationId
+  )
+
   return {
     id: testId,
     attemptId: attempt.id,
@@ -875,6 +881,7 @@ export async function getPersistedEmployeeTestResult(
       passed,
       answerReview
     ),
+    followUpsByOriginalQuestionId,
   }
 }
 

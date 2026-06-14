@@ -13,6 +13,7 @@ interface FollowUpAnswerFeedbackProps {
   sourceDocumentId: string
   onTryAnother: () => void
   onBackToResults: () => void
+  showTryAgain?: boolean
 }
 
 function formatDifficulty(difficulty: FollowUpQuestion["difficulty"]): string {
@@ -25,6 +26,7 @@ export function FollowUpAnswerFeedback({
   sourceDocumentId,
   onTryAnother,
   onBackToResults,
+  showTryAgain = true,
 }: FollowUpAnswerFeedbackProps) {
   const correctOption = followUp.options.find((option) => option.id === followUp.correctOptionId)
   const StatusIcon = isCorrect ? CheckCircle2 : XCircle
@@ -75,10 +77,12 @@ export function FollowUpAnswerFeedback({
           <ArrowLeft className="size-4" />
           Back to results
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onTryAnother}>
-          <RotateCcw className="size-4" />
-          Try again
-        </Button>
+        {showTryAgain ? (
+          <Button type="button" variant="outline" size="sm" onClick={onTryAnother}>
+            <RotateCcw className="size-4" />
+            Try again
+          </Button>
+        ) : null}
       </div>
     </div>
   )

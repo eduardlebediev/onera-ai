@@ -4,6 +4,43 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 43: Adaptive Follow-up Persistence
+
+**Branch:** `43-adaptive-follow-up-persistence`
+
+Persisted AI-generated follow-up questions and employee answers so follow-up state survives page reload.
+
+### Database
+
+- Added idempotent migration `00009_adaptive_follow_up_persistence.sql` with `follow_up_questions` and `follow_up_answers` tables, unique `(attempt_id, original_question_id)`, and org-scoped RLS policies aligned with `test_answers`.
+
+### API
+
+- Updated `POST /api/employee/tests/[id]/follow-up` to return existing persisted follow-ups or generate, validate, persist, and respond without `correctOptionId`.
+- Added `POST /api/employee/tests/[id]/follow-up/[followUpId]/answer` to validate option selection, persist one answer, and return stored results on duplicate submit.
+
+### Result Hydration
+
+- Extended `getPersistedEmployeeTestResult()` with `followUpsByOriginalQuestionId`.
+- Result page components restore follow-up cards, submitted feedback, and weak-topic status after reload.
+
+### UI
+
+- `FollowUpQuestionCard` submits through the answer API for Supabase attempts and keeps mock-local grading for demo tests.
+- `TestAnswerReview` hydrates persisted follow-ups and preserves in-session submitted state.
+
+### Review Fixes
+
+- Replaced invalid Zod `.omit()` on refined schema with explicit public output schema.
+- Added duplicate-submit race handling on follow-up answer insert.
+- Synced local follow-up state after submit so collapse/re-expand preserves answered feedback.
+
+### Verification
+
+- `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+---
+
 ## Feature Spec 42: Admin Analytics Page + Org-Scoped Reads
 
 **Branch:** `feature/42-admin-analytics-and-org-scoping`

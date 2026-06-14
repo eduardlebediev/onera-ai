@@ -7,45 +7,104 @@ import {
   FollowUpAnswerFeedback,
   FollowUpQuestionMeta,
 } from "@/features/employee/tests/components/follow-up-answer-feedback"
+import { submitFollowUpAnswerForQuestion } from "@/features/employee/tests/lib/follow-up-question-api-client"
+import type { PersistedFollowUpAnswer } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/lib/utils"
 
 interface FollowUpQuestionCardProps {
   followUp: FollowUpQuestion
+  testId?: string
   sourceDocumentId: string
+  initialSubmittedAnswer?: PersistedFollowUpAnswer
   onComplete: (topic: string, isCorrect: boolean) => void
   onBackToResults: () => void
+  onSubmitted?: (answer: {
+    selectedOptionId: string
+    isCorrect: boolean
+    correctOptionId: string
+    explanationAfterAnswer: string
+  }) => void
 }
 
 export function FollowUpQuestionCard({
   followUp,
+  testId,
   sourceDocumentId,
+  initialSubmittedAnswer,
   onComplete,
   onBackToResults,
+  onSubmitted,
 }: FollowUpQuestionCardProps) {
-  const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>()
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isCorrect, setIsCorrect] = useState(false)
+  const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>(
+    initialSubmittedAnswer?.selectedOptionId
+  )
+  const [isSubmitted, setIsSubmitted] = useState(Boolean(initialSubmittedAnswer))
+  const [isCorrect, setIsCorrect] = useState(initialSubmittedAnswer?.isCorrect ?? false)
   const [isChecking, setIsChecking] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [resolvedFollowUp, setResolvedFollowUp] = useState<FollowUpQuestion>(followUp)
 
-  function handleSubmit() {
-    if (!selectedOptionId || isChecking) return
+  async function handleSubmit() {
+    if (!selectedOptionId || isChecking || isSubmitted) return
+
+    if (!testId) {
+      setIsChecking(true)
+      window.setTimeout(() => {
+        const correct = selectedOptionId === followUp.correctOptionId
+        setIsCorrect(correct)
+        setIsSubmitted(true)
+        onComplete(followUp.topic, correct)
+        onSubmitted?.({
+          selectedOptionId,
+          isCorrect: correct,
+          correctOptionId: followUp.correctOptionId ?? selectedOptionId,
+          explanationAfterAnswer: followUp.explanationAfterAnswer,
+        })
+        setIsChecking(false)
+      }, 600)
+      return
+    }
 
     setIsChecking(true)
-    window.setTimeout(() => {
-      const correct = selectedOptionId === followUp.correctOptionId
-      setIsCorrect(correct)
+    setSubmitError(null)
+
+    try {
+      const result = await submitFollowUpAnswerForQuestion(testId, followUp.id, selectedOptionId)
+
+      setResolvedFollowUp((current) => ({
+        ...current,
+        correctOptionId: result.correctOptionId,
+        explanationAfterAnswer: result.explanationAfterAnswer,
+      }))
+      setIsCorrect(result.isCorrect)
       setIsSubmitted(true)
-      onComplete(followUp.topic, correct)
+      onComplete(followUp.topic, result.isCorrect)
+      onSubmitted?.({
+        selectedOptionId,
+        isCorrect: result.isCorrect,
+        correctOptionId: result.correctOptionId,
+        explanationAfterAnswer: result.explanationAfterAnswer,
+      })
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Could not submit follow-up answer. Try again."
+      )
+    } finally {
       setIsChecking(false)
-    }, 600)
+    }
   }
 
   function handleTryAnother() {
+    if (testId) {
+      return
+    }
+
     setSelectedOptionId(undefined)
     setIsSubmitted(false)
     setIsCorrect(false)
+    setSubmitError(null)
   }
 
   return (
@@ -57,31 +116,32 @@ export function FollowUpQuestionCard({
 
       <div className="space-y-2 rounded-lg border border-border/60 bg-background/80 p-4">
         <p className="typography-label text-muted-foreground">What you missed</p>
-        <p className="typography-small">{followUp.explanationBeforeQuestion}</p>
+        <p className="typography-small">{resolvedFollowUp.explanationBeforeQuestion}</p>
       </div>
 
       {isSubmitted ? (
         <FollowUpAnswerFeedback
-          followUp={followUp}
+          followUp={resolvedFollowUp}
           isCorrect={isCorrect}
           sourceDocumentId={sourceDocumentId}
           onTryAnother={handleTryAnother}
           onBackToResults={onBackToResults}
+          showTryAgain={!testId}
         />
       ) : (
         <>
-          <FollowUpQuestionMeta followUp={followUp} />
+          <FollowUpQuestionMeta followUp={resolvedFollowUp} />
 
           <div className="space-y-2">
-            <p className="text-sm font-medium">{followUp.questionText}</p>
+            <p className="text-sm font-medium">{resolvedFollowUp.questionText}</p>
             <p className="flex items-start gap-1.5 typography-small text-muted-foreground">
               <FileText className="mt-0.5 size-3.5 shrink-0" />
-              <span>Source: {followUp.sourceChunkReference}</span>
+              <span>Source: {resolvedFollowUp.sourceChunkReference}</span>
             </p>
           </div>
 
           <div className="space-y-2" role="radiogroup" aria-label="Follow-up answer options">
-            {followUp.options.map((option) => {
+            {resolvedFollowUp.options.map((option) => {
               const isSelected = selectedOptionId === option.id
 
               return (
@@ -115,11 +175,13 @@ export function FollowUpQuestionCard({
             })}
           </div>
 
+          {submitError ? <p className="typography-small text-destructive">{submitError}</p> : null}
+
           <Button
             type="button"
             size="sm"
             disabled={!selectedOptionId || isChecking}
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
           >
             {isChecking ? (
               <>

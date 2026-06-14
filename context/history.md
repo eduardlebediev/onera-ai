@@ -4,6 +4,61 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 45: Test Lifecycle Management
+
+**Branch:** `feature/45-test-lifecycle-management`
+
+Added admin lifecycle management for saved tests, including metadata edits, archive, restore, protected delete behavior, archived list visibility, and assignment protections.
+
+### Database
+
+- Added `supabase/migrations/00010_test_lifecycle_tombstones.sql` with `tests.deleted_at`, `deleted_by`, and `deletion_reason`, plus `status = deleted` for archived-test tombstones.
+- Applied the migration to the configured Supabase project and verified the new columns exist.
+
+### API and Server Logic
+
+- Added `PATCH /api/admin/tests/[id]` for org-scoped metadata updates: title, description, difficulty, passing score, and target role.
+- Added `POST /api/admin/tests/[id]/archive` and `POST /api/admin/tests/[id]/restore`; archive is idempotent, restore keeps source-invalid tests inactive.
+- Added `DELETE /api/admin/tests/[id]`; draft/review tests without attempts hard-delete, published tests return `409`, and archived tests with attempts are tombstoned.
+- Tightened saved-test list, detail, and assignment loaders to filter by organization and hide `deleted` tombstones from admin lifecycle pages.
+
+### UI
+
+- Added saved-test detail actions for inline metadata editing, archive confirmation with lifecycle impact summary, one-click restore feedback, and strong delete confirmation.
+- Kept archived tests visible in the admin tests filter/badges while blocking archived or inactive tests from assignment.
+
+### Review Fixes
+
+- Prevented restore from reactivating tests whose source document validity is blocking.
+- Switched lifecycle confirmation impact to exact server-computed counts instead of approximate assignment-summary counts.
+
+### Verification
+
+- `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+### Context
+
+- Updated `context/architecture.md`, `context/decisions.md`, and `context/progress-tracker.md`.
+
+### Files changed
+
+- `supabase/migrations/00010_test_lifecycle_tombstones.sql`
+- `src/app/api/admin/tests/[id]/route.ts`
+- `src/app/api/admin/tests/[id]/archive/route.ts`
+- `src/app/api/admin/tests/[id]/restore/route.ts`
+- `src/features/tests/lib/test-lifecycle.ts`
+- `src/features/tests/lib/test-lifecycle-api-client.ts`
+- `src/features/tests/schemas/test-lifecycle-schema.ts`
+- `src/features/tests/components/saved-test-lifecycle-actions.tsx`
+- `src/features/tests/components/saved-test-detail-page.tsx`
+- `src/features/tests/lib/supabase-tests.ts`
+- `src/features/tests/lib/supabase-test-detail.ts`
+- `src/features/tests/lib/supabase-assignments.ts`
+- `src/lib/supabase/types.ts`
+- `context/architecture.md`, `context/decisions.md`, `context/progress-tracker.md`, `context/history.md`
+
+---
+
 ## Feature Spec 44: Employee Progress Page
 
 **Branch:** `feature/44-employee-progress-page`

@@ -1,5 +1,9 @@
 # Decisions
 
+## 063 — Archived tests with attempts are tombstoned on delete
+
+Draft/review tests without attempts can be hard-deleted. Published tests cannot be deleted directly. Archived tests with attempts are marked `status = deleted`, inactive, and retain delete audit metadata so employee history and completed results remain available without showing the test in admin lifecycle lists.
+
 ## 062 — Follow-up questions and answers persist per attempt
 
 Adaptive follow-ups are stored in `follow_up_questions` and `follow_up_answers`, keyed by `(attempt_id, original_question_id)` with one answer per follow-up. Generate persists after successful AI validation and returns a public payload without `correctOptionId`; answer validates ownership, persists once, and returns correctness plus explanation. Result loaders hydrate persisted follow-ups so reload restores generated and answered state.

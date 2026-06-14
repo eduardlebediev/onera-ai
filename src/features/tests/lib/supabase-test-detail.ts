@@ -46,6 +46,8 @@ export type SavedTestDetail = {
   isActive: boolean
   sourceValidity: string
   sourceInvalidReason: string | null
+  deletedAt: string | null
+  deletionReason: string | null
   sourceDocumentId: string | null
   sourceDocumentTitle: string | null
   sourceDocumentVersionNumber: number | null
@@ -91,15 +93,20 @@ function parseCorrectAnswer(value: Json): { optionIds: string[] } {
   return { optionIds: [] }
 }
 
-export async function getSavedTestDetailById(testId: string): Promise<SavedTestDetail | null> {
+export async function getSavedTestDetailById(
+  testId: string,
+  organizationId: string
+): Promise<SavedTestDetail | null> {
   const supabase = createAdminClient()
 
   const { data: test, error: testError } = await supabase
     .from("tests")
     .select(
-      "id, title, description, status, difficulty, language, target_role, passing_score, question_count, published_at, source_document_id, is_active, source_validity, source_invalid_reason"
+      "id, title, description, status, difficulty, language, target_role, passing_score, question_count, published_at, source_document_id, is_active, source_validity, source_invalid_reason, deleted_at, deletion_reason"
     )
     .eq("id", testId)
+    .eq("organization_id", organizationId)
+    .neq("status", "deleted")
     .maybeSingle()
 
   if (testError) {
@@ -202,6 +209,8 @@ export async function getSavedTestDetailById(testId: string): Promise<SavedTestD
     isActive: test.is_active ?? true,
     sourceValidity: test.source_validity ?? "valid",
     sourceInvalidReason: test.source_invalid_reason,
+    deletedAt: test.deleted_at,
+    deletionReason: test.deletion_reason,
     sourceDocumentId,
     sourceDocumentTitle,
     sourceDocumentVersionNumber,

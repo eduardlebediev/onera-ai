@@ -12,6 +12,7 @@ export type TestsListResult = {
 
 type TestRow = {
   id: string
+  organization_id: string
   title: string
   description: string | null
   status: string
@@ -40,7 +41,7 @@ type SupabaseQueryError = {
 }
 
 const LEGACY_TEST_SELECT =
-  "id, title, description, status, difficulty, language, target_role, question_count, passing_score, source_document_id, published_at, created_at"
+  "id, organization_id, title, description, status, difficulty, language, target_role, question_count, passing_score, source_document_id, published_at, created_at"
 
 const TEST_SELECT = `${LEGACY_TEST_SELECT}, is_active, source_validity, source_invalid_reason`
 
@@ -158,12 +159,14 @@ function mapTestRowToListItem(
   }
 }
 
-export async function getTestsFromSupabase(): Promise<TestsListResult> {
+export async function getTestsFromSupabase(organizationId: string): Promise<TestsListResult> {
   const supabase = createAdminClient()
 
   const { data: tests, error } = await supabase
     .from("tests")
     .select(TEST_SELECT)
+    .eq("organization_id", organizationId)
+    .neq("status", "deleted")
     .order("created_at", { ascending: false })
 
   let testRows = normalizeTestRows(tests as unknown[] | null)
@@ -174,13 +177,16 @@ export async function getTestsFromSupabase(): Promise<TestsListResult> {
     const { data: legacyTests, error: legacyError } = await supabase
       .from("tests")
       .select(LEGACY_TEST_SELECT)
+      .eq("organization_id", organizationId)
       .order("created_at", { ascending: false })
 
     if (legacyError) {
       throw new Error(`Failed to fetch tests: ${legacyError.message}`)
     }
 
-    testRows = normalizeTestRows(legacyTests as unknown[] | null)
+    testRows = normalizeTestRows(legacyTests as unknown[] | null).filter(
+      (test) => test.status !== "deleted"
+    )
   } else if (error) {
     throw new Error(`Failed to fetch tests: ${error.message}`)
   }

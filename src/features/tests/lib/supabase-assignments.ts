@@ -235,16 +235,22 @@ function mapTestRowToResolvedTest(
   }
 }
 
-async function getTestRowById(testId: string): Promise<TestRow | null> {
+async function getTestRowById(testId: string, organizationId?: string): Promise<TestRow | null> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("tests")
     .select(
       "id, organization_id, source_document_id, title, description, status, difficulty, language, target_role, question_count, passing_score, published_at, created_at, is_active, source_validity, source_invalid_reason"
     )
     .eq("id", testId)
-    .maybeSingle()
+    .neq("status", "deleted")
+
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId)
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   if (error) {
     throw new Error(`Failed to fetch test: ${error.message}`)
@@ -271,14 +277,22 @@ async function getSourceDocument(documentId: string | null): Promise<DocumentRow
   return data as DocumentRow | null
 }
 
-async function getAssignmentsForTest(testId: string): Promise<AssignmentRow[]> {
+async function getAssignmentsForTest(
+  testId: string,
+  organizationId?: string
+): Promise<AssignmentRow[]> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("test_assignments")
     .select("id, user_id, status, deadline")
     .eq("test_id", testId)
-    .order("created_at", { ascending: false })
+
+  if (organizationId) {
+    query = query.eq("organization_id", organizationId)
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false })
 
   if (error) {
     throw new Error(`Failed to fetch assignments: ${error.message}`)
@@ -349,9 +363,10 @@ function mapMemberToEmployee(
 }
 
 export async function getSupabaseAssignPageData(
-  testId: string
+  testId: string,
+  organizationId: string
 ): Promise<SupabaseAssignPageData | null> {
-  const test = await getTestRowById(testId)
+  const test = await getTestRowById(testId, organizationId)
 
   if (!test) {
     return null
@@ -359,8 +374,8 @@ export async function getSupabaseAssignPageData(
 
   const [sourceDocument, assignments, members] = await Promise.all([
     getSourceDocument(test.source_document_id),
-    getAssignmentsForTest(test.id),
-    getActiveEmployeeMembers(test.organization_id),
+    getAssignmentsForTest(test.id, organizationId),
+    getActiveEmployeeMembers(organizationId),
   ])
   const assignmentSummary = summarizeAssignments(assignments)
   const profilesById = await getProfilesById(
@@ -383,11 +398,14 @@ export async function getSupabaseAssignPageData(
   }
 }
 
-export async function getSupabaseAssignmentSummaryByTestId(testId: string): Promise<{
+export async function getSupabaseAssignmentSummaryByTestId(
+  testId: string,
+  organizationId: string
+): Promise<{
   summary: SupabaseAssignmentSummary
   employees: SupabaseAssignedEmployee[]
 }> {
-  const assignments = await getAssignmentsForTest(testId)
+  const assignments = await getAssignmentsForTest(testId, organizationId)
   const profilesById = await getProfilesById(assignments.map((assignment) => assignment.user_id))
 
   return {

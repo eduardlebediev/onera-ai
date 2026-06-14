@@ -197,11 +197,14 @@ Fields:
 - question_count
 - passing_score
 - language — en | de
-- status — draft | review | published | archived
+- status — draft | review | published | archived | deleted
 - is_active — whether the test can be assigned or started
 - source_validity — valid | outdated | source_archived | source_deleted | needs_review
 - source_invalid_reason
 - source_invalid_at
+- deleted_at
+- deleted_by
+- deletion_reason
 - created_by
 - created_at
 - updated_at

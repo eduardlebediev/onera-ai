@@ -7,6 +7,7 @@ import { TestDetailPage } from "@/features/tests/components/test-detail-page"
 import { getSupabaseAssignmentSummaryByTestId } from "@/features/tests/lib/supabase-assignments"
 import { getSavedTestDetailById } from "@/features/tests/lib/supabase-test-detail"
 import { getSupabaseTestProgress } from "@/features/tests/lib/supabase-test-progress"
+import { getTestLifecycleImpact } from "@/features/tests/lib/test-lifecycle"
 import { getResolvedMockTestById } from "@/features/tests/lib/test-source-document"
 import { mockTests } from "@/features/tests/mock/tests"
 
@@ -32,7 +33,7 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
   let savedTest = null
 
   try {
-    savedTest = await getSavedTestDetailById(id)
+    savedTest = await getSavedTestDetailById(id, organizationId)
   } catch (error) {
     console.error(`Failed to load saved test ${id} from Supabase:`, error)
     notFound()
@@ -42,12 +43,13 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
     notFound()
   }
 
-  const [assignments, progress] = await Promise.all([
-    getSupabaseAssignmentSummaryByTestId(savedTest.id),
+  const [assignments, progress, lifecycleImpact] = await Promise.all([
+    getSupabaseAssignmentSummaryByTestId(savedTest.id, organizationId),
     getSupabaseTestProgress(savedTest.id, organizationId).catch((error) => {
       console.error(`Failed to load test progress for ${savedTest.id}:`, error)
       return null
     }),
+    getTestLifecycleImpact({ testId: savedTest.id, organizationId }),
   ])
 
   const assignedEmployees =
@@ -72,6 +74,7 @@ export default async function TestDetailRoute({ params }: TestDetailRouteProps) 
       assignmentSummary={assignments.summary}
       assignedEmployees={assignedEmployees}
       results={progress?.results}
+      lifecycleImpact={lifecycleImpact}
     />
   )
 }

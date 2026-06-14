@@ -282,6 +282,9 @@ export type Database = {
           source_validity: string
           source_invalid_reason: string | null
           source_invalid_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -303,6 +306,9 @@ export type Database = {
           source_validity?: string
           source_invalid_reason?: string | null
           source_invalid_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -324,6 +330,9 @@ export type Database = {
           source_validity?: string
           source_invalid_reason?: string | null
           source_invalid_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           created_at?: string
           updated_at?: string
         }

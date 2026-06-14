@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { AssignEmployeesPage } from "@/features/tests/components/assign-employees-page"
 import { AssignNotPublished } from "@/features/tests/components/assign-not-published"
@@ -30,7 +31,8 @@ export default async function AssignTestRoute({ params }: AssignTestRouteProps) 
     notFound()
   }
 
-  const data = await getSupabaseAssignPageData(id)
+  const user = await requireAdminUser()
+  const data = await getSupabaseAssignPageData(id, user.membership.organizationId)
 
   if (!data) {
     notFound()

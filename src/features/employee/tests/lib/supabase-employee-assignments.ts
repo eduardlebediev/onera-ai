@@ -1,11 +1,11 @@
 import "server-only"
 
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import type { TestAssignmentStatus, MockEmployee } from "@/features/tests/mock/employees"
 import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-import { getLatestCompletedAttemptIdForAssignment } from "./supabase-employee-attempts"
 import { getEmployeeCompletedAttemptStats } from "./supabase-employee-progress"
 
 type AssignmentRow = {
@@ -24,6 +24,7 @@ type TestRow = {
   difficulty: string
   question_count: number | null
   passing_score: number
+  max_attempts: number
   status: string
   is_active: boolean
   source_validity: string
@@ -150,7 +151,7 @@ async function getTestsById(testIds: string[]): Promise<Map<string, TestRow>> {
   const { data, error } = await supabase
     .from("tests")
     .select(
-      "id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity, source_invalid_reason"
+      "id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity, source_invalid_reason"
     )
     .in("id", testIds)
 
@@ -173,6 +174,29 @@ async function getDocumentsById(documentIds: string[]): Promise<Map<string, Docu
   }
 
   return new Map(((data ?? []) as DocumentRow[]).map((document) => [document.id, document]))
+}
+
+async function getCompletedAttemptRows(input: {
+  userId: string
+  testId: string
+  organizationId: string
+}): Promise<Array<{ id: string; score: number | null; passed: boolean | null }>> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("test_attempts")
+    .select("id, score, passed")
+    .eq("user_id", input.userId)
+    .eq("test_id", input.testId)
+    .eq("organization_id", input.organizationId)
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
+
+  if (error) {
+    throw new Error(`Failed to fetch completed attempts: ${error.message}`)
+  }
+
+  return (data ?? []) as Array<{ id: string; score: number | null; passed: boolean | null }>
 }
 
 export async function getSupabaseEmployeeAssignments(
@@ -224,19 +248,34 @@ export async function getSupabaseEmployeeAssignments(
         let score: number | null = null
         let passed: boolean | null = null
         let latestAttemptId: string | undefined
+        let attemptCount = 0
 
         if (status === "completed" || status === "failed") {
-          const latestAttempt = await getLatestCompletedAttemptIdForAssignment(
+          const completedAttempts = await getCompletedAttemptRows({
             userId,
-            test.id,
-            organizationId
-          )
+            testId: test.id,
+            organizationId,
+          })
+          const latestAttempt = completedAttempts[0]
+          attemptCount = completedAttempts.length
+
           if (latestAttempt) {
             score = latestAttempt.score
             passed = latestAttempt.passed
-            latestAttemptId = latestAttempt.attemptId
+            latestAttemptId = latestAttempt.id
           }
         }
+
+        const testIsActive = test.is_active ?? true
+        const sourceValidity = test.source_validity ?? "valid"
+        const maxAttempts = test.max_attempts ?? 3
+        const testCanBeTaken = isTestAssignable({
+          status: test.status,
+          isActive: testIsActive,
+          sourceValidity,
+        })
+        const canRetake =
+          status === "failed" && passed === false && attemptCount < maxAttempts && testCanBeTaken
 
         return {
           assignmentId: assignment.id,
@@ -253,10 +292,13 @@ export async function getSupabaseEmployeeAssignments(
           estimatedMinutes: getEstimatedMinutes(questionCount),
           score,
           passed,
+          attemptCount,
+          maxAttempts,
+          canRetake,
           required: true,
           progressPercent: getProgressPercent(status),
-          testIsActive: test.is_active ?? true,
-          sourceValidity: test.source_validity ?? "valid",
+          testIsActive,
+          sourceValidity,
           sourceInvalidReason: test.source_invalid_reason,
         } satisfies EmployeeAssignedTest
       })

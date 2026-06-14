@@ -18,11 +18,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
-import {
-  getAssignmentForEmployee,
-  isAssignmentFinished,
-  isAssignmentTakeable,
-} from "./supabase-employee-tests"
+import { getAssignmentForEmployee, isAssignmentTakeable } from "./supabase-employee-tests"
 
 export type StartAttemptResult = {
   attemptId: string
@@ -54,6 +50,15 @@ type AttemptRow = {
   ai_feedback: string | null
   started_at: string | null
   completed_at: string | null
+}
+
+type TestAttemptPolicyRow = {
+  id: string
+  organization_id: string
+  status: string
+  is_active: boolean | null
+  source_validity: string | null
+  max_attempts: number | null
 }
 
 type QuestionScoringRow = {
@@ -342,6 +347,28 @@ async function getActiveAttempt(userId: string, testId: string): Promise<Attempt
   return data as AttemptRow | null
 }
 
+async function getCompletedAttemptCount(input: {
+  userId: string
+  testId: string
+  organizationId: string
+}): Promise<number> {
+  const supabase = createAdminClient()
+
+  const { count, error } = await supabase
+    .from("test_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", input.userId)
+    .eq("test_id", input.testId)
+    .eq("organization_id", input.organizationId)
+    .eq("status", "completed")
+
+  if (error) {
+    throw new Error(`Failed to count completed attempts: ${error.message}`)
+  }
+
+  return count ?? 0
+}
+
 async function getAttemptById(attemptId: string): Promise<AttemptRow | null> {
   const supabase = createAdminClient()
 
@@ -360,22 +387,11 @@ async function getAttemptById(attemptId: string): Promise<AttemptRow | null> {
   return data as AttemptRow | null
 }
 
-async function getExistingAnswerCount(attemptId: string): Promise<number> {
-  const supabase = createAdminClient()
-
-  const { count, error } = await supabase
-    .from("test_answers")
-    .select("id", { count: "exact", head: true })
-    .eq("attempt_id", attemptId)
-
-  if (error) {
-    throw new Error(`Failed to check existing answers: ${error.message}`)
-  }
-
-  return count ?? 0
-}
-
-export type StartAttemptErrorCode = "not_found" | "assignment_finished" | "test_inactive"
+export type StartAttemptErrorCode =
+  | "not_found"
+  | "assignment_finished"
+  | "test_inactive"
+  | "max_attempts_reached"
 
 export class StartAttemptError extends Error {
   constructor(
@@ -395,11 +411,11 @@ export async function startEmployeeTestAttempt(
   const assignment = await getAssignmentForEmployee(testId, userId, organizationId)
   if (!assignment) return null
 
-  if (isAssignmentFinished(assignment.status)) {
-    throw new StartAttemptError("Assignment is already completed", "assignment_finished")
+  if (assignment.status === "completed") {
+    throw new StartAttemptError("Passed assignments cannot be retaken", "assignment_finished")
   }
 
-  if (!isAssignmentTakeable(assignment.status)) {
+  if (!isAssignmentTakeable(assignment.status) && assignment.status !== "failed") {
     return null
   }
 
@@ -407,7 +423,7 @@ export async function startEmployeeTestAttempt(
 
   const { data: test, error: testError } = await supabase
     .from("tests")
-    .select("id, organization_id, status, is_active, source_validity")
+    .select("id, organization_id, status, is_active, source_validity, max_attempts")
     .eq("id", testId)
     .eq("organization_id", organizationId)
     .maybeSingle()
@@ -416,14 +432,15 @@ export async function startEmployeeTestAttempt(
     throw new Error(`Failed to fetch test: ${testError.message}`)
   }
 
-  if (!test || test.status !== "published") return null
+  const testRow = test as TestAttemptPolicyRow | null
+  if (!testRow || testRow.status !== "published") return null
 
-  const isActive = test.is_active ?? true
-  const sourceValidity = test.source_validity ?? "valid"
+  const isActive = testRow.is_active ?? true
+  const sourceValidity = testRow.source_validity ?? "valid"
 
   if (
     !isTestAssignable({
-      status: test.status,
+      status: testRow.status,
       isActive,
       sourceValidity,
     })
@@ -431,12 +448,33 @@ export async function startEmployeeTestAttempt(
     throw new StartAttemptError(INACTIVE_TEST_START_MESSAGE, "test_inactive")
   }
 
-  if (assignment.status === "not_started") {
+  const existingAttempt = await getActiveAttempt(userId, testId)
+  if (existingAttempt) {
+    return { attemptId: existingAttempt.id, testId }
+  }
+
+  if (assignment.status === "failed") {
+    const completedAttemptCount = await getCompletedAttemptCount({
+      userId,
+      testId,
+      organizationId,
+    })
+    const maxAttempts = testRow.max_attempts ?? 3
+
+    if (completedAttemptCount >= maxAttempts) {
+      throw new StartAttemptError(
+        `Maximum attempts reached (${maxAttempts}). Review your latest result instead.`,
+        "max_attempts_reached"
+      )
+    }
+  }
+
+  if (assignment.status === "not_started" || assignment.status === "failed") {
     const { data: updatedAssignment, error: assignmentUpdateError } = await supabase
       .from("test_assignments")
       .update({ status: "in_progress" })
       .eq("id", assignment.id)
-      .eq("status", "not_started")
+      .in("status", ["not_started", "failed"])
       .select("id")
       .maybeSingle()
 
@@ -451,19 +489,14 @@ export async function startEmployeeTestAttempt(
         return null
       }
 
-      if (isAssignmentFinished(latestAssignment.status)) {
-        throw new StartAttemptError("Assignment is already completed", "assignment_finished")
+      if (latestAssignment.status === "completed") {
+        throw new StartAttemptError("Passed assignments cannot be retaken", "assignment_finished")
       }
 
-      if (!isAssignmentTakeable(latestAssignment.status)) {
+      if (!isAssignmentTakeable(latestAssignment.status) && latestAssignment.status !== "failed") {
         return null
       }
     }
-  }
-
-  const existingAttempt = await getActiveAttempt(userId, testId)
-  if (existingAttempt) {
-    return { attemptId: existingAttempt.id, testId }
   }
 
   const now = new Date().toISOString()
@@ -471,7 +504,7 @@ export async function startEmployeeTestAttempt(
   const { data: newAttempt, error: insertError } = await supabase
     .from("test_attempts")
     .insert({
-      organization_id: test.organization_id,
+      organization_id: testRow.organization_id,
       test_id: testId,
       user_id: userId,
       assignment_id: assignment.id,
@@ -636,14 +669,7 @@ export async function submitEmployeeTestAttempt(input: {
   const passed = score >= testMeta.passing_score
   const now = new Date().toISOString()
 
-  const existingAnswerCount = await getExistingAnswerCount(attempt.id)
-  if (existingAnswerCount > 0) {
-    throw new SubmitAttemptError("Attempt is already completed", "already_completed")
-  }
-
-  const answerInserts = scoredAnswers.map((item) => ({
-    organization_id: attempt.organization_id,
-    attempt_id: attempt.id,
+  const answerPayload = scoredAnswers.map((item) => ({
     question_id: item.question.id,
     user_answer:
       item.question.question_type === "open_question"
@@ -656,46 +682,30 @@ export async function submitEmployeeTestAttempt(input: {
     is_correct: item.isCorrect,
   }))
 
-  const { error: answersInsertError } = await supabase.from("test_answers").insert(answerInserts)
-
-  if (answersInsertError) {
-    throw new Error(`Failed to save test answers: ${answersInsertError.message}`)
-  }
-
-  const { data: completedAttempt, error: attemptUpdateError } = await supabase
-    .from("test_attempts")
-    .update({
-      status: "completed",
-      score,
-      passed,
-      completed_at: now,
-    })
-    .eq("id", attempt.id)
-    .eq("status", "in_progress")
-    .select("id")
-    .maybeSingle()
-
-  if (attemptUpdateError) {
-    await supabase.from("test_answers").delete().eq("attempt_id", attempt.id)
-    throw new Error(`Failed to complete test attempt: ${attemptUpdateError.message}`)
-  }
-
-  if (!completedAttempt) {
-    await supabase.from("test_answers").delete().eq("attempt_id", attempt.id)
-    throw new SubmitAttemptError("Attempt is already completed", "already_completed")
-  }
-
-  if (attempt.assignment_id) {
-    const assignmentStatus = passed ? "completed" : "failed"
-    const { error: assignmentUpdateError } = await supabase
-      .from("test_assignments")
-      .update({ status: assignmentStatus })
-      .eq("id", attempt.assignment_id)
-      .in("status", ["not_started", "in_progress"])
-
-    if (assignmentUpdateError) {
-      throw new Error(`Failed to update assignment status: ${assignmentUpdateError.message}`)
+  const { data: completedAttemptRows, error: completeAttemptError } = await supabase.rpc(
+    "complete_test_attempt",
+    {
+      p_attempt_id: attempt.id,
+      p_test_id: input.testId,
+      p_user_id: userId,
+      p_organization_id: organizationId,
+      p_score: score,
+      p_passed: passed,
+      p_completed_at: now,
+      p_answers: answerPayload as unknown as Json,
     }
+  )
+
+  if (completeAttemptError) {
+    if (completeAttemptError.message.includes("already")) {
+      throw new SubmitAttemptError("Attempt is already completed", "already_completed")
+    }
+
+    throw new Error(`Failed to complete test attempt: ${completeAttemptError.message}`)
+  }
+
+  if (!completedAttemptRows || completedAttemptRows.length === 0) {
+    throw new SubmitAttemptError("Attempt is already completed", "already_completed")
   }
 
   await persistAttemptFeedbackBestEffort(attempt.id, {
@@ -748,7 +758,9 @@ export async function getPersistedEmployeeTestResult(
     await Promise.all([
       supabase
         .from("tests")
-        .select("id, title, description, passing_score, source_document_id")
+        .select(
+          "id, title, description, passing_score, source_document_id, status, is_active, source_validity, max_attempts"
+        )
         .eq("id", testId)
         .eq("organization_id", organizationId)
         .maybeSingle(),
@@ -845,6 +857,28 @@ export async function getPersistedEmployeeTestResult(
   const wrongCount = answerReview.length - correctCount
   const score = attempt.score
   const passed = attempt.passed
+  const attemptCount = await getCompletedAttemptCount({
+    userId,
+    testId,
+    organizationId,
+  })
+  const maxAttempts = test.max_attempts ?? 3
+  const sourceIsRetakeable = isTestAssignable({
+    status: test.status,
+    isActive: test.is_active ?? true,
+    sourceValidity: test.source_validity ?? "valid",
+  })
+  const activeAttempt = !passed ? await getActiveAttempt(userId, testId) : null
+  const canRetake = !passed && attemptCount < maxAttempts && sourceIsRetakeable && !activeAttempt
+  const retakeDisabledReason = passed
+    ? undefined
+    : !sourceIsRetakeable
+      ? INACTIVE_TEST_START_MESSAGE
+      : attemptCount >= maxAttempts
+        ? `Maximum attempts reached (${maxAttempts}).`
+        : activeAttempt
+          ? "A retake is already in progress."
+          : undefined
 
   const startedAt = attempt.started_at ? new Date(attempt.started_at).getTime() : null
   const completedAt = attempt.completed_at ? new Date(attempt.completed_at).getTime() : null
@@ -881,6 +915,10 @@ export async function getPersistedEmployeeTestResult(
       passed,
       answerReview
     ),
+    canRetake,
+    retakeDisabledReason,
+    attemptCount,
+    maxAttempts,
     followUpsByOriginalQuestionId,
   }
 }

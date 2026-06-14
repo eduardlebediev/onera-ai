@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 
-import { insertTestDocuments } from "@/features/tests/lib/test-documents"
 import {
   SourceDocumentValidationError,
   validateSelectableDocumentsForGeneration,
@@ -167,54 +166,11 @@ export async function POST(request: Request) {
     const supabase = createAdminClient()
     const publishedAt = new Date().toISOString()
 
-    const { data: savedTest, error: insertTestError } = await supabase
-      .from("tests")
-      .insert({
-        organization_id: primaryDocument.organizationId,
-        source_document_id: primaryDocument.id,
-        title: input.title,
-        description: input.description ?? null,
-        status: "published",
-        difficulty: input.difficulty,
-        language: input.language,
-        target_role: input.targetRole ?? null,
-        question_count: saveableQuestions.length,
-        passing_score: input.passingScore,
-        created_by: null,
-        published_at: publishedAt,
-        is_active: true,
-        source_validity: "valid",
-      })
-      .select("id")
-      .single()
-
-    if (insertTestError || !savedTest) {
-      console.error("Failed to insert test:", insertTestError?.message)
-      return jsonError("Failed to save generated test", 500)
-    }
-
-    try {
-      await insertTestDocuments({
-        testId: savedTest.id,
-        organizationId: primaryDocument.organizationId,
-        documentIds: validatedDocuments.documentIds,
-      })
-    } catch (error) {
-      console.error("Failed to insert test_documents:", error)
-      return jsonError(
-        error instanceof Error ? error.message : "Failed to save test source documents",
-        500
-      )
-    }
-
     const questionRows = saveableQuestions.map((question, index) => ({
-      organization_id: primaryDocument.organizationId,
-      test_id: savedTest.id,
       source_chunk_id: question.sourceChunkId ?? null,
       source_document_id: question.sourceChunkId
         ? (chunkDocumentById.get(question.sourceChunkId) ?? null)
         : null,
-      is_active: true,
       source_status: question.sourceChunkId ? "valid" : "manual_kept",
       review_status: question.reviewStatus === "needs_edit" ? "edited" : "approved",
       question_text: question.questionText,
@@ -227,13 +183,28 @@ export async function POST(request: Request) {
       order_index: index,
     }))
 
-    const { error: insertQuestionsError } = await supabase
-      .from("test_questions")
-      .insert(questionRows)
+    const { data: savedTestId, error: publishError } = await supabase.rpc(
+      "publish_generated_test",
+      {
+        p_organization_id: primaryDocument.organizationId,
+        p_source_document_id: primaryDocument.id,
+        p_title: input.title,
+        p_description: input.description ?? null,
+        p_difficulty: input.difficulty,
+        p_language: input.language,
+        p_target_role: input.targetRole ?? null,
+        p_question_count: saveableQuestions.length,
+        p_passing_score: input.passingScore,
+        p_created_by: admin.userId,
+        p_published_at: publishedAt,
+        p_document_ids: validatedDocuments.documentIds,
+        p_questions: questionRows as unknown as Json,
+      }
+    )
 
-    if (insertQuestionsError) {
-      console.error("Failed to insert test questions:", insertQuestionsError.message)
-      return jsonError("Failed to save generated test questions", 500)
+    if (publishError || !savedTestId) {
+      console.error("Failed to publish generated test:", publishError?.message)
+      return jsonError("Failed to save generated test", 500)
     }
 
     if (input.generationRunId) {
@@ -247,10 +218,10 @@ export async function POST(request: Request) {
       const { error: updateRunError } = await supabase
         .from("ai_generation_runs")
         .update({
-          test_id: savedTest.id,
+          test_id: savedTestId,
           output_summary: {
             ...existingSummary,
-            saved_test_id: savedTest.id,
+            saved_test_id: savedTestId,
             saved_question_count: saveableQuestions.length,
             published_at: publishedAt,
             document_ids: validatedDocuments.documentIds,
@@ -265,9 +236,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      testId: savedTest.id,
+      testId: savedTestId,
       questionCount: saveableQuestions.length,
-      redirectTo: `/admin/tests/${savedTest.id}`,
+      redirectTo: `/admin/tests/${savedTestId}`,
     })
   } catch (error) {
     if (error instanceof AuthError) {

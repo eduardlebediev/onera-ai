@@ -7,9 +7,18 @@ import { Card, CardContent } from "@/shared/ui/card"
 interface TestResultActionsProps {
   testId: string
   sourceDocumentId: string
+  passed: boolean
+  canRetake?: boolean
+  retakeDisabledReason?: string
 }
 
-export function TestResultActions({ testId, sourceDocumentId }: TestResultActionsProps) {
+export function TestResultActions({
+  testId,
+  sourceDocumentId,
+  passed,
+  canRetake,
+  retakeDisabledReason,
+}: TestResultActionsProps) {
   return (
     <Card>
       <CardContent className="space-y-3 p-6">
@@ -29,18 +38,32 @@ export function TestResultActions({ testId, sourceDocumentId }: TestResultAction
           </Link>
         </Button>
 
-        <span className="block" title="Test already completed">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled
-            aria-label={`Retake ${testId} disabled: Test already completed`}
-          >
-            <RotateCcw className="size-4" />
-            Retake Test
-          </Button>
-        </span>
+        {!passed ? (
+          canRetake ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link href={`/employee/tests/${testId}/take`}>
+                <RotateCcw className="size-4" />
+                Retake Test
+              </Link>
+            </Button>
+          ) : (
+            <span
+              className="block"
+              title={retakeDisabledReason ?? "Retake is not available for this test"}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled
+                aria-label={`Retake ${testId} disabled: ${retakeDisabledReason ?? "Retake unavailable"}`}
+              >
+                <RotateCcw className="size-4" />
+                Retake Test
+              </Button>
+            </span>
+          )
+        ) : null}
       </CardContent>
     </Card>
   )

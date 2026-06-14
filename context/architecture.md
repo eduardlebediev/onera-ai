@@ -65,7 +65,7 @@ Installed extensions used by the app:
 
 Migration notes:
 
-- Local canonical migrations live in `supabase/migrations/00001_initial_schema.sql` through `00010_test_lifecycle_tombstones.sql`.
+- Local canonical migrations live in `supabase/migrations/00001_initial_schema.sql` through `00011_retake_and_transactions.sql`.
 - The remote migration history contains `00001_initial_schema` plus timestamped follow-up migrations for auth/RLS, document ingestion, versioning, archive/delete, multi-document tests, document topics, review editor state, adaptive follow-ups, and test lifecycle tombstones.
 - Before relying on a new Supabase column or table, verify the target database schema or apply the matching migration. Missing column errors are schema drift until proven otherwise.
 - Regenerate or manually update `src/lib/supabase/types.ts` after schema changes that affect application code.
@@ -264,6 +264,7 @@ Fields:
 - `target_role`
 - `question_count`
 - `passing_score`
+- `max_attempts`
 - `created_by`
 - `published_at`
 - `is_active`
@@ -493,15 +494,15 @@ There is at most one answer per follow-up question.
 6. A draft `tests` row and `test_questions` rows are persisted immediately for review mutations.
 7. `ai_generation_runs` records input config, retrieved chunks, output summary, model, embedding model, and completion/failure state.
 8. Admin review can edit, approve, reject, add, delete, and regenerate questions before publishing.
-9. Publishing validates approved question readiness and source grounding, then marks the test published.
+9. Publishing validates approved question readiness and source grounding, then calls `publish_generated_test` so published `tests`, `test_documents`, and `test_questions` rows are inserted atomically with `tests.created_by` set to the acting admin.
 
 ### Test Assignment and Taking
 
 1. Admin assigns published, active tests to individual employees through `test_assignments`.
 2. Employee pages load only the current employee's assignments.
-3. Starting a Supabase-backed test creates or resumes an in-progress `test_attempts` row.
+3. Starting a Supabase-backed test creates or resumes an in-progress `test_attempts` row. Failed assignments may start a retake until `tests.max_attempts` completed attempts is reached; passed assignments cannot be retaken.
 4. Take flow receives safe question payloads without `correct_answer`.
-5. Submit validates assignment/user/organization ownership, scores objective answers, grades open questions best-effort, stores `test_answers`, completes the attempt, updates assignment status, and persists AI feedback best-effort.
+5. Submit validates assignment/user/organization ownership, scores objective answers, grades open questions best-effort, then calls `complete_test_attempt` so answer inserts, attempt completion, and assignment status updates are atomic. AI feedback remains best-effort after the critical transaction.
 6. Result and progress pages hydrate persisted attempts, answers, AI feedback, topics, and follow-ups.
 
 ### Lifecycle and Source Validity

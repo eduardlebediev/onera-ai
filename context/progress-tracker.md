@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 46: Retake + Transactional Reliability
+
 - Feature Spec 45: Test Lifecycle Management
 
 - Feature Spec 44: Employee Progress Page

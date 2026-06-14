@@ -1,5 +1,13 @@
 # Decisions
 
+## 065 — Publish and submit multi-row writes use transactional RPCs
+
+Publishing generated tests uses `publish_generated_test` to atomically insert the published test, source document joins, and questions with `created_by` set to the acting admin. Employee submit uses `complete_test_attempt` to atomically insert answers, complete the attempt, and update assignment status; best-effort AI feedback stays outside the critical transaction.
+
+## 064 — Failed assignments are retakeable up to max_attempts
+
+Failed assignments can start a new attempt while preserving prior completed attempts until the test-level `max_attempts` limit is reached. Passed assignments cannot be retaken, retakes are blocked when the source test is inactive or source-invalid, and the database enforces at most one in-progress attempt per employee/test.
+
 ## 063 — Archived tests with attempts are tombstoned on delete
 
 Draft/review tests without attempts can be hard-deleted. Published tests cannot be deleted directly. Archived tests with attempts are marked `status = deleted`, inactive, and retain delete audit metadata so employee history and completed results remain available without showing the test in admin lifecycle lists.

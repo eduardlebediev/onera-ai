@@ -19,6 +19,7 @@ export const EMPLOYEE_TEST_FILTER_OPTIONS: Array<{
   { label: "Not Started", value: "not_started" },
   { label: "In Progress", value: "in_progress" },
   { label: "Completed", value: "completed" },
+  { label: "Failed", value: "failed" },
   { label: "Overdue", value: "overdue" },
 ]
 
@@ -113,7 +114,7 @@ export function filterEmployeeTests(
   }
 
   if (filter === "completed") {
-    return tests.filter(isEmployeeTestFinished)
+    return tests.filter((test) => test.status === "completed")
   }
 
   return tests.filter((test) => test.status === filter)
@@ -154,6 +155,14 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
   }
 
   if (test.status === "failed") {
+    if (test.canRetake) {
+      return {
+        label: "Retake Test",
+        href: `/employee/tests/${test.id}/take`,
+        variant: "default",
+      }
+    }
+
     return {
       label: "Review",
       href: resultHref,

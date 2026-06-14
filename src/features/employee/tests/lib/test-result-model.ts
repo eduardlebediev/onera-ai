@@ -48,6 +48,10 @@ export interface EmployeeTestResult {
   answerReview: AnswerReviewItem[]
   weakTopics: ResultWeakTopic[]
   aiFeedback: ResultAiFeedback
+  canRetake?: boolean
+  retakeDisabledReason?: string
+  attemptCount?: number
+  maxAttempts?: number
   followUpsByOriginalQuestionId?: Record<string, PersistedFollowUpState>
 }
 
@@ -176,6 +180,9 @@ function buildEmployeeTestResult(
     answerReview,
     weakTopics,
     aiFeedback,
+    canRetake: assignedTest.canRetake ?? false,
+    attemptCount: assignedTest.attemptCount,
+    maxAttempts: assignedTest.maxAttempts,
   }
 }
 

@@ -96,14 +96,26 @@ export function TestResultPage({ result }: TestResultPageProps) {
           />
 
           <div className="lg:hidden">
-            <TestResultActions testId={result.id} sourceDocumentId={result.sourceDocumentId} />
+            <TestResultActions
+              testId={result.id}
+              sourceDocumentId={result.sourceDocumentId}
+              passed={result.passed}
+              canRetake={result.canRetake}
+              retakeDisabledReason={result.retakeDisabledReason}
+            />
           </div>
         </div>
 
         <aside className="hidden space-y-4 lg:block">
           <TestResultKpiSection result={result} />
           <TestWeakTopics {...weakTopicsProps} />
-          <TestResultActions testId={result.id} sourceDocumentId={result.sourceDocumentId} />
+          <TestResultActions
+            testId={result.id}
+            sourceDocumentId={result.sourceDocumentId}
+            passed={result.passed}
+            canRetake={result.canRetake}
+            retakeDisabledReason={result.retakeDisabledReason}
+          />
         </aside>
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { EmployeeTestCard } from "@/features/employee/tests/components/employee-test-card"
@@ -13,6 +14,7 @@ import {
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import type { MockEmployee } from "@/features/tests/mock/employees"
 import { Badge } from "@/shared/ui/badge"
+import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { FilterTabBar } from "@/shared/ui/filter-tab-bar"
 
@@ -26,6 +28,10 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
   const overallProgress = getEmployeeOverallProgress(tests)
 
   const visibleTests = useMemo(() => filterEmployeeTests(tests, filter), [tests, filter])
+  const retakeNeededTests = useMemo(
+    () => tests.filter((test) => test.status === "failed" && test.canRetake),
+    [tests]
+  )
 
   return (
     <div className="page-shell">
@@ -54,6 +60,46 @@ export function EmployeeTestsPage({ employee, tests }: EmployeeTestsPageProps) {
       <div className="mt-8">
         <EmployeeTestsKpiSection tests={tests} />
       </div>
+
+      {retakeNeededTests.length > 0 ? (
+        <Card className="mt-6 border-red-200 bg-red-50/70 dark:border-red-900/30 dark:bg-red-900/20">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="typography-h3 font-semibold text-red-900 dark:text-red-300">
+                  Failed / Retake Needed
+                </h2>
+                <p className="typography-small text-red-800 dark:text-red-400">
+                  Retake failed tests before the max-attempt limit is reached.
+                </p>
+              </div>
+              <Badge variant="outline" className="w-fit border-red-200 bg-white text-red-700">
+                {retakeNeededTests.length} retakeable
+              </Badge>
+            </div>
+
+            <div className="space-y-2">
+              {retakeNeededTests.map((test) => (
+                <div
+                  key={test.id}
+                  className="flex flex-col gap-3 rounded-xl border border-red-200 bg-card/80 p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{test.title}</p>
+                    <p className="typography-small text-muted-foreground">
+                      Attempt {test.attemptCount ?? 1} of {test.maxAttempts ?? 3} - Latest score{" "}
+                      {test.score ?? 0}%
+                    </p>
+                  </div>
+                  <Button asChild size="sm" className="w-full rounded-full sm:w-auto">
+                    <Link href={`/employee/tests/${test.id}/take`}>Retake Test</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="mt-6">
         <FilterTabBar options={EMPLOYEE_TEST_FILTER_OPTIONS} value={filter} onChange={setFilter} />

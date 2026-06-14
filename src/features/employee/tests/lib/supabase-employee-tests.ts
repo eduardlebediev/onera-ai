@@ -37,6 +37,7 @@ type TestRow = {
   difficulty: string
   question_count: number | null
   passing_score: number
+  max_attempts: number | null
   status: string
   is_active: boolean
   source_validity: string
@@ -151,7 +152,7 @@ async function getTestRow(testId: string): Promise<TestRow | null> {
   const { data, error } = await supabase
     .from("tests")
     .select(
-      "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity"
+      "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity"
     )
     .eq("id", testId)
     .maybeSingle()
@@ -206,22 +207,54 @@ async function getSafeQuestionsForTest(testId: string): Promise<EmployeeSafeQues
   }))
 }
 
+async function getCompletedAttemptCount(input: {
+  userId: string
+  testId: string
+  organizationId: string
+}): Promise<number> {
+  const supabase = createAdminClient()
+
+  const { count, error } = await supabase
+    .from("test_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", input.userId)
+    .eq("test_id", input.testId)
+    .eq("organization_id", input.organizationId)
+    .eq("status", "completed")
+
+  if (error) {
+    throw new Error(`Failed to count completed attempts: ${error.message}`)
+  }
+
+  return count ?? 0
+}
+
 export async function getSupabaseEmployeeTakeableTest(
   testId: string,
   userId: string,
   organizationId: string
 ): Promise<SupabaseEmployeeTakeableTest | null> {
   const assignment = await getAssignmentForUserAndTest(userId, testId, organizationId)
-  if (
-    !assignment ||
-    isAssignmentFinished(assignment.status) ||
-    !isAssignmentTakeable(assignment.status)
-  ) {
+  if (!assignment || assignment.status === "completed") {
     return null
   }
 
   const test = await getTestRow(testId)
   if (!test || test.status !== "published" || test.organization_id !== organizationId) return null
+
+  if (assignment.status === "failed") {
+    const completedAttemptCount = await getCompletedAttemptCount({
+      userId,
+      testId,
+      organizationId,
+    })
+
+    if (completedAttemptCount >= (test.max_attempts ?? 3)) {
+      return null
+    }
+  } else if (!isAssignmentTakeable(assignment.status)) {
+    return null
+  }
 
   if (
     !isTestAssignable({
@@ -237,7 +270,8 @@ export async function getSupabaseEmployeeTakeableTest(
   if (questions.length === 0) return null
 
   const sourceDocument = await getSourceDocumentTitle(test.source_document_id)
-  const status = mapAssignmentStatus(assignment.status)
+  const status =
+    assignment.status === "failed" ? "in_progress" : mapAssignmentStatus(assignment.status)
   const questionCount = test.question_count ?? questions.length
 
   return {

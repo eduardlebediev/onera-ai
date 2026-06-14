@@ -4,6 +4,62 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 46: Retake + Transactional Reliability
+
+**Branch:** `feature/46-retake-and-transactional-reliability`
+
+Added capped retakes for failed employee assignments and transactional RPCs for multi-row publish and submit writes.
+
+### Database
+
+- Added `supabase/migrations/00011_retake_and_transactions.sql` with `tests.max_attempts`, a partial unique index for one in-progress attempt per employee/test, and two service-role-only `security definer` RPCs.
+- `publish_generated_test` atomically inserts the published test, source document joins, and questions.
+- `complete_test_attempt` atomically inserts answers, completes the attempt, and updates the assignment status.
+
+### Employee Retakes
+
+- Failed assignments can start a new attempt until `max_attempts` completed attempts is reached.
+- Passed assignments remain blocked from retake.
+- Result pages and My Tests show retake actions only when the policy allows them, while preserving prior attempts for progress/history.
+
+### Admin Publish and Submit Reliability
+
+- `POST /api/admin/tests/publish-generated` now calls the transactional publish RPC and sets `tests.created_by` to the acting admin.
+- Employee submit keeps scoring and best-effort AI feedback in application code, but moves critical answer/attempt/assignment persistence into the transactional submit RPC.
+
+### Review Fixes
+
+- Restricted transactional RPC execution to `service_role` instead of all authenticated users.
+- Added the in-progress attempt uniqueness guard to prevent concurrent retake starts from creating multiple active attempts.
+- Aligned My Tests retake eligibility with the existing source validity assignment rules.
+
+### Verification
+
+- `npm run lint` passes.
+- `npm run typecheck` passes.
+- Scoped Prettier check for changed code files passes.
+- `npm run build` passes.
+- Full `npm run format:check` still fails on pre-existing unrelated `.docs/48-mock-cleanup-real-product-feel.md`.
+
+### Files changed
+
+- `supabase/migrations/00011_retake_and_transactions.sql`
+- `src/app/api/admin/tests/publish-generated/route.ts`
+- `src/app/api/employee/tests/[id]/start/route.ts`
+- `src/features/employee/tests/lib/supabase-employee-attempts.ts`
+- `src/features/employee/tests/lib/supabase-employee-assignments.ts`
+- `src/features/employee/tests/lib/supabase-employee-tests.ts`
+- `src/features/employee/tests/lib/employee-test-model.ts`
+- `src/features/employee/tests/lib/test-result-model.ts`
+- `src/features/employee/tests/components/employee-tests-page.tsx`
+- `src/features/employee/tests/components/test-result-actions.tsx`
+- `src/features/employee/tests/components/test-result-page.tsx`
+- `src/features/employee/tests/mock/employee-tests.ts`
+- `src/lib/supabase/types.ts`
+- `context/architecture.md`, `context/decisions.md`, `context/progress-tracker.md`, `context/history.md`
+
+---
+
 ## Feature Spec 45: Test Lifecycle Management
 
 **Branch:** `feature/45-test-lifecycle-management`

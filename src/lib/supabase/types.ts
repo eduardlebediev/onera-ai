@@ -276,6 +276,7 @@ export type Database = {
           target_role: string | null
           question_count: number | null
           passing_score: number
+          max_attempts: number
           created_by: string | null
           published_at: string | null
           is_active: boolean
@@ -300,6 +301,7 @@ export type Database = {
           target_role?: string | null
           question_count?: number | null
           passing_score?: number
+          max_attempts?: number
           created_by?: string | null
           published_at?: string | null
           is_active?: boolean
@@ -324,6 +326,7 @@ export type Database = {
           target_role?: string | null
           question_count?: number | null
           passing_score?: number
+          max_attempts?: number
           created_by?: string | null
           published_at?: string | null
           is_active?: boolean
@@ -701,6 +704,23 @@ export type Database = {
     }
     Views: Record<string, never>
     Functions: {
+      complete_test_attempt: {
+        Args: {
+          p_attempt_id: string
+          p_test_id: string
+          p_user_id: string
+          p_organization_id: string
+          p_score: number
+          p_passed: boolean
+          p_completed_at: string
+          p_answers: Json
+        }
+        Returns: {
+          attempt_id: string
+          score: number
+          passed: boolean
+        }[]
+      }
       match_document_chunks: {
         Args: {
           query_embedding: number[]
@@ -717,6 +737,24 @@ export type Database = {
           content: string
           similarity: number
         }[]
+      }
+      publish_generated_test: {
+        Args: {
+          p_organization_id: string
+          p_source_document_id: string
+          p_title: string
+          p_description: string | null
+          p_difficulty: string
+          p_language: string
+          p_target_role: string | null
+          p_question_count: number
+          p_passing_score: number
+          p_created_by: string
+          p_published_at: string
+          p_document_ids: string[]
+          p_questions: Json
+        }
+        Returns: string
       }
     }
     Enums: Record<string, never>

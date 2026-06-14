@@ -32,6 +32,9 @@ export interface EmployeeAssignedTest {
   estimatedMinutes: number
   score: number | null
   passed: boolean | null
+  attemptCount?: number
+  maxAttempts?: number
+  canRetake?: boolean
   required: boolean
   progressPercent: number
   testIsActive?: boolean

@@ -6,6 +6,7 @@ import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 import { getLatestCompletedAttemptIdForAssignment } from "./supabase-employee-attempts"
+import { getEmployeeCompletedAttemptStats } from "./supabase-employee-progress"
 
 type AssignmentRow = {
   id: string
@@ -178,13 +179,21 @@ export async function getSupabaseEmployeeAssignments(
   userId: string,
   organizationId: string
 ): Promise<SupabaseEmployeeAssignmentsResult> {
-  const [employee, assignments] = await Promise.all([
+  const [employee, assignments, attemptStats] = await Promise.all([
     getEmployeeProfile(userId),
     getAssignmentRows(userId, organizationId),
+    getEmployeeCompletedAttemptStats(userId, organizationId),
   ])
+  const employeeWithStats = employee
+    ? {
+        ...employee,
+        completedTestsCount: attemptStats.completedTestsCount,
+        averageScore: attemptStats.averageScore,
+      }
+    : null
 
   if (assignments.length === 0) {
-    return { employee, tests: [] }
+    return { employee: employeeWithStats, tests: [] }
   }
 
   const testsById = await getTestsById(Array.from(new Set(assignments.map((item) => item.test_id))))
@@ -254,7 +263,7 @@ export async function getSupabaseEmployeeAssignments(
   )
 
   return {
-    employee,
+    employee: employeeWithStats,
     tests: testsWithAttempts,
   }
 }

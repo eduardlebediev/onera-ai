@@ -4,6 +4,37 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 44: Employee Progress Page
+
+**Branch:** `feature/44-employee-progress-page`
+
+Added a Supabase-backed `/employee/progress` page for authenticated employees to review completed tests, average score, topic strengths, weak topics, and attempt history.
+
+### Progress Loader
+
+- Added `src/features/employee/tests/lib/supabase-employee-progress.ts` to load completed `test_attempts` for the current employee and organization, fetch related test titles, join answer records to `test_questions.topic`, and derive strengths (`>80%`) and weak topics (`<60%`).
+- Exposed shared completed-attempt stats so employee profile metrics can use real attempts.
+
+### Employee UI
+
+- Added `src/app/(employee)/employee/progress/page.tsx` using `requireEmployeeUser()` and the server loader.
+- Added `EmployeeProgressPage` with overview KPI cards, strengths and weak-topic lists, an attempt history table, an empty state for employees with no attempts, an all-understood weak-topic state, and a load-error state.
+- Added the Progress link to the employee navbar and updated the employee module manifest.
+
+### Assignment Metrics
+
+- Updated `getSupabaseEmployeeAssignments()` so `completedTestsCount` and `averageScore` on the employee profile are computed from real completed attempts instead of hardcoded zeros.
+
+### Review
+
+- Spec-first review found no Critical, Major, or Minor issues. No fix-pass code changes were needed.
+
+### Verification
+
+- `npm run lint`, `npm run typecheck`, `npm run format:check`, and `npm run build` pass.
+
+---
+
 ## Feature Spec 43: Adaptive Follow-up Persistence
 
 **Branch:** `43-adaptive-follow-up-persistence`

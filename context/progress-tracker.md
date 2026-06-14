@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 44: Employee Progress Page
+
 - Feature Spec 43: Adaptive Follow-up Persistence
 
 - Feature Spec 42: Admin Analytics Page + Org-Scoped Reads

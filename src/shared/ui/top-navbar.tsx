@@ -24,6 +24,7 @@ const ADMIN_LINKS = [
 const EMPLOYEE_LINKS = [
   { href: "/employee/dashboard", label: "Dashboard" },
   { href: "/employee/tests", label: "My Tests" },
+  { href: "/employee/progress", label: "Progress" },
 ] as const
 
 type TopNavbarProps = {

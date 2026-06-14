@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Owns the employee-facing My Tests experience: assigned test list, progress summary, filters, test-taking flow, test result with AI feedback, and AI-generated follow-up questions for weak topics.
+Owns the employee-facing My Tests and progress experiences: assigned test list, progress summary, filters, test-taking flow, test result with AI feedback, and AI-generated follow-up questions for weak topics.
 
 ## Contains
 
@@ -10,7 +10,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 - feature-specific mock data
 - feature-specific types
 - feature-specific helpers
-- Supabase-backed attempt persistence for UUID assigned tests
+- Supabase-backed assignment, attempt, result, and progress reads for UUID tests
 
 ## Does Not Contain
 
@@ -31,6 +31,7 @@ Owns the employee-facing My Tests experience: assigned test list, progress summa
 
 - `/employee/dashboard` — employee home with KPIs, next test, feedback, and learning focus
 - `/employee/tests`
+- `/employee/progress` — Supabase-backed completed tests, average score, topic strengths, weak topics, and attempt history
 - `/employee/tests/[id]/take` — Supabase UUID tests use persisted attempts; mock ids use local state
 - `/employee/tests/[id]/result` — persisted results via `?attemptId=` for Supabase tests; mock/sessionStorage fallback otherwise
 

@@ -41,69 +41,87 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <Table className="text-left">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Test</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Role</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Assigned</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">
-                  Completed
-                </span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Ø Score</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Status</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-border/50">
-            {tests.map((test) => (
-              <TableRow key={test.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell>
-                  <Link
-                    href={`/admin/tests/${test.id}`}
-                    className="typography-small font-medium hover:text-primary hover:underline"
-                  >
-                    {test.title}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">{test.role}</p>
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">
-                    {test.assignedCount} assigned
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">
-                    {test.completedCount} completed
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`typography-p font-medium ${test.averageScore > 0 ? getScoreColorClass(test.averageScore) : "text-muted-foreground"}`}
-                  >
-                    {test.averageScore > 0 ? `${test.averageScore}%` : "—"}
+        {tests.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 px-6 py-8">
+            <p className="typography-small font-medium text-foreground">No tests yet</p>
+            <p className="typography-small text-muted-foreground">
+              Generate your first test from a ready document.
+            </p>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/documents">Generate Test</Link>
+            </Button>
+          </div>
+        ) : (
+          <Table className="text-left">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Test</span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Role</span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    Assigned
                   </span>
-                </TableCell>
-                <TableCell>
-                  <TestStatusBadge status={test.status} />
-                </TableCell>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    Completed
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    Ø Score
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Status</span>
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody className="divide-y divide-border/50">
+              {tests.map((test) => (
+                <TableRow key={test.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell>
+                    <Link
+                      href={`/admin/tests/${test.id}`}
+                      className="typography-small font-medium hover:text-primary hover:underline"
+                    >
+                      {test.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {test.role}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {test.assignedCount} assigned
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {test.completedCount} completed
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`typography-p font-medium ${test.averageScore > 0 ? getScoreColorClass(test.averageScore) : "text-muted-foreground"}`}
+                    >
+                      {test.averageScore > 0 ? `${test.averageScore}%` : "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <TestStatusBadge status={test.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   )

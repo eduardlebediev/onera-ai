@@ -9,15 +9,12 @@ export default function TestNotFound() {
       <ClipboardList className="size-12 text-muted-foreground" />
       <h1 className="typography-h2">Test not found</h1>
       <p className="max-w-md typography-muted">
-        This test ID does not match any test in the demo. Try opening the Security Guidelines
-        Knowledge Test from the Tests page.
+        This test ID does not match a test in your workspace. Open the Tests page to select a saved
+        test or generate a new one from a document.
       </p>
       <div className="flex flex-wrap justify-center gap-3">
         <Button asChild>
           <Link href="/admin/tests">View Tests</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/admin/tests/test-1">Open Security Guidelines Test</Link>
         </Button>
       </div>
     </div>

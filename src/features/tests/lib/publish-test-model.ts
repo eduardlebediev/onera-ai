@@ -4,7 +4,6 @@ import type {
   ReviewQuestion,
   ReviewStatus,
 } from "@/features/tests/mock/generated-test-review"
-import { mockTests } from "@/features/tests/mock/tests"
 
 export type PublishReadinessStatus = "ready" | "needs_attention"
 
@@ -141,15 +140,6 @@ export function getPublishBlockReason(checks: PublishReadinessCheck[]): string {
   return failingCheck?.helperText ?? "Complete the required checks before publishing."
 }
 
-const publishedTestByDocumentId: Record<string, string> = {
-  "doc-1": "test-1",
-  "doc-2": "test-2",
-}
-
 export function resolvePublishedTestId(documentId: string): string {
-  const mappedId = publishedTestByDocumentId[documentId]
-  if (mappedId) return mappedId
-
-  const firstPublished = mockTests.find((test) => test.status === "published")
-  return firstPublished?.id ?? mockTests[0].id
+  return documentId
 }

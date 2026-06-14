@@ -154,6 +154,25 @@ function parseQuestionCountFromSummary(summary: Json): number {
   return typeof questionCount === "number" && Number.isFinite(questionCount) ? questionCount : 0
 }
 
+function hasRecoverableReviewDraft(summary: Json): boolean {
+  if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+    return false
+  }
+
+  const reviewDraft = (summary as Record<string, unknown>).review_draft
+  if (!reviewDraft || typeof reviewDraft !== "object" || Array.isArray(reviewDraft)) {
+    return false
+  }
+
+  const draft = (reviewDraft as Record<string, unknown>).draft
+  if (!draft || typeof draft !== "object" || Array.isArray(draft)) {
+    return false
+  }
+
+  const questions = (draft as Record<string, unknown>).questions
+  return Array.isArray(questions) && questions.length > 0
+}
+
 function mapRecentGenerationRunRow(
   row: RecentGenerationRunRow,
   documentTitlesById: Map<string, string>
@@ -270,8 +289,9 @@ async function fetchRecentDrafts(
   }
 
   const runRows = (data ?? []) as RecentGenerationRunRow[]
+  const draftRunRows = runRows.filter((row) => hasRecoverableReviewDraft(row.output_summary))
   const documentIds = Array.from(
-    new Set(runRows.map((row) => row.document_id).filter((id): id is string => Boolean(id)))
+    new Set(draftRunRows.map((row) => row.document_id).filter((id): id is string => Boolean(id)))
   )
 
   const documentTitlesById = new Map<string, string>()
@@ -294,7 +314,7 @@ async function fetchRecentDrafts(
     }
   }
 
-  return runRows.map((row) => mapRecentGenerationRunRow(row, documentTitlesById))
+  return draftRunRows.map((row) => mapRecentGenerationRunRow(row, documentTitlesById))
 }
 
 function mapTestStatus(status: string): TestStatus {
@@ -348,6 +368,7 @@ function buildWeeklyCompletions(attempts: AttemptRow[]): WeeklyCompletion[] {
 }
 
 function buildKpiStats(input: {
+  documentsCount: number
   publishedTestsCount: number
   totalAssignments: number
   completedAssignments: number
@@ -364,8 +385,8 @@ function buildKpiStats(input: {
   return [
     {
       label: "Documents",
-      value: "—",
-      description: "See Documents page for backend data",
+      value: String(input.documentsCount),
+      description: "Uploaded source documents",
     },
     {
       label: "Active Tests",
@@ -395,6 +416,24 @@ function buildKpiStats(input: {
         input.weakTopicsCount > 0 ? "Topics with incorrect answers" : "No weak topics yet",
     },
   ]
+}
+
+export function buildEmptyAdminDashboardMetrics(): AdminDashboardMetrics {
+  return {
+    kpiStats: buildKpiStats({
+      documentsCount: 0,
+      publishedTestsCount: 0,
+      totalAssignments: 0,
+      completedAssignments: 0,
+      inProgressAssignments: 0,
+      averageScore: null,
+      weakTopicsCount: 0,
+      activeEmployeesCount: 0,
+    }),
+    testPerformance: [],
+    weeklyCompletions: buildWeeklyCompletions([]),
+    recentAttempts: [],
+  }
 }
 
 export async function getAdminDashboardFromSupabase(
@@ -443,10 +482,16 @@ async function fetchAdminDashboardMetrics(
   organizationId: string
 ): Promise<AdminDashboardMetrics | null> {
   const [
+    { count: documentsCount, error: documentsError },
     { data: tests, error: testsError },
     { data: assignments, error: assignmentsError },
     { data: attempts, error: attemptsError },
   ] = await Promise.all([
+    supabase
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .neq("status", "deleted"),
     supabase
       .from("tests")
       .select("id, title, status, target_role")
@@ -463,9 +508,13 @@ async function fetchAdminDashboardMetrics(
       .order("completed_at", { ascending: false }),
   ])
 
-  if (testsError || assignmentsError || attemptsError) {
+  if (documentsError || testsError || assignmentsError || attemptsError) {
     throw new Error(
-      testsError?.message ?? assignmentsError?.message ?? attemptsError?.message ?? "Unknown error"
+      documentsError?.message ??
+        testsError?.message ??
+        assignmentsError?.message ??
+        attemptsError?.message ??
+        "Unknown error"
     )
   }
 
@@ -473,8 +522,13 @@ async function fetchAdminDashboardMetrics(
   const assignmentRows = (assignments ?? []) as AssignmentRow[]
   const attemptRows = (attempts ?? []) as AttemptRow[]
 
-  if (testRows.length === 0 && assignmentRows.length === 0 && attemptRows.length === 0) {
-    return null
+  if (
+    (documentsCount ?? 0) === 0 &&
+    testRows.length === 0 &&
+    assignmentRows.length === 0 &&
+    attemptRows.length === 0
+  ) {
+    return buildEmptyAdminDashboardMetrics()
   }
 
   const publishedTests = testRows.filter((test) => test.status === "published")
@@ -632,6 +686,7 @@ async function fetchAdminDashboardMetrics(
 
   return {
     kpiStats: buildKpiStats({
+      documentsCount: documentsCount ?? 0,
       publishedTestsCount: publishedTests.length,
       totalAssignments: assignmentRows.length,
       completedAssignments,

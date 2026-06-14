@@ -7,6 +7,10 @@ import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 import { getEmployeeCompletedAttemptStats } from "./supabase-employee-progress"
+import {
+  isMissingMaxAttemptsColumnError,
+  warnMissingMaxAttemptsFallback,
+} from "./supabase-schema-drift"
 
 type AssignmentRow = {
   id: string
@@ -24,7 +28,7 @@ type TestRow = {
   difficulty: string
   question_count: number | null
   passing_score: number
-  max_attempts: number
+  max_attempts: number | null
   status: string
   is_active: boolean
   source_validity: string
@@ -51,6 +55,23 @@ type MemberRow = {
 export type SupabaseEmployeeAssignmentsResult = {
   employee: MockEmployee | null
   tests: EmployeeAssignedTest[]
+}
+
+const TEST_SELECT =
+  "id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity, source_invalid_reason"
+
+const LEGACY_TEST_SELECT =
+  "id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity, source_invalid_reason"
+
+function normalizeTestRows(rows: unknown[] | null): TestRow[] {
+  return (rows ?? []).map((row) => {
+    const test = row as Partial<TestRow>
+
+    return {
+      ...test,
+      max_attempts: test.max_attempts ?? null,
+    } as TestRow
+  })
 }
 
 function mapAssignmentStatus(status: string): TestAssignmentStatus {
@@ -148,18 +169,26 @@ async function getTestsById(testIds: string[]): Promise<Map<string, TestRow>> {
 
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("tests")
-    .select(
-      "id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity, source_invalid_reason"
-    )
-    .in("id", testIds)
+  const { data, error } = await supabase.from("tests").select(TEST_SELECT).in("id", testIds)
 
-  if (error) {
+  if (error && isMissingMaxAttemptsColumnError(error)) {
+    warnMissingMaxAttemptsFallback()
+
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("tests")
+      .select(LEGACY_TEST_SELECT)
+      .in("id", testIds)
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch assigned tests: ${legacyError.message}`)
+    }
+
+    return new Map(normalizeTestRows(legacyData as unknown[] | null).map((test) => [test.id, test]))
+  } else if (error) {
     throw new Error(`Failed to fetch assigned tests: ${error.message}`)
   }
 
-  return new Map(((data ?? []) as TestRow[]).map((test) => [test.id, test]))
+  return new Map(normalizeTestRows(data as unknown[] | null).map((test) => [test.id, test]))
 }
 
 async function getDocumentsById(documentIds: string[]): Promise<Map<string, DocumentRow>> {

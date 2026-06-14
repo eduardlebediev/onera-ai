@@ -19,6 +19,10 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
 import { getAssignmentForEmployee, isAssignmentTakeable } from "./supabase-employee-tests"
+import {
+  isMissingMaxAttemptsColumnError,
+  warnMissingMaxAttemptsFallback,
+} from "./supabase-schema-drift"
 
 export type StartAttemptResult = {
   attemptId: string
@@ -77,6 +81,51 @@ type AnswerRow = {
   question_id: string
   user_answer: Json
   is_correct: boolean | null
+}
+
+type ResultTestRow = {
+  id: string
+  title: string
+  description: string | null
+  passing_score: number
+  source_document_id: string | null
+  status: string
+  is_active: boolean | null
+  source_validity: string | null
+  max_attempts: number | null
+}
+
+const TEST_ATTEMPT_POLICY_SELECT =
+  "id, organization_id, status, is_active, source_validity, max_attempts"
+
+const LEGACY_TEST_ATTEMPT_POLICY_SELECT = "id, organization_id, status, is_active, source_validity"
+
+const RESULT_TEST_SELECT =
+  "id, title, description, passing_score, source_document_id, status, is_active, source_validity, max_attempts"
+
+const LEGACY_RESULT_TEST_SELECT =
+  "id, title, description, passing_score, source_document_id, status, is_active, source_validity"
+
+function normalizeTestAttemptPolicyRow(row: unknown | null): TestAttemptPolicyRow | null {
+  if (!row) return null
+
+  const test = row as Partial<TestAttemptPolicyRow>
+
+  return {
+    ...test,
+    max_attempts: test.max_attempts ?? null,
+  } as TestAttemptPolicyRow
+}
+
+function normalizeResultTestRow(row: unknown | null): ResultTestRow | null {
+  if (!row) return null
+
+  const test = row as Partial<ResultTestRow>
+
+  return {
+    ...test,
+    max_attempts: test.max_attempts ?? null,
+  } as ResultTestRow
 }
 
 function parseOptions(value: Json): Array<{ id: string; text: string }> {
@@ -387,6 +436,80 @@ async function getAttemptById(attemptId: string): Promise<AttemptRow | null> {
   return data as AttemptRow | null
 }
 
+async function getTestAttemptPolicyRow(input: {
+  testId: string
+  organizationId: string
+}): Promise<TestAttemptPolicyRow | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("tests")
+    .select(TEST_ATTEMPT_POLICY_SELECT)
+    .eq("id", input.testId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle()
+
+  if (error && isMissingMaxAttemptsColumnError(error)) {
+    warnMissingMaxAttemptsFallback()
+
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("tests")
+      .select(LEGACY_TEST_ATTEMPT_POLICY_SELECT)
+      .eq("id", input.testId)
+      .eq("organization_id", input.organizationId)
+      .maybeSingle()
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch test: ${legacyError.message}`)
+    }
+
+    return normalizeTestAttemptPolicyRow(legacyData)
+  }
+
+  if (error) {
+    throw new Error(`Failed to fetch test: ${error.message}`)
+  }
+
+  return normalizeTestAttemptPolicyRow(data)
+}
+
+async function getResultTestRow(input: {
+  testId: string
+  organizationId: string
+}): Promise<ResultTestRow | null> {
+  const supabase = createAdminClient()
+
+  const { data, error } = await supabase
+    .from("tests")
+    .select(RESULT_TEST_SELECT)
+    .eq("id", input.testId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle()
+
+  if (error && isMissingMaxAttemptsColumnError(error)) {
+    warnMissingMaxAttemptsFallback()
+
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("tests")
+      .select(LEGACY_RESULT_TEST_SELECT)
+      .eq("id", input.testId)
+      .eq("organization_id", input.organizationId)
+      .maybeSingle()
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch test for result: ${legacyError.message}`)
+    }
+
+    return normalizeResultTestRow(legacyData)
+  }
+
+  if (error) {
+    throw new Error(`Failed to fetch test for result: ${error.message}`)
+  }
+
+  return normalizeResultTestRow(data)
+}
+
 export type StartAttemptErrorCode =
   | "not_found"
   | "assignment_finished"
@@ -420,19 +543,7 @@ export async function startEmployeeTestAttempt(
   }
 
   const supabase = createAdminClient()
-
-  const { data: test, error: testError } = await supabase
-    .from("tests")
-    .select("id, organization_id, status, is_active, source_validity, max_attempts")
-    .eq("id", testId)
-    .eq("organization_id", organizationId)
-    .maybeSingle()
-
-  if (testError) {
-    throw new Error(`Failed to fetch test: ${testError.message}`)
-  }
-
-  const testRow = test as TestAttemptPolicyRow | null
+  const testRow = await getTestAttemptPolicyRow({ testId, organizationId })
   if (!testRow || testRow.status !== "published") return null
 
   const isActive = testRow.is_active ?? true
@@ -754,25 +865,13 @@ export async function getPersistedEmployeeTestResult(
 
   const supabase = createAdminClient()
 
-  const [{ data: test, error: testError }, { data: answerRows, error: answersError }] =
-    await Promise.all([
-      supabase
-        .from("tests")
-        .select(
-          "id, title, description, passing_score, source_document_id, status, is_active, source_validity, max_attempts"
-        )
-        .eq("id", testId)
-        .eq("organization_id", organizationId)
-        .maybeSingle(),
-      supabase
-        .from("test_answers")
-        .select("id, question_id, user_answer, is_correct")
-        .eq("attempt_id", attemptId),
-    ])
-
-  if (testError) {
-    throw new Error(`Failed to fetch test for result: ${testError.message}`)
-  }
+  const [test, { data: answerRows, error: answersError }] = await Promise.all([
+    getResultTestRow({ testId, organizationId }),
+    supabase
+      .from("test_answers")
+      .select("id, question_id, user_answer, is_correct")
+      .eq("attempt_id", attemptId),
+  ])
 
   if (answersError) {
     throw new Error(`Failed to fetch answers for result: ${answersError.message}`)

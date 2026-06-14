@@ -149,7 +149,7 @@ export async function getLatestReviewDraftForDocument(
       storedDraft,
     }
   } catch (error) {
-    console.warn("Falling back to demo review data:", error)
+    console.warn("Could not load Supabase review draft:", error)
     return null
   }
 }

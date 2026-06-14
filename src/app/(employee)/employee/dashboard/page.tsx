@@ -49,7 +49,9 @@ export default async function EmployeeDashboardRoute() {
   return (
     <EmployeeDashboard
       employee={result?.employee ?? buildEmployeeFallback(user)}
+      organizationId={user.membership.organizationId}
       tests={result?.tests ?? []}
+      userId={user.userId}
     />
   )
 }

@@ -6,6 +6,10 @@ import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
+import {
+  isMissingMaxAttemptsColumnError,
+  warnMissingMaxAttemptsFallback,
+} from "./supabase-schema-drift"
 
 export type EmployeeSafeQuestionOption = {
   id: string
@@ -51,6 +55,23 @@ type QuestionRow = {
   topic: string | null
   order_index: number
   source_chunk_id: string | null
+}
+
+const TEST_SELECT =
+  "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity"
+
+const LEGACY_TEST_SELECT =
+  "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity"
+
+function normalizeTestRow(row: unknown | null): TestRow | null {
+  if (!row) return null
+
+  const test = row as Partial<TestRow>
+
+  return {
+    ...test,
+    max_attempts: test.max_attempts ?? null,
+  } as TestRow
 }
 
 function mapAssignmentStatus(status: string): TestAssignmentStatus {
@@ -151,17 +172,29 @@ async function getTestRow(testId: string): Promise<TestRow | null> {
 
   const { data, error } = await supabase
     .from("tests")
-    .select(
-      "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity"
-    )
+    .select(TEST_SELECT)
     .eq("id", testId)
     .maybeSingle()
 
-  if (error) {
+  if (error && isMissingMaxAttemptsColumnError(error)) {
+    warnMissingMaxAttemptsFallback()
+
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("tests")
+      .select(LEGACY_TEST_SELECT)
+      .eq("id", testId)
+      .maybeSingle()
+
+    if (legacyError) {
+      throw new Error(`Failed to fetch test: ${legacyError.message}`)
+    }
+
+    return normalizeTestRow(legacyData)
+  } else if (error) {
     throw new Error(`Failed to fetch test: ${error.message}`)
   }
 
-  return data as TestRow | null
+  return normalizeTestRow(data)
 }
 
 async function getSourceDocumentTitle(documentId: string | null): Promise<string> {

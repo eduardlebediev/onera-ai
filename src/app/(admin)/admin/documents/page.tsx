@@ -1,28 +1,51 @@
-import { mockDocuments } from "@/data/mock/documents"
-import { BackendFallbackBanner } from "@/features/documents/components/backend-fallback-banner"
 import { DocumentProcessingRefresher } from "@/features/documents/components/document-processing-refresher"
 import { DocumentUploadButton } from "@/features/documents/components/document-upload-button"
 import { DocumentsKpiSection } from "@/features/documents/components/documents-kpi-section"
 import { DocumentsTable } from "@/features/documents/components/documents-table"
 import { getDocumentsFromSupabase } from "@/features/documents/lib/supabase-documents"
+import { Card, CardContent } from "@/shared/ui/card"
 
 export const dynamic = "force-dynamic"
 
+function DocumentsEmptyState() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+        <div>
+          <p className="typography-h3 font-semibold">No documents yet</p>
+          <p className="mt-2 max-w-md typography-p text-muted-foreground">
+            Upload your first document to extract topics and generate knowledge tests.
+          </p>
+        </div>
+        <DocumentUploadButton />
+      </CardContent>
+    </Card>
+  )
+}
+
+function DocumentsLoadErrorState() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+        <p className="typography-h3 font-semibold">Documents could not be loaded</p>
+        <p className="max-w-md typography-p text-muted-foreground">
+          Refresh the page or try again later. No demo fallback data is shown.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default async function DocumentsPage() {
-  let documents = mockDocuments
-  let showFallbackBanner = false
+  let documents: Awaited<ReturnType<typeof getDocumentsFromSupabase>>["documents"] = []
+  let loadError = false
 
   try {
     const result = await getDocumentsFromSupabase()
-
-    if (result.documents.length > 0) {
-      documents = result.documents
-    } else {
-      showFallbackBanner = true
-    }
+    documents = result.documents
   } catch (error) {
     console.error("Failed to load documents from Supabase:", error)
-    showFallbackBanner = true
+    loadError = true
   }
 
   return (
@@ -30,7 +53,6 @@ export default async function DocumentsPage() {
       <DocumentProcessingRefresher
         enabled={documents.some((document) => document.status === "processing")}
       />
-      {showFallbackBanner ? <BackendFallbackBanner /> : null}
 
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -47,7 +69,13 @@ export default async function DocumentsPage() {
       </div>
 
       <div className="mt-2">
-        <DocumentsTable documents={documents} />
+        {loadError ? (
+          <DocumentsLoadErrorState />
+        ) : documents.length === 0 ? (
+          <DocumentsEmptyState />
+        ) : (
+          <DocumentsTable documents={documents} />
+        )}
       </div>
     </div>
   )

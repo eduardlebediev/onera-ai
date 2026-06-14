@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation"
 
-import { mockDocuments } from "@/data/mock/documents"
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { DocumentDetail } from "@/features/documents/components/document-detail"
 import { DocumentProcessingRefresher } from "@/features/documents/components/document-processing-refresher"
-import { resolveMockDocumentByRouteId } from "@/features/documents/lib/demo-document-ids"
 import { getDocumentDetailById } from "@/features/documents/lib/supabase-documents"
 
 interface DocumentDetailPageProps {
@@ -22,9 +20,7 @@ async function resolveDocument(id: string): Promise<MockDocumentDetail | null> {
     console.error(`Failed to load document ${id} from Supabase:`, error)
   }
 
-  return (
-    resolveMockDocumentByRouteId(id) ?? mockDocuments.find((document) => document.id === id) ?? null
-  )
+  return null
 }
 
 export default async function DocumentDetailPage({ params }: DocumentDetailPageProps) {

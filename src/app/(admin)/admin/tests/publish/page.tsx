@@ -1,38 +1,64 @@
-import { mockDocuments } from "@/data/mock/documents"
+import Link from "next/link"
+
 import {
   resolveApiDocumentId,
-  resolveMockDocumentByRouteId,
   resolveReviewDocumentRouteId,
 } from "@/features/documents/lib/demo-document-ids"
+import { getDocumentDetailById } from "@/features/documents/lib/supabase-documents"
 import { PublishTestPage } from "@/features/tests/components/publish-test-page"
 import { getLatestReviewDraftForDocument } from "@/features/tests/lib/supabase-review-drafts"
-import { getMockTestReviewData } from "@/features/tests/mock/generated-test-review"
+import { Button } from "@/shared/ui/button"
+import { Card, CardContent } from "@/shared/ui/card"
 
 interface PublishTestRouteProps {
   searchParams: Promise<{ documentId?: string; runId?: string }>
 }
 
+function EmptyPublishState() {
+  return (
+    <div className="page-shell-narrow">
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+          <div>
+            <p className="typography-h3 font-semibold">No approved review draft found</p>
+            <p className="mt-2 max-w-md typography-p text-muted-foreground">
+              Generate and review a test draft before publishing it.
+            </p>
+          </div>
+          <Button asChild className="rounded-full">
+            <Link href="/admin/documents">Generate Test</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 export default async function PublishTestRoute({ searchParams }: PublishTestRouteProps) {
   const { documentId, runId } = await searchParams
-  const defaultDocument =
-    mockDocuments.find((document) => document.chunks.length > 0) ?? mockDocuments[0]
-  const sourceDocument =
-    (documentId ? resolveMockDocumentByRouteId(documentId) : undefined) ?? defaultDocument
-  const reviewDocumentId = documentId ? resolveReviewDocumentRouteId(documentId) : sourceDocument.id
   const apiDocumentId = documentId ? resolveApiDocumentId(documentId) : null
+
+  if (!documentId || !apiDocumentId) {
+    return <EmptyPublishState />
+  }
+
   const supabaseReviewDraft = apiDocumentId
     ? await getLatestReviewDraftForDocument(apiDocumentId)
     : null
-  const reviewData = supabaseReviewDraft?.reviewData ?? getMockTestReviewData(sourceDocument)
+  const sourceDocument = await getDocumentDetailById(apiDocumentId)
+
+  if (!supabaseReviewDraft || !sourceDocument) {
+    return <EmptyPublishState />
+  }
 
   return (
     <PublishTestPage
       document={sourceDocument}
-      reviewData={reviewData}
-      documentId={reviewDocumentId}
-      generationRunId={supabaseReviewDraft?.generationRunId ?? runId ?? null}
-      reviewDataSource={supabaseReviewDraft ? "supabase" : "mock"}
-      recoveredDraft={supabaseReviewDraft?.storedDraft ?? null}
+      reviewData={supabaseReviewDraft.reviewData}
+      documentId={resolveReviewDocumentRouteId(documentId)}
+      generationRunId={supabaseReviewDraft.generationRunId ?? runId ?? null}
+      reviewDataSource="supabase"
+      recoveredDraft={supabaseReviewDraft.storedDraft}
     />
   )
 }

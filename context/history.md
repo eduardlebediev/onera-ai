@@ -4,6 +4,78 @@ Detailed session records for all completed feature specs and refinements.
 
 ---
 
+## Feature Spec 48: Mock Cleanup — Real Product Feel
+
+**Branch:** `feature/48-mock-cleanup-real-product-feel`
+
+Removed visible mock fallbacks and dead demo links so primary pages render Supabase data, real empty states, or load-error states.
+
+### Seed Data
+
+- Extended `supabase/seed.sql` with demo `document_topics` for both seeded documents.
+- Added one published security-guidelines test with approved questions, `test_documents`, one employee assignment, one completed failed attempt, persisted answers, AI feedback text, and an `ai_generation_runs` audit row.
+
+### Mock Fallback Cleanup
+
+- Removed mock document/test fallbacks from admin documents, tests, dashboard, saved test detail, assign, review, and publish route paths.
+- Replaced empty Supabase results with real empty states for admin documents, admin tests, dashboard cards, review, and publish.
+- Removed hardcoded direct mock links such as `doc-1` and `test-1` from user-facing empty/not-found states.
+- Deleted the unused backend fallback banner that advertised demo fallback data.
+
+### Employee Dashboard
+
+- Replaced dashboard-level mock attempt lookup with Supabase-backed completed-attempt and answer-topic queries.
+- Recent feedback now links to the persisted result with `?attemptId=`.
+- Learning focus is derived from real incorrect answer topics, with mock attempt data kept only for non-UUID local demo test ids.
+
+### Review Fixes
+
+- Filtered dashboard AI Review rows to only show generation runs with recoverable review drafts, so published seed audit rows are not shown as pending drafts.
+- Ensured learning-focus explanations come from missed answers rather than earlier correct answers in the same topic.
+- Added a schema-drift fallback for employee assignment, take/start, and result loaders when `tests.max_attempts` is missing, defaulting employee attempt limits to 3 until migration `00011_retake_and_transactions.sql` is applied.
+
+### Verification
+
+- `npm run lint` passes.
+- `npm run typecheck` passes.
+- `npm run format:check` passes.
+- `npm run build` passes. Build still reports the existing Next.js middleware-to-proxy deprecation warning.
+
+### Files changed
+
+- `supabase/seed.sql`
+- `src/app/(admin)/admin/documents/page.tsx`
+- `src/app/(admin)/admin/documents/[id]/page.tsx`
+- `src/app/(admin)/admin/documents/[id]/not-found.tsx`
+- `src/app/(admin)/admin/tests/page.tsx`
+- `src/app/(admin)/admin/tests/[id]/page.tsx`
+- `src/app/(admin)/admin/tests/[id]/assign/page.tsx`
+- `src/app/(admin)/admin/tests/[id]/not-found.tsx`
+- `src/app/(admin)/admin/tests/review/page.tsx`
+- `src/app/(admin)/admin/tests/publish/page.tsx`
+- `src/app/(admin)/admin/dashboard/page.tsx`
+- `src/app/(employee)/employee/dashboard/page.tsx`
+- `src/features/analytics/components/admin-dashboard.tsx`
+- `src/features/analytics/components/ai-drafts-list.tsx`
+- `src/features/analytics/components/dashboard-header.tsx`
+- `src/features/analytics/components/recent-documents-card.tsx`
+- `src/features/analytics/components/test-completions-chart.tsx`
+- `src/features/analytics/components/test-performance-table.tsx`
+- `src/features/analytics/lib/supabase-admin-dashboard.ts`
+- `src/features/employee/tests/components/employee-dashboard.tsx`
+- `src/features/employee/tests/lib/employee-dashboard-model.ts`
+- `src/features/employee/tests/lib/supabase-employee-assignments.ts`
+- `src/features/employee/tests/lib/supabase-employee-attempts.ts`
+- `src/features/employee/tests/lib/supabase-employee-tests.ts`
+- `src/features/employee/tests/lib/supabase-schema-drift.ts`
+- `src/features/tests/components/tests-list-page.tsx`
+- `src/features/tests/lib/publish-test-model.ts`
+- `src/features/tests/lib/supabase-review-drafts.ts`
+- `src/features/documents/components/backend-fallback-banner.tsx` (deleted)
+- `context/progress-tracker.md`
+
+---
+
 ## Feature Spec 47: Background Ingestion + Demo Login + Dead-UI Cleanup
 
 **Branch:** `feature/47-background-ingestion-and-demo-login`

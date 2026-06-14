@@ -60,69 +60,85 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <Table className="text-left">
-          <TableHeader>
-            <TableRow className="text-muted-foreground">
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Document</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Status</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Topics</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Tests</span>
-              </TableHead>
-              <TableHead className="py-3">
-                <span className="typography-small font-medium text-muted-foreground">Updated</span>
-              </TableHead>
-              <TableHead className="py-3 text-right">
-                <span className="typography-small font-medium text-muted-foreground">Action</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="divide-y divide-border/50">
-            {documents.map((document) => (
-              <TableRow key={document.id}>
-                <TableCell>
-                  <Link
-                    href={`/admin/documents/${document.id}`}
-                    className="typography-small font-medium hover:text-primary hover:underline"
-                  >
-                    {document.title}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">
-                    {document.topics.length > 0 ? document.topics.length : "—"}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">
-                    {document.testCount > 0 ? document.testCount : "—"}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <p className="typography-small font-medium text-muted-foreground">
-                    {document.updatedAt}
-                  </p>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={getDocumentActionHref(document)}>
-                      {getDocumentActionLabel(document)}
-                    </Link>
-                  </Button>
-                </TableCell>
+        {documents.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 px-6 py-8">
+            <p className="typography-small font-medium text-foreground">No documents yet</p>
+            <p className="typography-small text-muted-foreground">
+              Upload your first document to start generating tests.
+            </p>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/documents">Upload Document</Link>
+            </Button>
+          </div>
+        ) : (
+          <Table className="text-left">
+            <TableHeader>
+              <TableRow className="text-muted-foreground">
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    Document
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Status</span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Topics</span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">Tests</span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    Updated
+                  </span>
+                </TableHead>
+                <TableHead className="py-3 text-right">
+                  <span className="typography-small font-medium text-muted-foreground">Action</span>
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody className="divide-y divide-border/50">
+              {documents.map((document) => (
+                <TableRow key={document.id}>
+                  <TableCell>
+                    <Link
+                      href={`/admin/documents/${document.id}`}
+                      className="typography-small font-medium hover:text-primary hover:underline"
+                    >
+                      {document.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {document.topics.length > 0 ? document.topics.length : "—"}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {document.testCount > 0 ? document.testCount : "—"}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="typography-small font-medium text-muted-foreground">
+                      {document.updatedAt}
+                    </p>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={getDocumentActionHref(document)}>
+                        {getDocumentActionLabel(document)}
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   )

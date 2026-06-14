@@ -26,7 +26,7 @@ export function DashboardHeader() {
           </Link>
         </Button>
         <Button variant="default" size="lg" asChild>
-          <Link href="/admin/documents/doc-1/generate-test">
+          <Link href="/admin/documents">
             <Sparkles className="size-4" />
             Generate Test
           </Link>

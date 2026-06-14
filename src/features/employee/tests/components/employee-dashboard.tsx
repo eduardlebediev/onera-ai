@@ -7,22 +7,31 @@ import { EmployeeDashboardRecentFeedback } from "@/features/employee/tests/compo
 import { getEmployeeDashboardKpiStats } from "@/features/employee/tests/lib/employee-dashboard-kpi"
 import {
   getDashboardQuickActions,
-  getDashboardWeakTopics,
+  getEmployeeDashboardAttemptInsights,
   getNextRequiredTest,
-  getRecentFeedback,
 } from "@/features/employee/tests/lib/employee-dashboard-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import type { MockEmployee } from "@/features/tests/mock/employees"
 
 interface EmployeeDashboardProps {
   employee: MockEmployee
+  organizationId: string
   tests: EmployeeAssignedTest[]
+  userId: string
 }
 
-export function EmployeeDashboard({ employee, tests }: EmployeeDashboardProps) {
-  const weakTopics = getDashboardWeakTopics(tests)
+export async function EmployeeDashboard({
+  employee,
+  organizationId,
+  tests,
+  userId,
+}: EmployeeDashboardProps) {
+  const { recentFeedback, weakTopics } = await getEmployeeDashboardAttemptInsights({
+    userId,
+    organizationId,
+    tests,
+  })
   const nextTest = getNextRequiredTest(tests)
-  const recentFeedback = getRecentFeedback(tests)
   const kpiStats = getEmployeeDashboardKpiStats(tests, weakTopics.length)
   const quickActions = getDashboardQuickActions(tests, nextTest, recentFeedback)
 

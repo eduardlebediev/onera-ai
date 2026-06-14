@@ -3,13 +3,10 @@ import { notFound } from "next/navigation"
 import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
 import { SavedTestDetailPage } from "@/features/tests/components/saved-test-detail-page"
-import { TestDetailPage } from "@/features/tests/components/test-detail-page"
 import { getSupabaseAssignmentSummaryByTestId } from "@/features/tests/lib/supabase-assignments"
 import { getSavedTestDetailById } from "@/features/tests/lib/supabase-test-detail"
 import { getSupabaseTestProgress } from "@/features/tests/lib/supabase-test-progress"
 import { getTestLifecycleImpact } from "@/features/tests/lib/test-lifecycle"
-import { getResolvedMockTestById } from "@/features/tests/lib/test-source-document"
-import { mockTests } from "@/features/tests/mock/tests"
 
 interface TestDetailRouteProps {
   params: Promise<{ id: string }>
@@ -17,11 +14,6 @@ interface TestDetailRouteProps {
 
 export default async function TestDetailRoute({ params }: TestDetailRouteProps) {
   const { id } = await params
-  const mockTest = getResolvedMockTestById(mockTests, id)
-
-  if (mockTest) {
-    return <TestDetailPage test={mockTest} />
-  }
 
   if (!isUuid(id)) {
     notFound()

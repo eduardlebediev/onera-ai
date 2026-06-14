@@ -19,6 +19,8 @@ interface TestCompletionsChartProps {
 }
 
 export function TestCompletionsChart({ data }: TestCompletionsChartProps) {
+  const totalCompletions = data.reduce((sum, item) => sum + item.completions, 0)
+
   return (
     <Card className="col-span-12 h-full lg:col-span-5">
       <CardHeader className="px-6 pb-3 pt-4">
@@ -29,7 +31,7 @@ export function TestCompletionsChart({ data }: TestCompletionsChartProps) {
           </div>
           <span className="typography-small flex items-center gap-1 font-medium text-emerald-600">
             <TrendingUp className="size-4" />
-            18%
+            {totalCompletions} this week
           </span>
         </div>
         <p className="mt-1 typography-small text-muted-foreground font-medium">

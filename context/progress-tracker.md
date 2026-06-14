@@ -82,4 +82,4 @@ Production Readiness Cleanup
 - Feature Spec 02: Add Prettier, ESLint and Husky
 - Feature Spec 01: Set up shadcn/ui Design System
 
-See `context/history.md` for full details on each completed item.
+See `context/decisions.md` for architectural decisions and context/feature-specs/ for detailed feature specifications.

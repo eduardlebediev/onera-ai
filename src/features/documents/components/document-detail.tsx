@@ -11,6 +11,8 @@ import {
   XCircle,
 } from "lucide-react"
 import Link from "next/link"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 import type { DocumentStatus, DocumentTopic, MockDocumentDetail } from "@/data/mock/documents"
 import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
@@ -83,6 +85,42 @@ const TOPIC_BADGE_COLORS = [
   "bg-pink-50 text-pink-700 hover:bg-pink-50 dark:bg-pink-900/20 dark:text-pink-400",
   "bg-teal-50 text-teal-700 hover:bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400",
 ]
+
+const EXTRACTED_TEXT_MARKDOWN_CLASS_NAME = [
+  "space-y-3 leading-6 text-muted-foreground",
+  "[&>:first-child]:mt-0 [&>:last-child]:mb-0",
+  "[&_a]:font-medium [&_a]:text-primary [&_a]:underline-offset-4 hover:[&_a]:underline",
+  "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic",
+  "[&_code]:rounded-md [&_code]:bg-background [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-foreground",
+  "[&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-foreground",
+  "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-foreground",
+  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-foreground",
+  "[&_h4]:font-semibold [&_h4]:text-foreground",
+  "[&_hr]:border-border",
+  "[&_li]:pl-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5",
+  "[&_p]:text-muted-foreground",
+  "[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-background [&_pre]:p-3",
+  "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
+  "[&_strong]:font-semibold [&_strong]:text-foreground",
+  "[&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden",
+  "[&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2",
+  "[&_th]:border [&_th]:border-border [&_th]:bg-background [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-foreground",
+].join(" ")
+
+interface ExtractedTextMarkdownProps {
+  children: string
+  preview?: boolean
+}
+
+function ExtractedTextMarkdown({ children, preview = false }: ExtractedTextMarkdownProps) {
+  return (
+    <div
+      className={`${preview ? "max-h-40 overflow-hidden" : "overflow-x-auto"} ${EXTRACTED_TEXT_MARKDOWN_CLASS_NAME}`}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+    </div>
+  )
+}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -326,7 +364,9 @@ export function DocumentDetail({
                 <CardContent>
                   {document.extractedText ? (
                     <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
-                      <p className="line-clamp-6 whitespace-pre-wrap">{document.extractedText}</p>
+                      <ExtractedTextMarkdown preview>
+                        {document.extractedText}
+                      </ExtractedTextMarkdown>
                     </div>
                   ) : document.chunks.length > 0 ? (
                     <>
@@ -479,8 +519,8 @@ export function DocumentDetail({
               </CardHeader>
               <CardContent>
                 {document.extractedText ? (
-                  <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {document.extractedText}
+                  <div className="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">
+                    <ExtractedTextMarkdown>{document.extractedText}</ExtractedTextMarkdown>
                   </div>
                 ) : document.chunks.length > 0 ? (
                   <div className="space-y-6">

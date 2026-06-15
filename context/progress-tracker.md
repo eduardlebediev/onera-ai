@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 55: Markdown Rendering for Document Text
+
 - Feature Spec 54 Follow-up: Employee My Tests DataTable
 
 - Feature Spec 54 Follow-up: Tests Table Filter Toolbar Alignment

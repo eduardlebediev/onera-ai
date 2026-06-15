@@ -16,6 +16,14 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 57 Follow-up: Direct Archive All Documents
+
+- Feature Spec 57 Follow-up: Direct Delete All Documents
+
+- Feature Spec 57 Follow-up: Document Bulk Action Eligibility
+
+- Feature Spec 57: Bulk Row Selection and Batch Actions
+
 - Feature Spec 56: Code Quality Fixes
 
 - Feature Spec 55: Markdown Rendering for Document Text

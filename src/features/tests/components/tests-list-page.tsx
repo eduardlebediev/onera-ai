@@ -2,12 +2,15 @@
 
 import { memo, useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ClipboardList, Filter } from "lucide-react"
+import { Archive, ClipboardList, Filter, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { TestDrawer } from "@/features/tests/components/test-drawer"
 import { TestsKpiSection } from "@/features/tests/components/tests-kpi-section"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { archiveTest, deleteTest } from "@/features/tests/lib/test-lifecycle-api-client"
 import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
 import {
   isSourceBlockingValidity,
@@ -20,9 +23,12 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
 import { DataTable } from "@/shared/ui/data-table/data-table"
 import { DataTableColumnHeader } from "@/shared/ui/data-table/data-table-column-header"
+import { DataTableSelectionCheckbox } from "@/shared/ui/data-table-selection-checkbox"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
+import { useSelection } from "@/shared/ui/use-selection"
 
 type StatusFilter = "all" | TestStatus
 
@@ -37,6 +43,8 @@ interface TestsListPageProps {
   tests: ResolvedMockTest[]
   loadError?: boolean
 }
+
+type BulkTestAction = "archive" | "delete"
 
 function TestsEmptyState() {
   return (
@@ -70,9 +78,12 @@ function TestsLoadErrorState() {
 }
 
 export function TestsListPage({ tests, loadError = false }: TestsListPageProps) {
+  const router = useRouter()
+  const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [bulkTestAction, setBulkTestAction] = useState<BulkTestAction | null>(null)
 
   const visibleTests = useMemo(() => {
     if (statusFilter === "all") return tests
@@ -88,8 +99,101 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
     setIsDrawerOpen(true)
   }, [])
 
+  const selectedTests = useMemo(
+    () => tests.filter((test) => selectedIds.has(test.id)),
+    [selectedIds, tests]
+  )
+  const canArchiveSelectedTests =
+    selectedTests.length > 0 && selectedTests.every((test) => test.status === "published")
+  const canDeleteSelectedTests =
+    selectedTests.length > 0 &&
+    selectedTests.every((test) => test.status === "draft" || test.status === "archived")
+
+  const handleBulkArchiveTests = useCallback(async () => {
+    if (!canArchiveSelectedTests) return
+
+    const confirmed = window.confirm(`Archive ${selectedTests.length} selected test(s)?`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setBulkTestAction("archive")
+
+    try {
+      for (const test of selectedTests) {
+        await archiveTest(test.id)
+      }
+
+      toast.success(`${selectedTests.length} test(s) archived.`)
+      clearSelection()
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk archive failed.")
+    } finally {
+      setBulkTestAction(null)
+    }
+  }, [canArchiveSelectedTests, clearSelection, router, selectedTests])
+
+  const handleBulkDeleteTests = useCallback(async () => {
+    if (!canDeleteSelectedTests) return
+
+    const confirmed = window.confirm(`Delete ${selectedTests.length} selected test(s)?`)
+
+    if (!confirmed) {
+      return
+    }
+
+    setBulkTestAction("delete")
+
+    try {
+      for (const test of selectedTests) {
+        await deleteTest({
+          testId: test.id,
+          deletionReason: "Bulk deleted from the tests table.",
+        })
+      }
+
+      toast.success(`${selectedTests.length} test(s) deleted.`)
+      clearSelection()
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bulk delete failed.")
+    } finally {
+      setBulkTestAction(null)
+    }
+  }, [canDeleteSelectedTests, clearSelection, router, selectedTests])
+
   const columns = useMemo<ColumnDef<ResolvedMockTest>[]>(
     () => [
+      {
+        id: "select",
+        header: ({ table }) => {
+          const visibleIds = table.getRowModel().rows.map((row) => row.original.id)
+          const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length
+          const allVisibleSelected =
+            visibleIds.length > 0 && selectedVisibleCount === visibleIds.length
+
+          return (
+            <DataTableSelectionCheckbox
+              aria-label="Select all visible tests"
+              checked={allVisibleSelected}
+              indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
+              disabled={visibleIds.length === 0}
+              onCheckedChange={(checked) => selectAll(visibleIds, checked)}
+            />
+          )
+        },
+        enableSorting: false,
+        meta: { width: 56, headerClassName: "text-center", cellClassName: "text-center" },
+        cell: ({ row }) => (
+          <DataTableSelectionCheckbox
+            aria-label={`Select ${row.original.title}`}
+            checked={selectedIds.has(row.original.id)}
+            onCheckedChange={() => toggle(row.original.id)}
+          />
+        ),
+      },
       {
         id: "title",
         accessorKey: "title",
@@ -189,7 +293,7 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
         cell: ({ row }) => <TestActionsCell testId={row.original.id} />,
       },
     ],
-    [handleOpenDrawer]
+    [handleOpenDrawer, selectAll, selectedIds, toggle]
   )
 
   return (
@@ -221,6 +325,28 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
             title="All Tests"
             countLabel={`${visibleTests.length} shown`}
           >
+            <DataTableBulkActions selectedCount={selectedIds.size}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canArchiveSelectedTests || bulkTestAction !== null}
+                onClick={() => void handleBulkArchiveTests()}
+              >
+                <Archive />
+                {bulkTestAction === "archive" ? "Archiving..." : "Archive"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canDeleteSelectedTests || bulkTestAction !== null}
+                onClick={() => void handleBulkDeleteTests()}
+              >
+                <Trash2 />
+                {bulkTestAction === "delete" ? "Deleting..." : "Delete"}
+              </Button>
+            </DataTableBulkActions>
             <DataTable
               columns={columns}
               data={visibleTests}

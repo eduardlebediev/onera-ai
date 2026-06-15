@@ -14,6 +14,7 @@ import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTable } from "@/shared/ui/data-table/data-table"
 import { DataTableColumnHeader } from "@/shared/ui/data-table/data-table-column-header"
+import { DataTableSelectionCheckbox } from "@/shared/ui/data-table-selection-checkbox"
 
 type EmployeeTableRow = EmployeeListItem & {
   searchText: string
@@ -22,9 +23,12 @@ type EmployeeTableRow = EmployeeListItem & {
 interface EmployeesTableProps {
   employees: EmployeeListItem[]
   nudgingIds: string[]
+  selectedIds: Set<string>
   toolbar?: ReactNode
-  onNudge: (employeeIds: string[], label: string) => void
+  onNudge: (employeeIds: string[], label: string) => Promise<boolean>
   onOpenPreview: (employee: EmployeeListItem) => void
+  onToggleSelected: (employeeId: string) => void
+  onSelectAll: (employeeIds: Iterable<string>, selected?: boolean) => void
 }
 
 const STATUS_STYLE: Record<
@@ -87,9 +91,12 @@ function handleRowKeyDown(
 export function EmployeesTable({
   employees,
   nudgingIds,
+  selectedIds,
   toolbar,
   onNudge,
   onOpenPreview,
+  onToggleSelected,
+  onSelectAll,
 }: EmployeesTableProps) {
   const tableRows = useMemo<EmployeeTableRow[]>(
     () =>
@@ -102,6 +109,39 @@ export function EmployeesTable({
 
   const columns = useMemo<ColumnDef<EmployeeTableRow>[]>(
     () => [
+      {
+        id: "select",
+        header: ({ table }) => {
+          const visibleIds = table.getRowModel().rows.map((row) => row.original.id)
+          const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length
+          const allVisibleSelected =
+            visibleIds.length > 0 && selectedVisibleCount === visibleIds.length
+
+          return (
+            <DataTableSelectionCheckbox
+              aria-label="Select all visible employees"
+              checked={allVisibleSelected}
+              indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
+              disabled={visibleIds.length === 0}
+              onCheckedChange={(checked) => onSelectAll(visibleIds, checked)}
+            />
+          )
+        },
+        enableSorting: false,
+        meta: {
+          pin: "left",
+          width: 56,
+          headerClassName: "text-center",
+          cellClassName: "text-center",
+        },
+        cell: ({ row }) => (
+          <DataTableSelectionCheckbox
+            aria-label={`Select ${row.original.name}`}
+            checked={selectedIds.has(row.original.id)}
+            onCheckedChange={() => onToggleSelected(row.original.id)}
+          />
+        ),
+      },
       {
         id: "name",
         accessorKey: "name",
@@ -180,7 +220,7 @@ export function EmployeesTable({
         ),
       },
     ],
-    [nudgingIds, onNudge]
+    [nudgingIds, onNudge, onSelectAll, onToggleSelected, selectedIds]
   )
 
   return (
@@ -260,7 +300,7 @@ const EmployeeActionsCell = memo(function EmployeeActionsCell({
 }: {
   employee: EmployeeTableRow
   isNudging: boolean
-  onNudge: (employeeIds: string[], label: string) => void
+  onNudge: (employeeIds: string[], label: string) => Promise<boolean>
 }) {
   return (
     <div
@@ -288,7 +328,7 @@ const EmployeeActionsCell = memo(function EmployeeActionsCell({
           size="sm"
           disabled={isNudging}
           onClick={() =>
-            onNudge(
+            void onNudge(
               [employee.id],
               employee.status === "overdue"
                 ? "Please complete your overdue assigned training."

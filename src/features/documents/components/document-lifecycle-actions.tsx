@@ -98,18 +98,11 @@ export function DocumentLifecycleActions({
   const [deletionReason, setDeletionReason] = useState("")
 
   const isApiBacked = hasApiBackedDocument(document.id)
-  const isDemo = document.sourceType === "demo"
   const isDeleted = document.status === "deleted"
   const isArchived = document.status === "archived"
   const supportsArchiveDelete = document.supportsArchiveDelete !== false
-  const canArchive =
-    isApiBacked &&
-    supportsArchiveDelete &&
-    !isDemo &&
-    !isDeleted &&
-    !isArchived &&
-    (document.status === "ready" || document.status === "failed")
-  const canDelete = isApiBacked && supportsArchiveDelete && !isDemo && isArchived
+  const canArchive = isApiBacked && supportsArchiveDelete && !isDeleted && !isArchived
+  const canDelete = isApiBacked && supportsArchiveDelete && !isDeleted
 
   const closeDialog = () => {
     if (isSubmitting) return
@@ -182,11 +175,11 @@ export function DocumentLifecycleActions({
             title={
               !supportsArchiveDelete
                 ? "Apply migration 00006 before archiving documents."
-                : isDemo
-                  ? "Demo documents cannot be archived"
+                : !isApiBacked
+                  ? "Only Supabase-backed documents can be archived"
                   : isArchived
                     ? "Document is already archived"
-                    : "Only ready or failed uploaded documents can be archived"
+                    : "Deleted documents cannot be archived"
             }
           >
             <Archive className="mr-2 size-4" />
@@ -211,9 +204,9 @@ export function DocumentLifecycleActions({
             title={
               !supportsArchiveDelete
                 ? "Apply migration 00006 before permanently deleting documents."
-                : isDemo
-                  ? "Demo documents cannot be permanently deleted"
-                  : "Only archived documents can be permanently deleted"
+                : !isApiBacked
+                  ? "Only Supabase-backed documents can be permanently deleted"
+                  : "This document is already permanently deleted"
             }
           >
             <Trash2 className="mr-2 size-4" />

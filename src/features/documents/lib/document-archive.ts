@@ -13,7 +13,6 @@ export type ArchiveDocumentResult = {
 type DocumentRow = {
   id: string
   organization_id: string
-  source_type: string
   status: string
 }
 
@@ -26,7 +25,7 @@ export async function archiveDocument(input: {
 
   const { data: document, error: documentError } = await supabase
     .from("documents")
-    .select("id, organization_id, source_type, status")
+    .select("id, organization_id, status")
     .eq("id", input.documentId)
     .eq("organization_id", input.organizationId)
     .maybeSingle()
@@ -41,23 +40,12 @@ export async function archiveDocument(input: {
 
   const row = document as DocumentRow
 
-  if (row.source_type === "demo") {
-    throw new ArchiveDocumentError("Demo documents cannot be archived", "demo")
-  }
-
   if (row.status === "deleted") {
     throw new ArchiveDocumentError("Deleted documents cannot be archived", "deleted")
   }
 
   if (row.status === "archived") {
     throw new ArchiveDocumentError("Document is already archived", "already_archived")
-  }
-
-  if (row.status !== "ready" && row.status !== "failed") {
-    throw new ArchiveDocumentError(
-      "Only ready or failed documents can be archived",
-      "invalid_status"
-    )
   }
 
   const now = new Date().toISOString()
@@ -94,12 +82,7 @@ export async function archiveDocument(input: {
   }
 }
 
-export type ArchiveDocumentErrorCode =
-  | "not_found"
-  | "demo"
-  | "deleted"
-  | "already_archived"
-  | "invalid_status"
+export type ArchiveDocumentErrorCode = "not_found" | "deleted" | "already_archived"
 
 export class ArchiveDocumentError extends Error {
   constructor(

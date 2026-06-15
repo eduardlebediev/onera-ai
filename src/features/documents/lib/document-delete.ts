@@ -14,7 +14,6 @@ export type DeleteDocumentResult = {
 type DocumentRow = {
   id: string
   organization_id: string
-  source_type: string
   status: string
   storage_path: string | null
 }
@@ -42,7 +41,7 @@ async function removeStorageObject(storagePath: string): Promise<void> {
   }
 }
 
-export async function permanentlyDeleteArchivedDocument(input: {
+export async function permanentlyDeleteDocumentRecord(input: {
   organizationId: string
   documentId: string
   deletedBy: string
@@ -52,7 +51,7 @@ export async function permanentlyDeleteArchivedDocument(input: {
 
   const { data: document, error: documentError } = await supabase
     .from("documents")
-    .select("id, organization_id, source_type, status, storage_path")
+    .select("id, organization_id, status, storage_path")
     .eq("id", input.documentId)
     .eq("organization_id", input.organizationId)
     .maybeSingle()
@@ -67,19 +66,8 @@ export async function permanentlyDeleteArchivedDocument(input: {
 
   const row = document as DocumentRow
 
-  if (row.source_type === "demo") {
-    throw new DeleteDocumentError("Demo documents cannot be permanently deleted", "demo")
-  }
-
   if (row.status === "deleted") {
     throw new DeleteDocumentError("Document is already deleted", "already_deleted")
-  }
-
-  if (row.status !== "archived" && row.status !== "failed") {
-    throw new DeleteDocumentError(
-      "Only archived or failed documents can be permanently deleted",
-      "not_archived"
-    )
   }
 
   const impact = await getDocumentImpactSummary({
@@ -144,7 +132,7 @@ export async function permanentlyDeleteArchivedDocument(input: {
   }
 }
 
-export type DeleteDocumentErrorCode = "not_found" | "demo" | "already_deleted" | "not_archived"
+export type DeleteDocumentErrorCode = "not_found" | "already_deleted"
 
 export class DeleteDocumentError extends Error {
   constructor(

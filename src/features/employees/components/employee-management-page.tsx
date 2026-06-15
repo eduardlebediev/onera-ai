@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { AssignSelectedEmployeesModal } from "@/features/employees/components/assign-selected-employees-modal"
 import { BulkAssignModal } from "@/features/employees/components/bulk-assign-modal"
 import { DepartmentSelect } from "@/features/employees/components/department-select"
 import { EmployeeDetailDrawer } from "@/features/employees/components/employee-detail-drawer"
@@ -18,7 +19,9 @@ import type {
 } from "@/features/employees/lib/supabase-employees"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
+import { useSelection } from "@/shared/ui/use-selection"
 
 type StatusFilter = "all" | EmployeeProgressStatus
 
@@ -32,6 +35,12 @@ type BulkAssignResponse = {
   targetCount?: number
   createdCount?: number
   skippedCount?: number
+  error?: string
+}
+
+type AssignSelectedEmployeesResponse = {
+  created?: unknown[]
+  skipped?: unknown[]
   error?: string
 }
 
@@ -115,13 +124,16 @@ function EmployeeKpiCards({ data }: { data: EmployeeManagementData }) {
 
 export function EmployeeManagementPage({ data, loadError = false }: EmployeeManagementPageProps) {
   const router = useRouter()
+  const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [invitedEmployees, setInvitedEmployees] = useState<EmployeeListItem[]>([])
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false)
+  const [isAssignSelectedOpen, setIsAssignSelectedOpen] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
   const [isBulkAssigning, setIsBulkAssigning] = useState(false)
+  const [isAssigningSelected, setIsAssigningSelected] = useState(false)
   const [nudgingIds, setNudgingIds] = useState<string[]>([])
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeListItem | null>(null)
   const [selectedEmployeeDetail, setSelectedEmployeeDetail] = useState<EmployeeDetail | null>(null)
@@ -184,6 +196,23 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
   const overdueEmployeeIds = employees
     .filter((employee) => employee.status === "overdue")
     .map((employee) => employee.id)
+
+  const selectedEmployees = useMemo(
+    () => employees.filter((employee) => selectedIds.has(employee.id)),
+    [employees, selectedIds]
+  )
+  const selectedEmployeeIds = useMemo(
+    () => selectedEmployees.map((employee) => employee.id),
+    [selectedEmployees]
+  )
+  const canAssignSelectedEmployees =
+    selectedEmployees.length > 0 &&
+    data.tests.length > 0 &&
+    selectedEmployees.every((employee) => employee.memberStatus === "active")
+  const canNudgeSelectedEmployees =
+    selectedEmployees.length > 0 &&
+    nudgingIds.length === 0 &&
+    selectedEmployees.every((employee) => employee.status !== "completed")
 
   const handleInvite = async (formData: {
     fullName: string
@@ -257,7 +286,48 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     }
   }
 
-  const handleNudge = async (employeeIds: string[], label: string) => {
+  const handleAssignSelectedEmployees = async (formData: { testId: string }) => {
+    if (!canAssignSelectedEmployees) return
+
+    setIsAssigningSelected(true)
+
+    try {
+      const response = await fetch(`/api/admin/tests/${formData.testId}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userIds: selectedEmployeeIds,
+          deadline: null,
+        }),
+      })
+      const payload = (await response
+        .json()
+        .catch(() => null)) as AssignSelectedEmployeesResponse | null
+
+      if (!response.ok) {
+        throw new Error(getErrorMessage(payload, "Selected assignment failed"))
+      }
+
+      setIsAssignSelectedOpen(false)
+      clearSelection()
+      toast.success("Selected assignment complete", {
+        description: `${payload?.created?.length ?? 0} new assignment${
+          payload?.created?.length === 1 ? "" : "s"
+        } created. ${payload?.skipped?.length ?? 0} skipped.`,
+        position: "bottom-right",
+      })
+      router.refresh()
+    } catch (error) {
+      toast.error("Selected assignment failed", {
+        description: error instanceof Error ? error.message : "Try again later.",
+        position: "bottom-right",
+      })
+    } finally {
+      setIsAssigningSelected(false)
+    }
+  }
+
+  const handleNudge = async (employeeIds: string[], label: string): Promise<boolean> => {
     setNudgingIds((current) => Array.from(new Set([...current, ...employeeIds])))
 
     try {
@@ -282,11 +352,13 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         } nudged by email.`,
         position: "bottom-right",
       })
+      return true
     } catch (error) {
       toast.error("Reminder failed", {
         description: error instanceof Error ? error.message : "Try again later.",
         position: "bottom-right",
       })
+      return false
     } finally {
       setNudgingIds((current) => current.filter((id) => !employeeIds.includes(id)))
     }
@@ -397,6 +469,37 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
           title="All Employees"
           countLabel={`${filteredEmployees.length} shown`}
         >
+          <DataTableBulkActions selectedCount={selectedIds.size}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canAssignSelectedEmployees || isAssigningSelected}
+              onClick={() => setIsAssignSelectedOpen(true)}
+            >
+              <Send />
+              Assign test
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canNudgeSelectedEmployees}
+              onClick={async () => {
+                const success = await handleNudge(
+                  selectedEmployeeIds,
+                  "Please complete your assigned training."
+                )
+
+                if (success) {
+                  clearSelection()
+                }
+              }}
+            >
+              <Bell />
+              Nudge reminder
+            </Button>
+          </DataTableBulkActions>
           {loadError ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <p className="typography-h3 font-semibold">Employees could not be loaded</p>
@@ -420,8 +523,11 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
             <EmployeesTable
               employees={filteredEmployees}
               nudgingIds={nudgingIds}
+              selectedIds={selectedIds}
               onNudge={handleNudge}
               onOpenPreview={handleOpenEmployeePreview}
+              onToggleSelected={toggle}
+              onSelectAll={selectAll}
               toolbar={
                 <>
                   <DepartmentSelect
@@ -475,6 +581,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         isSubmitting={isBulkAssigning}
         onOpenChange={setIsBulkAssignOpen}
         onSubmit={handleBulkAssign}
+      />
+      <AssignSelectedEmployeesModal
+        open={isAssignSelectedOpen}
+        selectedCount={selectedEmployees.length}
+        tests={data.tests}
+        isSubmitting={isAssigningSelected}
+        onOpenChange={setIsAssignSelectedOpen}
+        onSubmit={handleAssignSelectedEmployees}
       />
       <EmployeeDetailDrawer
         employee={selectedEmployee}

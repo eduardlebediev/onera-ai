@@ -9,7 +9,7 @@ import {
 } from "@/features/documents/lib/document-archive-delete-schema"
 import {
   DeleteDocumentError,
-  permanentlyDeleteArchivedDocument,
+  permanentlyDeleteDocumentRecord,
 } from "@/features/documents/lib/document-delete"
 
 interface DeleteDocumentRouteContext {
@@ -30,9 +30,7 @@ function mapDeleteError(error: DeleteDocumentError): NextResponse {
   switch (error.code) {
     case "not_found":
       return jsonError(error.message, 404)
-    case "demo":
     case "already_deleted":
-    case "not_archived":
       return jsonError(error.message, 400)
     default:
       return jsonError(error.message, 400)
@@ -71,7 +69,7 @@ export async function DELETE(request: Request, { params }: DeleteDocumentRouteCo
       return jsonError(message || "Invalid request body", 400)
     }
 
-    const result = await permanentlyDeleteArchivedDocument({
+    const result = await permanentlyDeleteDocumentRecord({
       organizationId: admin.membership.organizationId,
       documentId,
       deletedBy: admin.userId,

@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { FileText, Filter, MoreVertical, Trash2 } from "lucide-react"
+import { Archive, FileText, Filter, MoreVertical, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -17,16 +17,21 @@ import {
   getGenerateBlockReason,
 } from "@/features/documents/components/generate-test-model"
 import type { DocumentLifecycleStatus } from "@/features/documents/components/document-lifecycle-actions"
+import { hasApiBackedDocument } from "@/features/documents/lib/demo-document-ids"
 import {
+  archiveDocument,
   permanentlyDeleteDocument,
   retryDocumentIngestion,
 } from "@/features/documents/lib/document-upload-api-client"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
+import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
 import { DataTable } from "@/shared/ui/data-table/data-table"
 import { DataTableColumnHeader } from "@/shared/ui/data-table/data-table-column-header"
+import { DataTableSelectionCheckbox } from "@/shared/ui/data-table-selection-checkbox"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
+import { useSelection } from "@/shared/ui/use-selection"
 import { DocumentDrawer } from "./document-drawer"
 
 type StatusFilter = "active" | "archived" | "deleted" | "all"
@@ -82,6 +87,8 @@ type PendingDocumentAction = {
   action: "retry" | "delete"
 }
 
+type BulkDocumentAction = "archive" | "delete"
+
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date("2024-06-20")
@@ -101,8 +108,26 @@ function formatFileSize(sizeMb: number): string {
   return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
 }
 
+function canBulkArchiveDocument(document: MockDocumentDetail): boolean {
+  return (
+    hasApiBackedDocument(document.id) &&
+    document.supportsArchiveDelete !== false &&
+    document.status !== "archived" &&
+    document.status !== "deleted"
+  )
+}
+
+function canBulkDeleteDocument(document: MockDocumentDetail): boolean {
+  return (
+    hasApiBackedDocument(document.id) &&
+    document.supportsArchiveDelete !== false &&
+    document.status !== "deleted"
+  )
+}
+
 export function DocumentsTable({ documents }: DocumentsTableProps) {
   const router = useRouter()
+  const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -111,6 +136,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
   const [pendingDocumentAction, setPendingDocumentAction] = useState<PendingDocumentAction | null>(
     null
   )
+  const [bulkDocumentAction, setBulkDocumentAction] = useState<BulkDocumentAction | null>(null)
   const [documentActionError, setDocumentActionError] = useState<string | null>(null)
 
   const handleOpenDrawer = useCallback((document: MockDocumentDetail) => {
@@ -225,8 +251,145 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     [effectiveDocuments, statusFilter]
   )
 
+  const selectedDocuments = useMemo(
+    () => effectiveDocuments.filter((document) => selectedIds.has(document.id)),
+    [effectiveDocuments, selectedIds]
+  )
+  const archiveableSelectedDocuments = useMemo(
+    () => selectedDocuments.filter(canBulkArchiveDocument),
+    [selectedDocuments]
+  )
+  const deletableSelectedDocuments = useMemo(
+    () => selectedDocuments.filter(canBulkDeleteDocument),
+    [selectedDocuments]
+  )
+
+  const canArchiveSelectedDocuments = archiveableSelectedDocuments.length > 0
+  const canDeleteSelectedDocuments = deletableSelectedDocuments.length > 0
+
+  const handleBulkArchiveDocuments = useCallback(async () => {
+    if (!canArchiveSelectedDocuments) return
+
+    const skippedCount = selectedDocuments.length - archiveableSelectedDocuments.length
+    const confirmed = window.confirm(
+      `Archive ${archiveableSelectedDocuments.length} selected document(s)?${
+        skippedCount > 0 ? ` ${skippedCount} ineligible selected document(s) will be skipped.` : ""
+      }`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDocumentActionError(null)
+    setBulkDocumentAction("archive")
+
+    try {
+      for (const document of archiveableSelectedDocuments) {
+        const result = await archiveDocument(document.id)
+        handleLifecycleComplete(result.documentId, result.status)
+      }
+
+      toast.success(`${archiveableSelectedDocuments.length} document(s) archived.`, {
+        description: skippedCount > 0 ? `${skippedCount} selected document(s) skipped.` : undefined,
+      })
+      clearSelection()
+      router.refresh()
+    } catch (error) {
+      setDocumentActionError(
+        error instanceof Error ? error.message : "Could not archive selected documents."
+      )
+      toast.error("Bulk archive failed. Try again.")
+    } finally {
+      setBulkDocumentAction(null)
+    }
+  }, [
+    archiveableSelectedDocuments,
+    canArchiveSelectedDocuments,
+    clearSelection,
+    handleLifecycleComplete,
+    router,
+    selectedDocuments,
+  ])
+
+  const handleBulkDeleteDocuments = useCallback(async () => {
+    if (!canDeleteSelectedDocuments) return
+
+    const skippedCount = selectedDocuments.length - deletableSelectedDocuments.length
+    const confirmed = window.confirm(
+      `Delete ${deletableSelectedDocuments.length} selected document(s)?${
+        skippedCount > 0 ? ` ${skippedCount} ineligible selected document(s) will be skipped.` : ""
+      }`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    setDocumentActionError(null)
+    setBulkDocumentAction("delete")
+
+    try {
+      for (const document of deletableSelectedDocuments) {
+        const result = await permanentlyDeleteDocument({
+          documentId: document.id,
+          deletionReason: "Bulk deleted from the documents table.",
+        })
+        handleLifecycleComplete(result.documentId, result.status)
+      }
+
+      toast.success(`${deletableSelectedDocuments.length} document(s) deleted.`, {
+        description: skippedCount > 0 ? `${skippedCount} selected document(s) skipped.` : undefined,
+      })
+      clearSelection()
+      router.refresh()
+    } catch (error) {
+      setDocumentActionError(
+        error instanceof Error ? error.message : "Could not delete selected documents."
+      )
+      toast.error("Bulk delete failed. Try again.")
+    } finally {
+      setBulkDocumentAction(null)
+    }
+  }, [
+    canDeleteSelectedDocuments,
+    clearSelection,
+    deletableSelectedDocuments,
+    handleLifecycleComplete,
+    router,
+    selectedDocuments,
+  ])
+
   const columns = useMemo<ColumnDef<MockDocumentDetail>[]>(
     () => [
+      {
+        id: "select",
+        header: ({ table }) => {
+          const visibleIds = table.getRowModel().rows.map((row) => row.original.id)
+          const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length
+          const allVisibleSelected =
+            visibleIds.length > 0 && selectedVisibleCount === visibleIds.length
+
+          return (
+            <DataTableSelectionCheckbox
+              aria-label="Select all visible documents"
+              checked={allVisibleSelected}
+              indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
+              disabled={visibleIds.length === 0}
+              onCheckedChange={(checked) => selectAll(visibleIds, checked)}
+            />
+          )
+        },
+        enableSorting: false,
+        meta: { width: 56, headerClassName: "text-center", cellClassName: "text-center" },
+        cell: ({ row }) => (
+          <DataTableSelectionCheckbox
+            aria-label={`Select ${row.original.title}`}
+            checked={selectedIds.has(row.original.id)}
+            onCheckedChange={() => toggle(row.original.id)}
+          />
+        ),
+      },
       {
         id: "title",
         accessorKey: "title",
@@ -312,7 +475,15 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         ),
       },
     ],
-    [handleDeleteFailedDocument, handleOpenDrawer, handleRetryFailedDocument, pendingDocumentAction]
+    [
+      handleDeleteFailedDocument,
+      handleOpenDrawer,
+      handleRetryFailedDocument,
+      pendingDocumentAction,
+      selectAll,
+      selectedIds,
+      toggle,
+    ]
   )
 
   return (
@@ -322,6 +493,28 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         title="All Documents"
         countLabel={`${effectiveDocuments.length} total`}
       >
+        <DataTableBulkActions selectedCount={selectedIds.size}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!canArchiveSelectedDocuments || bulkDocumentAction !== null}
+            onClick={() => void handleBulkArchiveDocuments()}
+          >
+            <Archive />
+            {bulkDocumentAction === "archive" ? "Archiving..." : "Archive"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!canDeleteSelectedDocuments || bulkDocumentAction !== null}
+            onClick={() => void handleBulkDeleteDocuments()}
+          >
+            <Trash2 />
+            {bulkDocumentAction === "delete" ? "Deleting..." : "Delete"}
+          </Button>
+        </DataTableBulkActions>
         {documentActionError ? (
           <div className="border-b border-border/50 bg-red-50 px-4 py-3 text-sm text-red-700">
             {documentActionError}

@@ -97,6 +97,26 @@ async function markDocumentFailed(documentId: string, processingError: string): 
       processed_at: new Date().toISOString(),
     })
     .eq("id", documentId)
+    .eq("status", "processing")
+}
+
+async function isDocumentStillProcessing(input: {
+  documentId: string
+  organizationId: string
+}): Promise<boolean> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("documents")
+    .select("status")
+    .eq("id", input.documentId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error("Could not verify document processing status")
+  }
+
+  return data?.status === "processing"
 }
 
 async function removeStorageObject(storagePath: string): Promise<void> {
@@ -278,6 +298,13 @@ async function runDocumentIngestion(input: {
       openai,
     })
 
+    if (!(await isDocumentStillProcessing({ documentId, organizationId }))) {
+      return {
+        status: "failed",
+        processingError: "Document processing was cancelled.",
+      }
+    }
+
     const { error: chunksError } = await supabase.from("document_chunks").insert(
       embeddedChunks.map((chunk) => ({
         organization_id: organizationId,
@@ -305,7 +332,7 @@ async function runDocumentIngestion(input: {
         .filter((topic): topic is string => Boolean(topic?.trim())),
     })
 
-    const { error: readyError } = await supabase
+    const { data: finalizedDocument, error: readyError } = await supabase
       .from("documents")
       .update({
         extracted_text: extractedText,
@@ -315,9 +342,21 @@ async function runDocumentIngestion(input: {
       })
       .eq("id", documentId)
       .eq("organization_id", organizationId)
+      .eq("status", "processing")
+      .select("id")
+      .maybeSingle()
 
     if (readyError) {
       throw new Error("Could not finalize document processing")
+    }
+
+    if (!finalizedDocument) {
+      await clearDocumentIngestionArtifacts({ documentId, organizationId })
+
+      return {
+        status: "failed",
+        processingError: "Document processing was cancelled.",
+      }
     }
 
     return {

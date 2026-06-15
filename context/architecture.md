@@ -524,7 +524,7 @@ There is at most one answer per follow-up question.
 
 ### Lifecycle and Source Validity
 
-- Documents can be archived and then permanently deleted.
+- Documents can be archived or permanently deleted directly from any non-deleted state.
 - Permanent document deletion removes storage, extracted text, chunks, and topics, but keeps a lightweight document tombstone.
 - New document versions create new document rows; existing published tests remain tied to their original source version.
 - Source archive/delete/version changes can mark tests inactive or source-invalid without mutating completed attempts.

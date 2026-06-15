@@ -1,5 +1,9 @@
 # Decisions
 
+## 068 — Documents can be directly archived or deleted
+
+Admin document archive and delete actions support every non-deleted Supabase-backed document, including seeded demo documents and ready uploaded documents. Archiving remains optional and is not a prerequisite for permanent deletion.
+
 ## 067 — Employee nudges are append-only audit events
 
 Admin reminder nudges from the employee management page are recorded in `employee_nudge_events` with organization scope, target employee, acting admin, channel, reason, and timestamp. Employees can see only their own reminder events on the employee dashboard; actual Slack or email delivery remains out of scope until a future integration spec.

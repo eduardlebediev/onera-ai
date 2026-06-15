@@ -20,7 +20,6 @@ function mapArchiveError(error: ArchiveDocumentError): NextResponse {
   switch (error.code) {
     case "not_found":
       return jsonError(error.message, 404)
-    case "demo":
     case "deleted":
     case "already_archived":
       return jsonError(error.message, 400)

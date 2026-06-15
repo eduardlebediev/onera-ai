@@ -11,9 +11,11 @@ import {
   Users,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { FormEvent, KeyboardEvent, useMemo, useState } from "react"
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { EmployeeDetailDrawer } from "@/features/employees/components/employee-detail-drawer"
+import type { EmployeeDetail } from "@/features/employees/lib/supabase-employee-detail"
 import type {
   AssignableEmployeeTest,
   EmployeeListItem,
@@ -53,6 +55,11 @@ type BulkAssignResponse = {
 
 type NudgeResponse = {
   nudgedCount?: number
+  error?: string
+}
+
+type EmployeeDetailResponse = {
+  employee?: EmployeeDetail
   error?: string
 }
 
@@ -366,6 +373,16 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
   const [isInviting, setIsInviting] = useState(false)
   const [isBulkAssigning, setIsBulkAssigning] = useState(false)
   const [nudgingIds, setNudgingIds] = useState<string[]>([])
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeListItem | null>(null)
+  const [selectedEmployeeDetail, setSelectedEmployeeDetail] = useState<EmployeeDetail | null>(null)
+  const [employeeDetailCache, setEmployeeDetailCache] = useState<Record<string, EmployeeDetail>>({})
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false)
+  const [isDetailLoading, setIsDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const selectedEmployeeId = selectedEmployee?.id ?? null
+  const cachedSelectedEmployeeDetail = selectedEmployeeId
+    ? employeeDetailCache[selectedEmployeeId]
+    : null
 
   const employees = useMemo(() => {
     const employeesById = new Map(data.employees.map((employee) => [employee.id, employee]))
@@ -530,10 +547,83 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     }
   }
 
-  const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, employeeId: string) => {
+  useEffect(() => {
+    if (!isDetailDrawerOpen || !selectedEmployeeId) {
+      return
+    }
+
+    if (cachedSelectedEmployeeDetail) {
+      return
+    }
+
+    const controller = new AbortController()
+
+    async function loadEmployeeDetail(employeeId: string) {
+      setSelectedEmployeeDetail(null)
+      setDetailError(null)
+      setIsDetailLoading(true)
+
+      try {
+        const response = await fetch(`/api/admin/employees/${employeeId}/detail`, {
+          signal: controller.signal,
+        })
+        const payload = (await response.json().catch(() => null)) as EmployeeDetailResponse | null
+
+        if (!response.ok || !payload?.employee) {
+          throw new Error(getErrorMessage(payload, "Employee preview could not be loaded"))
+        }
+
+        const employeeDetail = payload.employee
+
+        setSelectedEmployeeDetail(employeeDetail)
+        setEmployeeDetailCache((current) =>
+          current[employeeId] ? current : { ...current, [employeeId]: employeeDetail }
+        )
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setDetailError(error instanceof Error ? error.message : "Try again later.")
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsDetailLoading(false)
+        }
+      }
+    }
+
+    void loadEmployeeDetail(selectedEmployeeId)
+
+    return () => {
+      controller.abort()
+    }
+  }, [cachedSelectedEmployeeDetail, isDetailDrawerOpen, selectedEmployeeId])
+
+  const handleOpenEmployeePreview = (employee: EmployeeListItem) => {
+    const cachedDetail = employeeDetailCache[employee.id]
+
+    setSelectedEmployee(employee)
+    setSelectedEmployeeDetail(cachedDetail ?? null)
+    setDetailError(null)
+    setIsDetailLoading(!cachedDetail)
+    setIsDetailDrawerOpen(true)
+  }
+
+  const handleDetailDrawerOpenChange = (open: boolean) => {
+    setIsDetailDrawerOpen(open)
+
+    if (!open) {
+      setIsDetailLoading(false)
+    }
+  }
+
+  const handleRowKeyDown = (
+    event: KeyboardEvent<HTMLTableRowElement>,
+    employee: EmployeeListItem
+  ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
-      router.push(`/admin/employees/${employeeId}`)
+      handleOpenEmployeePreview(employee)
     }
   }
 
@@ -660,9 +750,10 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
                       <TableRow
                         key={employee.id}
                         tabIndex={0}
-                        role="link"
-                        onClick={() => router.push(`/admin/employees/${employee.id}`)}
-                        onKeyDown={(event) => handleRowKeyDown(event, employee.id)}
+                        role="button"
+                        aria-label={`Preview ${employee.name}`}
+                        onClick={() => handleOpenEmployeePreview(employee)}
+                        onKeyDown={(event) => handleRowKeyDown(event, employee)}
                         className="cursor-pointer"
                       >
                         <TableCell className="py-4">
@@ -775,6 +866,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         isSubmitting={isBulkAssigning}
         onOpenChange={setIsBulkAssignOpen}
         onSubmit={handleBulkAssign}
+      />
+      <EmployeeDetailDrawer
+        employee={selectedEmployee}
+        detail={selectedEmployeeDetail}
+        loading={isDetailLoading}
+        error={detailError}
+        open={isDetailDrawerOpen}
+        onOpenChange={handleDetailDrawerOpenChange}
       />
     </div>
   )

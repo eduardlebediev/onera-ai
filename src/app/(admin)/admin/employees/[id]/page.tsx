@@ -1,8 +1,9 @@
-import Link from "next/link"
+import { notFound } from "next/navigation"
 
 import { requireAdminUser } from "@/features/auth/lib/require-auth"
-import { Button } from "@/shared/ui/button"
-import { Card, CardContent } from "@/shared/ui/card"
+import { isUuid } from "@/features/documents/lib/demo-document-ids"
+import { EmployeeDetailPage } from "@/features/employees/components/employee-detail-page"
+import { getSupabaseEmployeeDetail } from "@/features/employees/lib/supabase-employee-detail"
 
 interface EmployeeDetailPlaceholderProps {
   params: Promise<{ id: string }>
@@ -10,28 +11,28 @@ interface EmployeeDetailPlaceholderProps {
 
 export const dynamic = "force-dynamic"
 
-export default async function EmployeeDetailPlaceholder({
-  params,
-}: EmployeeDetailPlaceholderProps) {
-  await requireAdminUser()
+export default async function EmployeeDetailRoute({ params }: EmployeeDetailPlaceholderProps) {
   const { id } = await params
 
-  return (
-    <div className="page-shell-narrow">
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-          <div>
-            <p className="typography-h3 font-semibold">Employee detail coming soon</p>
-            <p className="mt-2 max-w-md typography-p text-muted-foreground">
-              Full employee profile and history views are out of scope for this feature. Employee
-              ID: <span className="font-mono text-foreground">{id}</span>
-            </p>
-          </div>
-          <Button asChild variant="outline" className="rounded-full">
-            <Link href="/admin/employees">Back to employees</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
+  if (!isUuid(id)) {
+    notFound()
+  }
+
+  const user = await requireAdminUser()
+  const organizationId = user.membership.organizationId
+
+  let employee = null
+
+  try {
+    employee = await getSupabaseEmployeeDetail(id, organizationId)
+  } catch (error) {
+    console.error(`Failed to load employee detail ${id} from Supabase:`, error)
+    notFound()
+  }
+
+  if (!employee) {
+    notFound()
+  }
+
+  return <EmployeeDetailPage employee={employee} />
 }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import {
   type DocumentFileType,
@@ -201,11 +202,13 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
           deletionReason: "Deleted failed upload from the documents table.",
         })
         handleLifecycleComplete(documentId, "deleted")
+        toast.success("Document permanently deleted.")
         router.refresh()
       } catch (error) {
         setDocumentActionError(
           error instanceof Error ? error.message : "Could not delete this failed document."
         )
+        toast.error("Delete failed. Try again.")
       } finally {
         setPendingDocumentAction(null)
       }

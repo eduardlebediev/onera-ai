@@ -4,6 +4,7 @@ import { Rocket, Save, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { PublishApprovedQuestions } from "@/features/tests/components/publish-approved-questions"
 import { PublishReadinessCard } from "@/features/tests/components/publish-readiness-card"
@@ -99,6 +100,7 @@ export function PublishTestPage({
 
   const handleSaveDraft = () => {
     setDraftSaved(true)
+    toast.success("Draft saved.")
   }
 
   const handlePublish = async () => {
@@ -112,6 +114,7 @@ export function PublishTestPage({
 
       if (!storedDraft) {
         setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
+        toast.error(`Publish failed. ${PUBLISH_GENERATED_TEST_ERROR_MESSAGE}`)
         setIsPublishing(false)
         return
       }
@@ -121,10 +124,14 @@ export function PublishTestPage({
         const result = await publishGeneratedTest(publishInput)
         clearGeneratedTestDraft()
         setSavedTestId(result.testId)
+        toast.success("Test published successfully.")
         router.push(result.redirectTo)
         return
-      } catch {
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : PUBLISH_GENERATED_TEST_ERROR_MESSAGE
         setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
+        toast.error(`Publish failed. ${message}`)
         setIsPublishing(false)
         return
       }
@@ -132,6 +139,7 @@ export function PublishTestPage({
 
     window.setTimeout(() => {
       setPublished(true)
+      toast.success("Test published successfully.")
       setIsPublishing(false)
     }, 700)
   }

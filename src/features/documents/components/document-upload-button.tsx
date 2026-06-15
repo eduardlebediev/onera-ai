@@ -3,6 +3,7 @@
 import { Upload } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useRef, useState, type ChangeEvent } from "react"
+import { toast } from "sonner"
 
 import { uploadDocument } from "@/features/documents/lib/document-upload-api-client"
 import { Button } from "@/shared/ui/button"
@@ -32,11 +33,13 @@ export function DocumentUploadButton() {
 
     try {
       const result = await uploadDocument(file)
+      toast.success("Document uploaded. Processing started.")
       router.push(result.redirectTo)
       router.refresh()
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed"
       setErrorMessage(message)
+      toast.error(`Upload failed. ${message}`)
     } finally {
       setIsUploading(false)
       event.target.value = ""

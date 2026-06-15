@@ -16,6 +16,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 51: Toast Notifications
+
 - Feature Spec 50: Table Row Preview Drawer + Breadcrumbs on Full Pages
 
 - Feature Spec 49: Breadcrumbs

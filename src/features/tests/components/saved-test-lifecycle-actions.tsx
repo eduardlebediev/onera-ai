@@ -3,6 +3,7 @@
 import { Archive, Loader2, MoreHorizontal, Pencil, RotateCcw, Trash2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createContext, useContext, useState, type FormEvent, type ReactNode } from "react"
+import { toast } from "sonner"
 
 import {
   archiveTest,
@@ -229,6 +230,7 @@ export function SavedTestLifecycleActionsProvider({
             ? "Archived test tombstoned. Historical results remain available."
             : "Test deleted.",
       })
+      toast.success("Test deleted.")
       setPendingAction(null)
       setDeleteConfirmation("")
       setDeletionReason("")
@@ -239,6 +241,9 @@ export function SavedTestLifecycleActionsProvider({
         status: "error",
         text: error instanceof Error ? error.message : "Could not complete this test action.",
       })
+      if (pendingAction === "delete") {
+        toast.error("Delete failed. Test has active attempts.")
+      }
     } finally {
       setIsSubmitting(false)
     }

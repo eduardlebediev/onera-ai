@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
+
+import { Toaster } from "@/shared/ui/sonner"
+
 import "./globals.css"
 
 const geistSans = Geist({
@@ -19,7 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="h-full bg-background font-sans">{children}</body>
+      <body className="h-full bg-background font-sans">
+        {children}
+        <Toaster duration={4000} position="top-right" richColors />
+      </body>
     </html>
   )
 }

@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { AssignBreadcrumb } from "@/features/tests/components/assign-breadcrumb"
 import { AssignEmployeeList } from "@/features/tests/components/assign-employee-list"
@@ -120,6 +121,7 @@ export function AssignEmployeesPage({
         }
 
         const createdAssignments = payload?.created ?? []
+        const assignedCount = createdAssignments.length
 
         setAssignments((current) => [
           ...current,
@@ -130,12 +132,16 @@ export function AssignEmployeesPage({
           })),
         ])
         setSuccessState({
-          assignedCount: createdAssignments.length,
+          assignedCount,
           deadline: settings.deadline,
         })
+        toast.success(
+          `${assignedCount} employee${assignedCount === 1 ? "" : "s"} assigned successfully`
+        )
         setSelectedEmployeeIds([])
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Failed to assign test")
+        toast.error("Assignment failed. Try again.")
       } finally {
         setIsAssigning(false)
       }
@@ -144,6 +150,8 @@ export function AssignEmployeesPage({
     }
 
     window.setTimeout(() => {
+      const assignedCount = selectedEmployeeIds.length
+
       setAssignments((current) => {
         const next = [...current]
 
@@ -165,9 +173,12 @@ export function AssignEmployeesPage({
       })
 
       setSuccessState({
-        assignedCount: selectedEmployeeIds.length,
+        assignedCount,
         deadline: settings.deadline,
       })
+      toast.success(
+        `${assignedCount} employee${assignedCount === 1 ? "" : "s"} assigned successfully`
+      )
       setIsAssigning(false)
     }, 700)
   }

@@ -3,6 +3,7 @@
 import { Archive, Loader2, Trash2, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import type { MockDocumentDetail } from "@/data/mock/documents"
 import { hasApiBackedDocument } from "@/features/documents/lib/demo-document-ids"
@@ -128,11 +129,13 @@ export function DocumentLifecycleActions({
 
       if (pendingAction === "archive") {
         result = await archiveDocument(document.id)
+        toast.success(`Document archived. ${result.impact.affectedTestCount} tests affected.`)
       } else {
         result = await permanentlyDeleteDocument({
           documentId: document.id,
           deletionReason: deletionReason.trim() || undefined,
         })
+        toast.success("Document permanently deleted.")
       }
 
       setCompletedAction({
@@ -147,6 +150,9 @@ export function DocumentLifecycleActions({
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Could not complete this document action."
+      )
+      toast.error(
+        pendingAction === "archive" ? "Archive failed. Try again." : "Delete failed. Try again."
       )
       setIsSubmitting(false)
     }

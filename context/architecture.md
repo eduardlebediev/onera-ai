@@ -66,7 +66,7 @@ Installed extensions used by the app:
 
 Migration notes:
 
-- Local canonical migrations live in `supabase/migrations/00001_initial_schema.sql` through `00011_retake_and_transactions.sql`.
+- Local canonical migrations live in `supabase/migrations/00001_initial_schema.sql` through `00014_retake_rpc_advisor_fixes.sql`.
 - The remote migration history contains `00001_initial_schema` plus timestamped follow-up migrations for auth/RLS, document ingestion, versioning, archive/delete, multi-document tests, document topics, review editor state, adaptive follow-ups, and test lifecycle tombstones.
 - Before relying on a new Supabase column or table, verify the target database schema or apply the matching migration. Missing column errors are schema drift until proven otherwise.
 - Regenerate or manually update `src/lib/supabase/types.ts` after schema changes that affect application code.

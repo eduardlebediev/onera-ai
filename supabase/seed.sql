@@ -431,6 +431,15 @@ values
     'Safe handling of sensitive customer information in tickets and screenshots.',
     0.85,
     'seed'
+  ),
+  (
+    'e1000000-0000-4000-8000-000000000010',
+    'a0000000-0000-4000-8000-000000000001',
+    'c0000000-0000-4000-8000-000000000002',
+    'Incident Reporting',
+    'Post-incident summaries, postmortems, and incident documentation requirements.',
+    0.84,
+    'seed'
   )
 on conflict (id) do nothing;
 
@@ -456,13 +465,13 @@ values (
   'f0000000-0000-4000-8000-000000000001',
   'a0000000-0000-4000-8000-000000000001',
   'c0000000-0000-4000-8000-000000000001',
-  'Security Guidelines Knowledge Check',
-  'A published demo test covering authentication, phishing response, data handling, remote access, and access reviews.',
+  'Security Guidelines Knowledge Test',
+  'A published demo test covering authentication, phishing response, data handling, and remote access.',
   'published',
   'medium',
   'en',
   'All employees',
-  5,
+  4,
   70,
   3,
   (
@@ -511,7 +520,12 @@ values
     'f1000000-0000-4000-8000-000000000001',
     'a0000000-0000-4000-8000-000000000001',
     'f0000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000001',
+    (
+      select id
+      from public.document_chunks
+      where document_id = 'c0000000-0000-4000-8000-000000000001'
+        and chunk_index = 0
+    ),
     'c0000000-0000-4000-8000-000000000001',
     'Which password and MFA rule is required for employees?',
     'single_choice',
@@ -529,7 +543,12 @@ values
     'f1000000-0000-4000-8000-000000000002',
     'a0000000-0000-4000-8000-000000000001',
     'f0000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000002',
+    (
+      select id
+      from public.document_chunks
+      where document_id = 'c0000000-0000-4000-8000-000000000001'
+        and chunk_index = 1
+    ),
     'c0000000-0000-4000-8000-000000000001',
     'What should an employee do after spotting a suspected phishing email?',
     'single_choice',
@@ -547,7 +566,12 @@ values
     'f1000000-0000-4000-8000-000000000003',
     'a0000000-0000-4000-8000-000000000001',
     'f0000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000003',
+    (
+      select id
+      from public.document_chunks
+      where document_id = 'c0000000-0000-4000-8000-000000000001'
+        and chunk_index = 2
+    ),
     'c0000000-0000-4000-8000-000000000001',
     'Which data classification includes customer records?',
     'single_choice',
@@ -565,7 +589,12 @@ values
     'f1000000-0000-4000-8000-000000000004',
     'a0000000-0000-4000-8000-000000000001',
     'f0000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000004',
+    (
+      select id
+      from public.document_chunks
+      where document_id = 'c0000000-0000-4000-8000-000000000001'
+        and chunk_index = 3
+    ),
     'c0000000-0000-4000-8000-000000000001',
     'Which remote-work behavior matches the security guideline?',
     'single_choice',
@@ -575,24 +604,6 @@ values
     'Remote Access',
     'easy',
     3,
-    true,
-    'valid',
-    'approved'
-  ),
-  (
-    'f1000000-0000-4000-8000-000000000005',
-    'a0000000-0000-4000-8000-000000000001',
-    'f0000000-0000-4000-8000-000000000001',
-    'e0000000-0000-4000-8000-000000000005',
-    'c0000000-0000-4000-8000-000000000001',
-    'How often must managers review team access?',
-    'single_choice',
-    '[{"id":"q5-a","text":"Only during annual planning."},{"id":"q5-b","text":"Quarterly."},{"id":"q5-c","text":"Every two years."},{"id":"q5-d","text":"Only after a security incident."}]'::jsonb,
-    '{"optionIds":["q5-b"]}'::jsonb,
-    'Managers must review team access quarterly and remove access quickly when an employee changes roles or leaves.',
-    'Access Control',
-    'medium',
-    4,
     true,
     'valid',
     'approved'
@@ -616,7 +627,7 @@ select
   'f0000000-0000-4000-8000-000000000001'::uuid,
   employee.id,
   admin.id,
-  'failed',
+  'completed',
   timezone('utc', now()) + interval '8 days',
   timezone('utc', now()) - interval '5 days',
   timezone('utc', now()) - interval '2 days'
@@ -648,9 +659,9 @@ select
   assignment.user_id,
   assignment.id,
   'completed',
-  60,
-  false,
-  '{"version":1,"feedback":{"performanceSummary":"You scored 60% and did not meet the passing threshold on the Security Guidelines Knowledge Check.","understoodWell":"You correctly handled authentication, data handling, and remote access questions.","needsImprovement":"Review phishing response timing and quarterly access review expectations.","recommendedNextStep":"Revisit the Security Guidelines sections on Incident Reporting and Access Control, then retake the test."}}',
+  75,
+  true,
+  '{"version":1,"feedback":{"performanceSummary":"You scored 75% and passed the Security Guidelines Knowledge Test.","understoodWell":"You correctly handled authentication, data handling, and remote access questions.","needsImprovement":"Review phishing response timing and reporting expectations.","recommendedNextStep":"Revisit the Security Guidelines section on Incident Reporting to strengthen your response process."}}',
   timezone('utc', now()) - interval '2 days 25 minutes',
   timezone('utc', now()) - interval '2 days',
   timezone('utc', now()) - interval '2 days 25 minutes',
@@ -706,13 +717,6 @@ join (
       '{"selectedOptionIds":["q4-a"]}'::jsonb,
       true,
       'Correct. VPN is required before accessing internal systems remotely.'
-    ),
-    (
-      'f4000000-0000-4000-8000-000000000005'::uuid,
-      'f1000000-0000-4000-8000-000000000005'::uuid,
-      '{"selectedOptionIds":["q5-a"]}'::jsonb,
-      false,
-      'Incorrect. Managers must review access quarterly.'
     )
 ) as answer (id, question_id, user_answer, is_correct, ai_explanation)
   on true
@@ -742,7 +746,7 @@ values (
   'completed',
   'gpt-4.1-mini',
   'text-embedding-3-small',
-  '{"difficulty":"medium","questionCount":5,"targetRole":"All employees","language":"en"}'::jsonb,
+  '{"difficulty":"medium","questionCount":4,"targetRole":"All employees","language":"en"}'::jsonb,
   array[
     'e0000000-0000-4000-8000-000000000001',
     'e0000000-0000-4000-8000-000000000002',
@@ -750,7 +754,7 @@ values (
     'e0000000-0000-4000-8000-000000000004',
     'e0000000-0000-4000-8000-000000000005'
   ]::uuid[],
-  '{"question_count":5,"status":"published_seed","topics":["Authentication","Incident Reporting","Data Handling","Remote Access","Access Control"]}'::jsonb,
+  '{"question_count":4,"status":"published_seed","topics":["Authentication","Incident Reporting","Data Handling","Remote Access"]}'::jsonb,
   (
     select id
     from public.profiles

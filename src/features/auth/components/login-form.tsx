@@ -2,29 +2,32 @@
 
 import { useActionState } from "react"
 
-import { loginAction, type LoginState } from "@/features/auth/actions/login"
+import { demoLoginAction, loginAction, type LoginState } from "@/features/auth/actions/login"
 import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
 import { Logo } from "@/shared/ui/logo"
 
 const DEMO_LOGIN_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true"
-const DEMO_PASSWORD = "demo-only-password"
 
 const DEMO_ACCOUNTS = [
   {
+    role: "admin",
     label: "Demo admin",
-    email: "admin@demo.ontera.ai",
     description: "Upload documents, generate tests, and review analytics.",
   },
   {
+    role: "employee",
     label: "Demo employee",
-    email: "employee@demo.ontera.ai",
     description: "Take assigned tests and review personalized feedback.",
   },
 ]
 
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState<LoginState, FormData>(loginAction, null)
+  const [demoState, demoFormAction, isDemoPending] = useActionState<LoginState, FormData>(
+    demoLoginAction,
+    null
+  )
 
   return (
     <div className="w-full max-w-sm space-y-6">
@@ -51,14 +54,13 @@ export function LoginForm() {
           </div>
           <div className="grid gap-2">
             {DEMO_ACCOUNTS.map((account) => (
-              <form key={account.email} action={formAction}>
-                <input type="hidden" name="email" value={account.email} />
-                <input type="hidden" name="password" value={DEMO_PASSWORD} />
+              <form key={account.role} action={demoFormAction}>
+                <input type="hidden" name="role" value={account.role} />
                 <Button
                   type="submit"
                   variant="outline"
                   className="h-auto w-full"
-                  disabled={isPending}
+                  disabled={isDemoPending}
                 >
                   <span className="flex flex-col items-start gap-0.5 py-1 text-left">
                     <span>{account.label}</span>
@@ -70,6 +72,11 @@ export function LoginForm() {
               </form>
             ))}
           </div>
+          {demoState?.error ? (
+            <p className="typography-small text-destructive" role="alert">
+              {demoState.error}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -84,7 +91,7 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             required
-            disabled={isPending}
+            disabled={isPending || isDemoPending}
             placeholder="you@company.com"
           />
         </div>
@@ -99,7 +106,7 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
-            disabled={isPending}
+            disabled={isPending || isDemoPending}
             placeholder="••••••••"
           />
         </div>
@@ -110,7 +117,7 @@ export function LoginForm() {
           </p>
         ) : null}
 
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button type="submit" className="w-full" disabled={isPending || isDemoPending}>
           {isPending ? "Signing in…" : "Sign in"}
         </Button>
       </form>

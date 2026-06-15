@@ -16,6 +16,10 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 58 Follow-up: One-click Demo Login
+
+- Feature Spec 58: Proper Demo Seed and Login
+
 - Feature Spec 57 Follow-up: Direct Archive All Documents
 
 - Feature Spec 57 Follow-up: Direct Delete All Documents

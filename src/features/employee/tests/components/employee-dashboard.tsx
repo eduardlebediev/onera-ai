@@ -2,14 +2,14 @@ import { EmployeeDashboardHeader } from "@/features/employee/tests/components/em
 import { EmployeeDashboardKpiSection } from "@/features/employee/tests/components/employee-dashboard-kpi-section"
 import { EmployeeDashboardLearningFocus } from "@/features/employee/tests/components/employee-dashboard-learning-focus"
 import { EmployeeDashboardNextTest } from "@/features/employee/tests/components/employee-dashboard-next-test"
-import { EmployeeDashboardQuickActions } from "@/features/employee/tests/components/employee-dashboard-quick-actions"
 import { EmployeeDashboardRecentFeedback } from "@/features/employee/tests/components/employee-dashboard-recent-feedback"
+import { EmployeeDashboardReminders } from "@/features/employee/tests/components/employee-dashboard-reminders"
 import { getEmployeeDashboardKpiStats } from "@/features/employee/tests/lib/employee-dashboard-kpi"
 import {
-  getDashboardQuickActions,
   getEmployeeDashboardAttemptInsights,
   getNextRequiredTest,
 } from "@/features/employee/tests/lib/employee-dashboard-model"
+import { getEmployeeReminders } from "@/features/employee/tests/lib/supabase-employee-reminders"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
 import type { MockEmployee } from "@/features/tests/mock/employees"
 
@@ -26,30 +26,43 @@ export async function EmployeeDashboard({
   tests,
   userId,
 }: EmployeeDashboardProps) {
-  const { recentFeedback, weakTopics } = await getEmployeeDashboardAttemptInsights({
-    userId,
-    organizationId,
-    tests,
-  })
+  const [{ recentFeedback, weakTopics }, reminders] = await Promise.all([
+    getEmployeeDashboardAttemptInsights({
+      userId,
+      organizationId,
+      tests,
+    }),
+    getEmployeeReminders({ userId, organizationId }).catch((error) => {
+      console.error("Failed to load employee reminders from Supabase:", error)
+      return []
+    }),
+  ])
   const nextTest = getNextRequiredTest(tests)
   const kpiStats = getEmployeeDashboardKpiStats(tests, weakTopics.length)
-  const quickActions = getDashboardQuickActions(tests, nextTest, recentFeedback)
 
   return (
     <div className="page-shell">
       <EmployeeDashboardHeader employee={employee} />
 
-      <div className="mt-8 flex flex-col gap-2">
-        <EmployeeDashboardKpiSection stats={kpiStats} />
+      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-12">
+          <EmployeeDashboardKpiSection stats={kpiStats} />
+        </div>
 
-        <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+        <div className="lg:col-span-8">
           <EmployeeDashboardNextTest nextTest={nextTest} />
+        </div>
+
+        <div className="lg:col-span-4">
+          <EmployeeDashboardReminders reminders={reminders} />
+        </div>
+
+        <div className="lg:col-span-6">
           <EmployeeDashboardRecentFeedback recentFeedback={recentFeedback} />
         </div>
 
-        <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
+        <div className="lg:col-span-6">
           <EmployeeDashboardLearningFocus weakTopics={weakTopics} />
-          <EmployeeDashboardQuickActions actions={quickActions} />
         </div>
       </div>
     </div>

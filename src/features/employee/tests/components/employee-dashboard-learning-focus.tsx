@@ -11,7 +11,7 @@ export function EmployeeDashboardLearningFocus({
   weakTopics,
 }: EmployeeDashboardLearningFocusProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center gap-2">
           <BookOpen className="size-4 text-muted-foreground" />
@@ -30,7 +30,9 @@ export function EmployeeDashboardLearningFocus({
                 className="space-y-1 rounded-lg border border-border/60 bg-background/50 p-4"
               >
                 <p className="text-sm font-medium text-foreground">{topic.topic}</p>
-                <p className="typography-small text-muted-foreground">{topic.explanation}</p>
+                <p className="typography-small line-clamp-1 text-muted-foreground">
+                  {topic.explanation}
+                </p>
                 <p className="typography-small">
                   <span className="font-medium text-foreground">Recommended: </span>
                   {topic.recommendedAction}

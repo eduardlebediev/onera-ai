@@ -16,6 +16,10 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 52 Follow-up: Employee Reminder Visibility
+
+- Feature Spec 52: Employee Management Page
+
 - Feature Spec 51: Toast Notifications
 
 - Feature Spec 50: Table Row Preview Drawer + Breadcrumbs on Full Pages

@@ -623,6 +623,36 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_nudge_events: {
+        Row: {
+          id: string
+          organization_id: string
+          employee_user_id: string
+          nudged_by: string | null
+          channel: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          employee_user_id: string
+          nudged_by?: string | null
+          channel?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          employee_user_id?: string
+          nudged_by?: string | null
+          channel?: string
+          reason?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           id: string

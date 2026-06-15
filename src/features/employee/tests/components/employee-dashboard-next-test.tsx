@@ -16,7 +16,7 @@ interface EmployeeDashboardNextTestProps {
 
 export function EmployeeDashboardNextTest({ nextTest }: EmployeeDashboardNextTestProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="space-y-4 p-6">
         <div>
           <h2 className="typography-h3 font-semibold">Next Required Test</h2>

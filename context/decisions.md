@@ -1,5 +1,9 @@
 # Decisions
 
+## 067 — Employee nudges are append-only audit events
+
+Admin reminder nudges from the employee management page are recorded in `employee_nudge_events` with organization scope, target employee, acting admin, channel, reason, and timestamp. Employees can see only their own reminder events on the employee dashboard; actual Slack or email delivery remains out of scope until a future integration spec.
+
 ## 066 — Document uploads store first and ingest in background
 
 Initial document uploads create the document row, store the original file in the private `documents` bucket, and return `processing` before extraction, chunking, embeddings, and topic extraction run fire-and-forget. Background ingestion reads the stored original file so failed upload processing can be retried without another browser upload.

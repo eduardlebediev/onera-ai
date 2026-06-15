@@ -56,6 +56,7 @@ The live Supabase project currently exposes these `public` tables with RLS enabl
 - `ai_generation_runs`
 - `follow_up_questions`
 - `follow_up_answers`
+- `employee_nudge_events`
 
 Installed extensions used by the app:
 
@@ -83,6 +84,7 @@ Postgres is the source of truth for:
 - AI generation runs and recoverable review draft summaries;
 - tests, test source documents, questions, review state, publishing state, source validity, archive/delete lifecycle state;
 - individual assignments, attempts, answers, AI feedback, adaptive follow-up questions, and follow-up answers;
+- employee nudge reminder audit events;
 - derived analytics through server-side loaders, not stored aggregate tables.
 
 ### Supabase Storage
@@ -245,6 +247,20 @@ Fields:
 - `created_by`
 - `change_message`
 - `ai_change_summary`
+- `created_at`
+
+### employee_nudge_events
+
+Append-only audit log for admin reminder nudges from the employee management page. Employees can read reminders targeted at their own user ID on the employee dashboard. Actual Slack or email delivery remains out of scope for MVP.
+
+Fields:
+
+- `id`
+- `organization_id`
+- `employee_user_id`
+- `nudged_by`
+- `channel` - `demo` | `email` | `slack`
+- `reason`
 - `created_at`
 
 ### tests

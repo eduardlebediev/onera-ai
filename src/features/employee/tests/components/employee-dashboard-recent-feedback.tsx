@@ -16,7 +16,7 @@ export function EmployeeDashboardRecentFeedback({
   recentFeedback,
 }: EmployeeDashboardRecentFeedbackProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center gap-2">
           <MessageSquareQuote className="size-4 text-muted-foreground" />

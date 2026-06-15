@@ -42,12 +42,6 @@ export interface DashboardWeakTopic {
   recommendedAction: string
 }
 
-export interface DashboardQuickAction {
-  label: string
-  description: string
-  href: string
-}
-
 export interface EmployeeDashboardAttemptInsights {
   recentFeedback: RecentFeedbackItem | null
   weakTopics: DashboardWeakTopic[]
@@ -169,7 +163,7 @@ function getDashboardWeakTopicsFromMock(tests: EmployeeAssignedTest[]): Dashboar
   }
 
   return Array.from(topicsByName.values())
-    .slice(0, 3)
+    .slice(0, 2)
     .map((topic) => ({
       topic: topic.topic,
       explanation: topic.explanation,
@@ -303,7 +297,7 @@ function buildDashboardWeakTopics(input: {
       const bCorrectPct = (b[1].totalCount - b[1].wrongCount) / b[1].totalCount
       return aCorrectPct - bCorrectPct || b[1].wrongCount - a[1].wrongCount
     })
-    .slice(0, 3)
+    .slice(0, 2)
     .map(([topic, stats]) => ({
       topic,
       explanation:
@@ -416,36 +410,4 @@ export async function getEmployeeDashboardAttemptInsights(input: {
   return hasMockOnlyTests(input.tests)
     ? getFallbackAttemptInsights(input.tests)
     : { recentFeedback: null, weakTopics: [] }
-}
-
-export function getDashboardQuickActions(
-  tests: EmployeeAssignedTest[],
-  nextTest: NextRequiredTest | null,
-  recentFeedback: RecentFeedbackItem | null
-): DashboardQuickAction[] {
-  const actions: DashboardQuickAction[] = [
-    {
-      label: "My Tests",
-      description: "View all assigned knowledge checks.",
-      href: "/employee/tests",
-    },
-  ]
-
-  if (recentFeedback) {
-    actions.push({
-      label: "Review Feedback",
-      description: `See results for ${recentFeedback.title}.`,
-      href: recentFeedback.resultHref,
-    })
-  }
-
-  if (nextTest) {
-    actions.push({
-      label: nextTest.actionLabel,
-      description: `Pick up ${nextTest.test.title}.`,
-      href: nextTest.actionHref,
-    })
-  }
-
-  return actions
 }

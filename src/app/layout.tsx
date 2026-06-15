@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
+import { NuqsAdapter } from "nuqs/adapters/next/app"
 
 import { Toaster } from "@/shared/ui/sonner"
 
@@ -23,8 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="h-full bg-background font-sans">
-        {children}
-        <Toaster duration={4000} position="top-right" richColors />
+        <NuqsAdapter>
+          {children}
+          <Toaster duration={4000} position="top-right" richColors />
+        </NuqsAdapter>
       </body>
     </html>
   )

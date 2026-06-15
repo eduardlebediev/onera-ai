@@ -1,20 +1,12 @@
 "use client"
 
-import {
-  Bell,
-  CheckCircle2,
-  Clock,
-  ClipboardList,
-  MailPlus,
-  Search,
-  Send,
-  Users,
-} from "lucide-react"
+import { Bell, CheckCircle2, Clock, ClipboardList, MailPlus, Send, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react"
+import { FormEvent, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { EmployeeDetailDrawer } from "@/features/employees/components/employee-detail-drawer"
+import { EmployeesTable } from "@/features/employees/components/employees-table"
 import type { EmployeeDetail } from "@/features/employees/lib/supabase-employee-detail"
 import type {
   AssignableEmployeeTest,
@@ -22,10 +14,9 @@ import type {
   EmployeeManagementData,
   EmployeeProgressStatus,
 } from "@/features/employees/lib/supabase-employees"
-import { cn } from "@/lib/utils"
-import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { DataTableShell } from "@/shared/ui/data-table-shell"
 import {
   Drawer,
   DrawerClose,
@@ -36,7 +27,6 @@ import {
   DrawerTitle,
 } from "@/shared/ui/drawer"
 import { Input } from "@/shared/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 
 type StatusFilter = "all" | EmployeeProgressStatus
 
@@ -75,50 +65,8 @@ const STATUS_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
   { label: "Overdue", value: "overdue" },
 ]
 
-const STATUS_STYLE: Record<
-  EmployeeProgressStatus,
-  { label: string; className: string; dotClassName: string }
-> = {
-  completed: {
-    label: "Completed",
-    className: "border-green-200 bg-green-50 text-green-700",
-    dotClassName: "bg-green-500",
-  },
-  pending: {
-    label: "Pending",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-    dotClassName: "bg-amber-500",
-  },
-  overdue: {
-    label: "Overdue",
-    className: "border-red-200 bg-red-50 text-red-700",
-    dotClassName: "bg-red-500",
-  },
-}
-
 function formatScore(score: number | null): string {
   return typeof score === "number" ? `${score}%` : "--"
-}
-
-function formatLastActive(value: string | null): string {
-  if (!value) return "No activity"
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value))
-}
-
-function getInitials(name: string): string {
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
-
-  return initials || "E"
 }
 
 function getErrorMessage(payload: { error?: string } | null, fallback: string): string {
@@ -365,7 +313,6 @@ function BulkAssignDrawer({
 export function EmployeeManagementPage({ data, loadError = false }: EmployeeManagementPageProps) {
   const router = useRouter()
   const [invitedEmployees, setInvitedEmployees] = useState<EmployeeListItem[]>([])
-  const [search, setSearch] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [isInviteOpen, setIsInviteOpen] = useState(false)
@@ -419,22 +366,17 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     [data, departments, employees]
   )
 
-  const filteredEmployees = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
+  const filteredEmployees = useMemo(
+    () =>
+      employees.filter((employee) => {
+        const matchesDepartment =
+          departmentFilter === "all" || employee.department === departmentFilter
+        const matchesStatus = statusFilter === "all" || employee.status === statusFilter
 
-    return employees.filter((employee) => {
-      const matchesSearch =
-        normalizedSearch.length === 0 ||
-        employee.name.toLowerCase().includes(normalizedSearch) ||
-        employee.email.toLowerCase().includes(normalizedSearch) ||
-        employee.department.toLowerCase().includes(normalizedSearch)
-      const matchesDepartment =
-        departmentFilter === "all" || employee.department === departmentFilter
-      const matchesStatus = statusFilter === "all" || employee.status === statusFilter
-
-      return matchesSearch && matchesDepartment && matchesStatus
-    })
-  }, [departmentFilter, employees, search, statusFilter])
+        return matchesDepartment && matchesStatus
+      }),
+    [departmentFilter, employees, statusFilter]
+  )
 
   const overdueEmployeeIds = employees
     .filter((employee) => employee.status === "overdue")
@@ -617,16 +559,6 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     }
   }
 
-  const handleRowKeyDown = (
-    event: KeyboardEvent<HTMLTableRowElement>,
-    employee: EmployeeListItem
-  ) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault()
-      handleOpenEmployeePreview(employee)
-    }
-  }
-
   return (
     <div className="page-shell">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -656,49 +588,12 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         <EmployeeKpiCards data={metricsData} />
       </div>
 
-      <Card className="mt-6">
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by name, email, department"
-                className="pl-8"
-              />
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <DepartmentSelect
-                departments={departments}
-                value={departmentFilter}
-                onChange={setDepartmentFilter}
-              />
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                className="h-8 rounded-lg border border-input bg-input px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={overdueEmployeeIds.length === 0 || nudgingIds.length > 0}
-                onClick={() =>
-                  handleNudge(overdueEmployeeIds, "Please complete your overdue assigned training.")
-                }
-              >
-                <Bell />
-                Nudge all overdue
-              </Button>
-            </div>
-          </div>
-
+      <div className="mt-6">
+        <DataTableShell
+          icon={Users}
+          title="All Employees"
+          countLabel={`${filteredEmployees.length} shown`}
+        >
           {loadError ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <p className="typography-h3 font-semibold">Employees could not be loaded</p>
@@ -719,138 +614,49 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Last active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center">
-                      <p className="typography-p text-muted-foreground">
-                        No employees match your filters.
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEmployees.map((employee) => {
-                    const statusStyle = STATUS_STYLE[employee.status]
-                    const isNudging = nudgingIds.includes(employee.id)
-
-                    return (
-                      <TableRow
-                        key={employee.id}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Preview ${employee.name}`}
-                        onClick={() => handleOpenEmployeePreview(employee)}
-                        onKeyDown={(event) => handleRowKeyDown(event, employee)}
-                        className="cursor-pointer"
-                      >
-                        <TableCell className="py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
-                              {getInitials(employee.name)}
-                            </div>
-                            <div>
-                              <p className="typography-small font-medium text-foreground">
-                                {employee.name}
-                              </p>
-                              {employee.memberStatus === "invited" ? (
-                                <p className="text-xs text-muted-foreground">Invite pending</p>
-                              ) : null}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 text-muted-foreground">
-                          {employee.email}
-                        </TableCell>
-                        <TableCell className="py-4">{employee.department}</TableCell>
-                        <TableCell className="py-4">
-                          <div className="min-w-28">
-                            <div className="h-2 rounded-full bg-muted">
-                              <div
-                                className="h-2 rounded-full bg-primary"
-                                style={{ width: `${employee.progress}%` }}
-                              />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {employee.progress}% complete
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <Badge
-                            variant="outline"
-                            className={cn("status-badge", statusStyle.className)}
-                          >
-                            <span
-                              className={cn("mr-1 size-1.5 rounded-full", statusStyle.dotClassName)}
-                            />
-                            {statusStyle.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4">{formatScore(employee.averageScore)}</TableCell>
-                        <TableCell className="py-4 text-muted-foreground">
-                          {formatLastActive(employee.lastActiveAt)}
-                        </TableCell>
-                        <TableCell
-                          className="py-4 text-right"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          {employee.status === "completed" ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                toast.message("Employee already completed", {
-                                  description: `${employee.name} has completed assigned work.`,
-                                  position: "bottom-right",
-                                })
-                              }
-                            >
-                              Completed
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant={employee.status === "overdue" ? "destructive" : "outline"}
-                              size="sm"
-                              disabled={isNudging}
-                              onClick={() =>
-                                handleNudge(
-                                  [employee.id],
-                                  employee.status === "overdue"
-                                    ? "Please complete your overdue assigned training."
-                                    : "Please complete your assigned training."
-                                )
-                              }
-                            >
-                              <Bell />
-                              {isNudging ? "Sending..." : "Nudge"}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
+            <EmployeesTable
+              employees={filteredEmployees}
+              nudgingIds={nudgingIds}
+              onNudge={handleNudge}
+              onOpenPreview={handleOpenEmployeePreview}
+              toolbar={
+                <>
+                  <DepartmentSelect
+                    departments={departments}
+                    value={departmentFilter}
+                    onChange={setDepartmentFilter}
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                    className="h-8 rounded-lg border border-input bg-input px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={overdueEmployeeIds.length === 0 || nudgingIds.length > 0}
+                    onClick={() =>
+                      handleNudge(
+                        overdueEmployeeIds,
+                        "Please complete your overdue assigned training."
+                      )
+                    }
+                  >
+                    <Bell />
+                    Nudge all overdue
+                  </Button>
+                </>
+              }
+            />
           )}
-        </CardContent>
-      </Card>
+        </DataTableShell>
+      </div>
 
       <InviteEmployeeDrawer
         open={isInviteOpen}

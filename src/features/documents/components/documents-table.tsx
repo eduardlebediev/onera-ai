@@ -1,18 +1,8 @@
 "use client"
 
-import { useCallback, useMemo, useState, type ChangeEvent } from "react"
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Filter,
-  MoreVertical,
-  Search,
-  Trash2,
-} from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
+import { FileText, Filter, MoreVertical, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -31,17 +21,15 @@ import {
   permanentlyDeleteDocument,
   retryDocumentIngestion,
 } from "@/features/documents/lib/document-upload-api-client"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
+import { DataTable } from "@/shared/ui/data-table/data-table"
+import { DataTableColumnHeader } from "@/shared/ui/data-table/data-table-column-header"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
-import { Input } from "@/shared/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-import { cn } from "@/lib/utils"
 import { DocumentDrawer } from "./document-drawer"
 
 type StatusFilter = "active" | "archived" | "deleted" | "all"
-type SortKey = "title" | "status" | "uploadedAt"
-type SortDirection = "asc" | "desc"
 
 const STATUS_LABELS: Record<DocumentStatus, string> = {
   ready: "Ready",
@@ -77,25 +65,6 @@ const FILE_ICON_STYLES: Record<DocumentFileType, string> = {
   md: "bg-gray-50 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400 border border-gray-200 dark:border-gray-800",
 }
 
-function formatRelativeDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date("2024-06-20") // Mock current date relative to the mock data
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return `Today, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
-  }
-  if (diffDays === 1) {
-    return `Yesterday, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
-  }
-  return `${diffDays} days ago`
-}
-
-function formatFileSize(sizeMb: number): string {
-  return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
-}
-
 interface DocumentsTableProps {
   documents: MockDocumentDetail[]
 }
@@ -113,12 +82,28 @@ type PendingDocumentAction = {
   action: "retry" | "delete"
 }
 
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date("2024-06-20")
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) {
+    return `Today, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
+  }
+  if (diffDays === 1) {
+    return `Yesterday, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
+  }
+  return `${diffDays} days ago`
+}
+
+function formatFileSize(sizeMb: number): string {
+  return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
+}
+
 export function DocumentsTable({ documents }: DocumentsTableProps) {
   const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
-  const [sortKey, setSortKey] = useState<SortKey>("uploadedAt")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [lifecycleStatusOverrides, setLifecycleStatusOverrides] =
@@ -145,26 +130,6 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     },
     []
   )
-
-  const handleSearchChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value)
-  }, [])
-
-  const handleStatusFilterChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(event.target.value as StatusFilter)
-  }, [])
-
-  const toggleSort = useCallback((nextSortKey: SortKey) => {
-    setSortKey((currentSortKey) => {
-      if (currentSortKey === nextSortKey) {
-        setSortDirection((currentDirection) => (currentDirection === "asc" ? "desc" : "asc"))
-        return currentSortKey
-      }
-
-      setSortDirection("asc")
-      return nextSortKey
-    })
-  }, [])
 
   const handleRetryFailedDocument = useCallback(
     async (documentId: string) => {
@@ -244,35 +209,217 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     ? (effectiveDocuments.find((document) => document.id === selectedDocumentId) ?? null)
     : null
 
-  const visibleDocuments = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
+  const filteredDocuments = useMemo(
+    () =>
+      [...effectiveDocuments]
+        .filter((document) => {
+          return (
+            statusFilter === "all" ||
+            (statusFilter === "active" &&
+              document.status !== "archived" &&
+              document.status !== "deleted") ||
+            document.status === statusFilter
+          )
+        })
+        .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()),
+    [effectiveDocuments, statusFilter]
+  )
 
-    return [...effectiveDocuments]
-      .filter((document) => {
-        const matchesSearch = document.title.toLowerCase().includes(normalizedQuery)
-        const matchesStatus =
-          statusFilter === "all" ||
-          (statusFilter === "active" &&
-            document.status !== "archived" &&
-            document.status !== "deleted") ||
-          document.status === statusFilter
+  const columns = useMemo<ColumnDef<MockDocumentDetail>[]>(
+    () => [
+      {
+        id: "title",
+        accessorKey: "title",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Document" />,
+        enableSorting: true,
+        meta: { width: 280 },
+        cell: ({ row }) => {
+          const document = row.original
 
-        return matchesSearch && matchesStatus
-      })
-      .sort((a, b) => {
-        let comparison = 0
+          return (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                handleOpenDrawer(document)
+              }}
+              className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <DocumentFileIcon fileType={document.fileType} />
+              <div className="flex flex-col">
+                <span className="typography-small line-clamp-1 font-medium text-foreground transition-colors group-hover:text-primary">
+                  {document.title}
+                </span>
+                <span className="typography-small mt-0.5 text-xs text-muted-foreground">
+                  {formatFileSize(document.fileSizeMb)}
+                </span>
+                <span className="mt-1 flex items-center gap-1.5">
+                  <Badge variant="outline" className="w-fit text-[10px]">
+                    v{document.versionNumber ?? document.versions[0]?.version ?? 1}
+                  </Badge>
+                  {document.isLatestVersion === false ? (
+                    <Badge variant="secondary" className="w-fit text-[10px]">
+                      Old
+                    </Badge>
+                  ) : (
+                    <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
+                      Latest
+                    </Badge>
+                  )}
+                </span>
+              </div>
+            </button>
+          )
+        },
+      },
+      {
+        id: "status",
+        accessorFn: (document) => STATUS_LABELS[document.status],
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        enableSorting: true,
+        meta: { width: 160 },
+        cell: ({ row }) => <DocumentStatusBadge status={row.original.status} />,
+      },
+      {
+        id: "topics",
+        header: "AI Topics",
+        enableSorting: false,
+        meta: { width: 140 },
+        cell: ({ row }) =>
+          row.original.status === "failed" ? (
+            <span className="text-sm text-muted-foreground">—</span>
+          ) : (
+            <p className="typography-small font-medium text-foreground">
+              {row.original.topics.length} topics
+            </p>
+          ),
+      },
+      {
+        id: "description",
+        header: "Extracted Text",
+        enableSorting: false,
+        meta: { width: 300 },
+        cell: ({ row }) =>
+          row.original.status === "failed" ? (
+            <span className="text-sm text-muted-foreground">—</span>
+          ) : (
+            <p className="typography-small block truncate text-muted-foreground">
+              {row.original.description}
+            </p>
+          ),
+      },
+      {
+        id: "tests",
+        header: "Tests",
+        enableSorting: false,
+        meta: { width: 120 },
+        cell: ({ row }) => (
+          <p className="typography-small font-medium text-foreground">
+            {row.original.linkedTests.length}
+          </p>
+        ),
+      },
+      {
+        id: "uploadedAt",
+        accessorKey: "uploadedAt",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+        enableSorting: true,
+        meta: { width: 160 },
+        cell: ({ row }) => (
+          <p className="typography-small whitespace-nowrap text-muted-foreground">
+            {formatRelativeDate(row.original.uploadedAt)}
+          </p>
+        ),
+      },
+      {
+        id: "actions",
+        header: "Action",
+        enableSorting: false,
+        meta: { width: 180, headerClassName: "text-right", cellClassName: "text-right" },
+        cell: ({ row }) => {
+          const document = row.original
+          const isFailed = document.status === "failed"
+          const isProcessing = document.status === "processing"
+          const isGeneratable = canGenerateTest(document)
+          const isRetryPending =
+            pendingDocumentAction?.documentId === document.id &&
+            pendingDocumentAction.action === "retry"
+          const isDeletePending =
+            pendingDocumentAction?.documentId === document.id &&
+            pendingDocumentAction.action === "delete"
+          const hasPendingAction = pendingDocumentAction !== null
 
-        if (sortKey === "title") {
-          comparison = a.title.localeCompare(b.title)
-        } else if (sortKey === "status") {
-          comparison = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status])
-        } else {
-          comparison = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
-        }
-
-        return sortDirection === "asc" ? comparison : -comparison
-      })
-  }, [effectiveDocuments, searchQuery, sortDirection, sortKey, statusFilter])
+          return (
+            <div
+              className="flex items-center justify-end gap-2"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              {isFailed ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={hasPendingAction}
+                    onClick={() => void handleRetryFailedDocument(document.id)}
+                  >
+                    {isRetryPending ? "Retrying..." : "Retry"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 border-destructive/20 text-destructive hover:bg-destructive/10"
+                    disabled={hasPendingAction}
+                    aria-label="Delete failed document"
+                    onClick={() => void handleDeleteFailedDocument(document.id)}
+                  >
+                    {isDeletePending ? (
+                      <span className="size-3 animate-pulse rounded-full bg-current" />
+                    ) : (
+                      <Trash2 className="size-4" />
+                    )}
+                  </Button>
+                </>
+              ) : isProcessing ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 border border-orange-200 bg-orange-50 text-xs text-orange-600 hover:bg-orange-100 dark:border-orange-900/30 dark:bg-orange-900/20 dark:text-orange-400"
+                  disabled
+                >
+                  Processing...
+                </Button>
+              ) : isGeneratable ? (
+                <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
+                  <Link href={`/admin/documents/${document.id}/generate-test`}>Generate Test</Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs font-medium"
+                  disabled
+                  title={getGenerateBlockReason(document)}
+                >
+                  Generate Test
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                onClick={() => handleOpenDrawer(document)}
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+            </div>
+          )
+        },
+      },
+    ],
+    [handleDeleteFailedDocument, handleOpenDrawer, handleRetryFailedDocument, pendingDocumentAction]
+  )
 
   return (
     <>
@@ -280,22 +427,24 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         icon={FileText}
         title="All Documents"
         countLabel={`${effectiveDocuments.length} total`}
-        toolbar={
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={handleSearchChange}
-                placeholder="Search documents..."
-                className="pl-9 bg-background border-border/50 rounded-lg h-9"
-              />
-            </div>
+      >
+        {documentActionError ? (
+          <div className="border-b border-border/50 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {documentActionError}
+          </div>
+        ) : null}
+        <DataTable
+          columns={columns}
+          data={filteredDocuments}
+          searchKey="title"
+          searchPlaceholder="Search documents..."
+          emptyMessage="No documents match the current filters."
+          toolbar={
             <div className="relative shrink-0">
               <select
                 value={statusFilter}
-                onChange={handleStatusFilterChange}
-                className="h-9 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                className="h-8 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {STATUS_FILTER_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -303,273 +452,14 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                   </option>
                 ))}
               </select>
-              <Filter className="absolute left-3 top-2.5 size-4 text-muted-foreground pointer-events-none" />
+              <Filter className="pointer-events-none absolute top-2 left-3 size-4 text-muted-foreground" />
             </div>
-          </div>
-        }
-      >
-        {documentActionError ? (
-          <div className="border-b border-border/50 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {documentActionError}
-          </div>
-        ) : null}
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="hover:bg-transparent">
-              <SortableTableHead
-                label="Document"
-                sortKey="title"
-                activeSortKey={sortKey}
-                sortDirection={sortDirection}
-                onSort={toggleSort}
-              />
-              <SortableTableHead
-                label="Status"
-                sortKey="status"
-                activeSortKey={sortKey}
-                sortDirection={sortDirection}
-                onSort={toggleSort}
-              />
-              <TableHead className="text-xs font-medium text-muted-foreground">AI Topics</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                Extracted Text
-              </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Tests</TableHead>
-              <SortableTableHead
-                label="Updated"
-                sortKey="uploadedAt"
-                activeSortKey={sortKey}
-                sortDirection={sortDirection}
-                onSort={toggleSort}
-              />
-              <TableHead className="text-right text-xs font-medium text-muted-foreground">
-                Action
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visibleDocuments.length > 0 ? (
-              visibleDocuments.map((document) => {
-                const isFailed = document.status === "failed"
-                const isProcessing = document.status === "processing"
-                const isGeneratable = canGenerateTest(document)
-                const isRetryPending =
-                  pendingDocumentAction?.documentId === document.id &&
-                  pendingDocumentAction.action === "retry"
-                const isDeletePending =
-                  pendingDocumentAction?.documentId === document.id &&
-                  pendingDocumentAction.action === "delete"
-                const hasPendingAction = pendingDocumentAction !== null
-
-                return (
-                  <TableRow
-                    key={document.id}
-                    onClick={() => handleOpenDrawer(document)}
-                    className="group cursor-pointer hover:bg-muted/30 transition-colors"
-                  >
-                    <TableCell className="py-4">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          handleOpenDrawer(document)
-                        }}
-                        className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                      >
-                        <DocumentFileIcon fileType={document.fileType} />
-                        <div className="flex flex-col">
-                          <span className="typography-small font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                            {document.title}
-                          </span>
-                          <span className="typography-small text-xs text-muted-foreground mt-0.5">
-                            {formatFileSize(document.fileSizeMb)}
-                          </span>
-                          <span className="mt-1 flex items-center gap-1.5">
-                            <Badge variant="outline" className="w-fit text-[10px]">
-                              v{document.versionNumber ?? document.versions[0]?.version ?? 1}
-                            </Badge>
-                            {document.isLatestVersion === false ? (
-                              <Badge variant="secondary" className="w-fit text-[10px]">
-                                Old
-                              </Badge>
-                            ) : (
-                              <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
-                                Latest
-                              </Badge>
-                            )}
-                          </span>
-                        </div>
-                      </button>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <Badge
-                        variant={STATUS_VARIANTS[document.status]}
-                        className={cn(
-                          "status-badge",
-                          document.status === "ready"
-                            ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
-                            : document.status === "processing"
-                              ? "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30"
-                              : document.status === "failed"
-                                ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"
-                                : ""
-                        )}
-                      >
-                        {document.status === "ready" && (
-                          <span className="mr-1 size-1.5 rounded-full bg-emerald-500" />
-                        )}
-                        {document.status === "processing" && (
-                          <span className="mr-1 size-1.5 rounded-full bg-orange-500" />
-                        )}
-                        {document.status === "failed" && (
-                          <span className="mr-1 size-1.5 rounded-full bg-red-500" />
-                        )}
-                        {STATUS_LABELS[document.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      {isFailed ? (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      ) : (
-                        <p className="typography-small font-medium text-foreground">
-                          {document.topics.length} topics
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-4 w-[300px] max-w-[300px]">
-                      {isFailed ? (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      ) : (
-                        <p className="typography-small text-muted-foreground truncate block">
-                          {document.description}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <p className="typography-small font-medium text-foreground">
-                        {document.linkedTests.length}
-                      </p>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <p className="typography-small text-muted-foreground whitespace-nowrap">
-                        {formatRelativeDate(document.uploadedAt)}
-                      </p>
-                    </TableCell>
-                    <TableCell
-                      className="py-4 text-right"
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => event.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-end gap-2">
-                        {isFailed ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 text-xs"
-                              disabled={hasPendingAction}
-                              onClick={() => void handleRetryFailedDocument(document.id)}
-                            >
-                              {isRetryPending ? "Retrying..." : "Retry"}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10"
-                              disabled={hasPendingAction}
-                              aria-label="Delete failed document"
-                              onClick={() => void handleDeleteFailedDocument(document.id)}
-                            >
-                              {isDeletePending ? (
-                                <span className="size-3 animate-pulse rounded-full bg-current" />
-                              ) : (
-                                <Trash2 className="size-4" />
-                              )}
-                            </Button>
-                          </>
-                        ) : isProcessing ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="h-8 text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-200 dark:border-orange-900/30"
-                            disabled
-                          >
-                            Processing...
-                          </Button>
-                        ) : isGeneratable ? (
-                          <Button
-                            asChild
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs font-medium"
-                          >
-                            <Link href={`/admin/documents/${document.id}/generate-test`}>
-                              Generate Test
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs font-medium"
-                            disabled
-                            title={getGenerateBlockReason(document)}
-                          >
-                            Generate Test
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground"
-                          onClick={() => handleOpenDrawer(document)}
-                        >
-                          <MoreVertical className="size-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
-                  <p className="typography-p text-muted-foreground">
-                    No documents match the current filters.
-                  </p>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-
-        <div className="flex items-center justify-between border-t border-border/50 px-4 py-3 bg-muted/10">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Rows per page:</span>
-            <select className="h-8 rounded-md border border-border/50 bg-background px-2 text-foreground outline-none">
-              <option>10</option>
-              <option>20</option>
-              <option>50</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" disabled>
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-md bg-muted font-medium">
-              1
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-md text-muted-foreground">
-              2
-            </Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-md text-muted-foreground">
-              3
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md">
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        </div>
+          }
+          getRowProps={(row) => ({
+            onClick: () => handleOpenDrawer(row.original),
+            className: "group cursor-pointer hover:bg-muted/30 transition-colors",
+          })}
+        />
       </DataTableShell>
       <DocumentDrawer
         document={selectedDocument}
@@ -594,38 +484,25 @@ function DocumentFileIcon({ fileType }: { fileType: DocumentFileType }) {
   )
 }
 
-interface SortableTableHeadProps {
-  label: string
-  sortKey: SortKey
-  activeSortKey: SortKey
-  sortDirection: SortDirection
-  onSort: (sortKey: SortKey) => void
-}
-
-function SortableTableHead({
-  label,
-  sortKey,
-  activeSortKey,
-  sortDirection,
-  onSort,
-}: SortableTableHeadProps) {
-  const isActive = activeSortKey === sortKey
-  const SortIcon = !isActive ? ArrowUpDown : sortDirection === "asc" ? ArrowUp : ArrowDown
-
-  const handleClick = useCallback(() => {
-    onSort(sortKey)
-  }, [onSort, sortKey])
-
+function DocumentStatusBadge({ status }: { status: DocumentStatus }) {
   return (
-    <TableHead>
-      <button
-        type="button"
-        onClick={handleClick}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        {label}
-        <SortIcon className="size-3" />
-      </button>
-    </TableHead>
+    <Badge
+      variant={STATUS_VARIANTS[status]}
+      className={cn(
+        "status-badge",
+        status === "ready"
+          ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30"
+          : status === "processing"
+            ? "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30"
+            : status === "failed"
+              ? "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"
+              : ""
+      )}
+    >
+      {status === "ready" && <span className="mr-1 size-1.5 rounded-full bg-emerald-500" />}
+      {status === "processing" && <span className="mr-1 size-1.5 rounded-full bg-orange-500" />}
+      {status === "failed" && <span className="mr-1 size-1.5 rounded-full bg-red-500" />}
+      {STATUS_LABELS[status]}
+    </Badge>
   )
 }

@@ -16,6 +16,12 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 54 Follow-up: Employee My Tests DataTable
+
+- Feature Spec 54 Follow-up: Tests Table Filter Toolbar Alignment
+
+- Feature Spec 54: TanStack Table — Shared DataTable Component
+
 - Feature Spec 53 Follow-up: Recreated Progress Trend Chart
 
 - Feature Spec 53 Follow-up: Assigned Not Started Employee Detail Block

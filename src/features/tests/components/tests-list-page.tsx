@@ -1,27 +1,28 @@
 "use client"
 
-import { ClipboardList } from "lucide-react"
-import Link from "next/link"
 import { useCallback, useMemo, useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
+import { ClipboardList, Filter } from "lucide-react"
+import Link from "next/link"
 
-import type { TestStatus } from "@/features/tests/mock/tests"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
-import { formatTestDate } from "@/features/tests/lib/test-format"
 import { TestDrawer } from "@/features/tests/components/test-drawer"
-import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { TestsKpiSection } from "@/features/tests/components/tests-kpi-section"
+import { formatTestDate } from "@/features/tests/lib/test-format"
+import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
 import {
   isSourceBlockingValidity,
   normalizeTestSourceValidity,
   TEST_SOURCE_VALIDITY_STYLE,
 } from "@/features/tests/lib/test-source-validity-style"
-import { TestsKpiSection } from "@/features/tests/components/tests-kpi-section"
+import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import type { TestStatus } from "@/features/tests/mock/tests"
+import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { DataTable } from "@/shared/ui/data-table/data-table"
+import { DataTableColumnHeader } from "@/shared/ui/data-table/data-table-column-header"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
-import { FilterTabBar } from "@/shared/ui/filter-tab-bar"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-import { cn } from "@/lib/utils"
 
 type StatusFilter = "all" | TestStatus
 
@@ -87,6 +88,130 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
     setIsDrawerOpen(true)
   }, [])
 
+  const columns = useMemo<ColumnDef<ResolvedMockTest>[]>(
+    () => [
+      {
+        id: "title",
+        accessorKey: "title",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        enableSorting: true,
+        meta: { width: 240 },
+        cell: ({ row }) => (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              handleOpenDrawer(row.original)
+            }}
+            className="typography-small line-clamp-1 text-left font-medium text-foreground transition-colors group-hover:text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {row.original.title}
+          </button>
+        ),
+      },
+      {
+        id: "status",
+        accessorKey: "status",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        enableSorting: true,
+        meta: { width: 220 },
+        cell: ({ row }) => <TestStatusCell test={row.original} />,
+      },
+      {
+        id: "difficulty",
+        accessorKey: "difficulty",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Difficulty" />,
+        enableSorting: true,
+        meta: { width: 140 },
+        cell: ({ row }) => <span className="capitalize">{row.original.difficulty}</span>,
+      },
+      {
+        id: "targetRole",
+        accessorKey: "targetRole",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Target Role" />,
+        enableSorting: true,
+        meta: { width: 180 },
+      },
+      {
+        id: "language",
+        accessorKey: "language",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Language" />,
+        enableSorting: true,
+        meta: { width: 120 },
+      },
+      {
+        id: "questionCount",
+        accessorKey: "questionCount",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Questions" />,
+        enableSorting: true,
+        meta: { width: 130 },
+      },
+      {
+        id: "passingScore",
+        accessorKey: "passingScore",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Passing Score" />,
+        enableSorting: true,
+        meta: { width: 160 },
+        cell: ({ row }) => `${row.original.passingScore}%`,
+      },
+      {
+        id: "sourceDocument",
+        accessorFn: (test) => test.sourceDocument.title,
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Source Document" />,
+        enableSorting: true,
+        meta: { width: 220 },
+        cell: ({ row }) => (
+          <p className="typography-small truncate text-muted-foreground">
+            {row.original.sourceDocument.title}
+          </p>
+        ),
+      },
+      {
+        id: "createdAt",
+        accessorKey: "createdAt",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+        enableSorting: true,
+        meta: { width: 140 },
+        cell: ({ row }) => (
+          <p className="typography-small whitespace-nowrap text-muted-foreground">
+            {formatTestDate(row.original.createdAt)}
+          </p>
+        ),
+      },
+      {
+        id: "assignedEmployeesCount",
+        accessorKey: "assignedEmployeesCount",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Assigned" />,
+        enableSorting: true,
+        meta: { width: 130 },
+      },
+      {
+        id: "attemptsCount",
+        accessorKey: "attemptsCount",
+        header: ({ column }) => <DataTableColumnHeader column={column} title="Attempts" />,
+        enableSorting: true,
+        meta: { width: 130 },
+      },
+      {
+        id: "actions",
+        header: "Action",
+        enableSorting: false,
+        meta: { width: 150, headerClassName: "text-right", cellClassName: "text-right" },
+        cell: ({ row }) => (
+          <div
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <Button asChild variant="outline" size="sm" className="h-8 text-xs">
+              <Link href={`/admin/tests/${row.original.id}`}>View details</Link>
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [handleOpenDrawer]
+  )
+
   return (
     <div className="page-shell">
       <div className="flex items-center justify-between gap-4">
@@ -106,14 +231,6 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
       </div>
 
       <div className="mt-6">
-        <FilterTabBar
-          options={STATUS_FILTER_OPTIONS}
-          value={statusFilter}
-          onChange={setStatusFilter}
-        />
-      </div>
-
-      <div className="mt-2">
         {loadError ? (
           <TestsLoadErrorState />
         ) : tests.length === 0 ? (
@@ -124,143 +241,62 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
             title="All Tests"
             countLabel={`${visibleTests.length} shown`}
           >
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Title
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Status
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Difficulty
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Target Role
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Language
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Questions
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Passing Score
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Source Document
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Created
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Assigned
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-muted-foreground">
-                      Attempts
-                    </TableHead>
-                    <TableHead className="text-right text-xs font-medium text-muted-foreground">
-                      Action
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleTests.length > 0 ? (
-                    visibleTests.map((test) => {
-                      const statusStyle = TEST_STATUS_STYLE[test.status]
-                      const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
-                      const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
-                      return (
-                        <TableRow
-                          key={test.id}
-                          onClick={() => handleOpenDrawer(test)}
-                          className="group cursor-pointer hover:bg-muted/30 transition-colors"
-                        >
-                          <TableCell className="py-4">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                handleOpenDrawer(test)
-                              }}
-                              className="typography-small line-clamp-1 text-left font-medium text-foreground transition-colors group-hover:text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                            >
-                              {test.title}
-                            </button>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className={cn("status-badge", statusStyle.listBadgeClass)}
-                              >
-                                <span
-                                  className={`mr-1 size-1.5 rounded-full ${statusStyle.dotClass}`}
-                                />
-                                {statusStyle.label}
-                              </Badge>
-                              {test.isActive === false ? (
-                                <Badge
-                                  variant="outline"
-                                  className="border-amber-200 bg-amber-50 text-amber-700"
-                                >
-                                  Inactive
-                                </Badge>
-                              ) : null}
-                              {isSourceBlockingValidity(sourceValidity) ? (
-                                <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
-                                  {sourceValidityStyle.label}
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4 capitalize">{test.difficulty}</TableCell>
-                          <TableCell className="py-4">{test.targetRole}</TableCell>
-                          <TableCell className="py-4">{test.language}</TableCell>
-                          <TableCell className="py-4">{test.questionCount}</TableCell>
-                          <TableCell className="py-4">{test.passingScore}%</TableCell>
-                          <TableCell className="py-4 max-w-[180px]">
-                            <p className="typography-small text-muted-foreground truncate">
-                              {test.sourceDocument.title}
-                            </p>
-                          </TableCell>
-                          <TableCell className="py-4 whitespace-nowrap">
-                            <p className="typography-small text-muted-foreground">
-                              {formatTestDate(test.createdAt)}
-                            </p>
-                          </TableCell>
-                          <TableCell className="py-4">{test.assignedEmployeesCount}</TableCell>
-                          <TableCell className="py-4">{test.attemptsCount}</TableCell>
-                          <TableCell
-                            className="py-4 text-right"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
-                          >
-                            <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-                              <Link href={`/admin/tests/${test.id}`}>View details</Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={12} className="h-32 text-center">
-                        <p className="typography-p text-muted-foreground">
-                          No tests match the current filter.
-                        </p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <DataTable
+              columns={columns}
+              data={visibleTests}
+              searchKey="title"
+              searchPlaceholder="Search tests..."
+              emptyMessage="No tests match the current filter."
+              toolbar={
+                <div className="relative shrink-0">
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                    className="h-8 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    {STATUS_FILTER_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <Filter className="pointer-events-none absolute top-2 left-3 size-4 text-muted-foreground" />
+                </div>
+              }
+              getRowProps={(row) => ({
+                onClick: () => handleOpenDrawer(row.original),
+                className: "group cursor-pointer hover:bg-muted/30 transition-colors",
+              })}
+            />
           </DataTableShell>
         )}
       </div>
       <TestDrawer test={selectedTest} open={isDrawerOpen} onOpenChange={setIsDrawerOpen} />
+    </div>
+  )
+}
+
+function TestStatusCell({ test }: { test: ResolvedMockTest }) {
+  const statusStyle = TEST_STATUS_STYLE[test.status]
+  const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
+  const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge variant="outline" className={cn("status-badge", statusStyle.listBadgeClass)}>
+        <span className={`mr-1 size-1.5 rounded-full ${statusStyle.dotClass}`} />
+        {statusStyle.label}
+      </Badge>
+      {test.isActive === false ? (
+        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+          Inactive
+        </Badge>
+      ) : null}
+      {isSourceBlockingValidity(sourceValidity) ? (
+        <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
+          {sourceValidityStyle.label}
+        </Badge>
+      ) : null}
     </div>
   )
 }

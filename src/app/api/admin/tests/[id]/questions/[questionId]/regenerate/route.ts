@@ -5,6 +5,7 @@ import { regenerateSingleQuestion } from "@/features/tests/lib/regenerate-single
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
+import { parseOptions } from "@/shared/db/parse-json-fields"
 
 interface RegenerateQuestionRouteContext {
   params: Promise<{ id: string; questionId: string }>
@@ -12,25 +13,6 @@ interface RegenerateQuestionRouteContext {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function parseOptions(value: Json): Array<{ id: string; text: string }> {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((item) => {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      "id" in item &&
-      "text" in item &&
-      typeof item.id === "string" &&
-      typeof item.text === "string"
-    ) {
-      return [{ id: item.id, text: item.text }]
-    }
-
-    return []
-  })
 }
 
 export async function POST(_request: Request, { params }: RegenerateQuestionRouteContext) {

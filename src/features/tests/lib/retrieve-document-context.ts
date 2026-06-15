@@ -10,7 +10,11 @@ import {
 import { buildRetrievalQuery } from "@/features/tests/lib/generate-test-prompt"
 import type { TestDifficulty, TestLanguage } from "@/features/tests/schemas/generated-test-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { createEmbedding, EMBEDDING_MODEL } from "@/shared/ai/chunk-embeddings"
+import {
+  createEmbedding,
+  EMBEDDING_MODEL,
+  serializePgvectorEmbedding,
+} from "@/shared/ai/chunk-embeddings"
 
 export { EMBEDDING_MODEL }
 
@@ -164,7 +168,7 @@ async function retrieveVectorMatchesForDocument(input: {
   const queryEmbedding = await createEmbedding(input.openai, retrievalQuery)
 
   const { data: rpcMatches, error: rpcError } = await supabase.rpc("match_document_chunks", {
-    query_embedding: queryEmbedding,
+    query_embedding: serializePgvectorEmbedding(queryEmbedding),
     match_count: input.matchCount,
     document_id_filter: input.document.id,
     organization_id_filter: input.document.organizationId,

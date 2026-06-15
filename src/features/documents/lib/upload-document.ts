@@ -21,6 +21,7 @@ import { embedDocumentChunks } from "@/features/documents/lib/embed-document-chu
 import { extractDocumentText } from "@/features/documents/lib/extract-document-text"
 import { persistDocumentTopicsBestEffort } from "@/features/documents/lib/persist-document-topics"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { serializePgvectorEmbedding } from "@/shared/ai/chunk-embeddings"
 
 export type UploadDocumentResult = {
   documentId: string
@@ -285,7 +286,7 @@ async function runDocumentIngestion(input: {
         title: chunk.title,
         topic: chunk.topic,
         content: chunk.content,
-        embedding: chunk.embedding,
+        embedding: serializePgvectorEmbedding(chunk.embedding),
         metadata: chunk.metadata,
       }))
     )

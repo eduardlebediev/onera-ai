@@ -2,14 +2,16 @@
 
 import { Bell, CheckCircle2, Clock, ClipboardList, MailPlus, Send, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { FormEvent, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { BulkAssignModal } from "@/features/employees/components/bulk-assign-modal"
+import { DepartmentSelect } from "@/features/employees/components/department-select"
 import { EmployeeDetailDrawer } from "@/features/employees/components/employee-detail-drawer"
 import { EmployeesTable } from "@/features/employees/components/employees-table"
+import { InviteEmployeeModal } from "@/features/employees/components/invite-employee-modal"
 import type { EmployeeDetail } from "@/features/employees/lib/supabase-employee-detail"
 import type {
-  AssignableEmployeeTest,
   EmployeeListItem,
   EmployeeManagementData,
   EmployeeProgressStatus,
@@ -17,16 +19,6 @@ import type {
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/shared/ui/drawer"
-import { Input } from "@/shared/ui/input"
 
 type StatusFilter = "all" | EmployeeProgressStatus
 
@@ -118,195 +110,6 @@ function EmployeeKpiCards({ data }: { data: EmployeeManagementData }) {
         </Card>
       ))}
     </div>
-  )
-}
-
-function DepartmentSelect({
-  departments,
-  value,
-  onChange,
-  includeAll = true,
-}: {
-  departments: string[]
-  value: string
-  onChange: (value: string) => void
-  includeAll?: boolean
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-8 rounded-lg border border-input bg-input px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-    >
-      {includeAll ? <option value="all">All departments</option> : null}
-      {departments.map((department) => (
-        <option key={department} value={department}>
-          {department}
-        </option>
-      ))}
-    </select>
-  )
-}
-
-function InviteEmployeeDrawer({
-  open,
-  departments,
-  isSubmitting,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean
-  departments: string[]
-  isSubmitting: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: { fullName: string; email: string; department: string }) => Promise<void>
-}) {
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [department, setDepartment] = useState(departments[0] ?? "Unassigned")
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    await onSubmit({ fullName, email, department })
-    setFullName("")
-    setEmail("")
-  }
-
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit} className="flex h-full flex-col">
-          <DrawerHeader>
-            <DrawerTitle>Invite employee</DrawerTitle>
-            <DrawerDescription>
-              Create an employee invite and send onboarding details.
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="space-y-4 px-4">
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Full name</span>
-              <Input
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                required
-                placeholder="Alex Morgan"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Email</span>
-              <Input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                placeholder="alex@company.com"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Department</span>
-              <DepartmentSelect
-                departments={departments}
-                value={department}
-                includeAll={false}
-                onChange={setDepartment}
-              />
-            </label>
-          </div>
-          <DrawerFooter className="mt-auto">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Inviting..." : "Invite & send onboarding"}
-            </Button>
-            <DrawerClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </form>
-      </DrawerContent>
-    </Drawer>
-  )
-}
-
-function BulkAssignDrawer({
-  open,
-  departments,
-  tests,
-  isSubmitting,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean
-  departments: string[]
-  tests: AssignableEmployeeTest[]
-  isSubmitting: boolean
-  onOpenChange: (open: boolean) => void
-  onSubmit: (data: { testId: string; department: string | null }) => Promise<void>
-}) {
-  const [testId, setTestId] = useState(tests[0]?.id ?? "")
-  const [department, setDepartment] = useState("all")
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    await onSubmit({
-      testId,
-      department: department === "all" ? null : department,
-    })
-  }
-
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit} className="flex h-full flex-col">
-          <DrawerHeader>
-            <DrawerTitle>Bulk assign</DrawerTitle>
-            <DrawerDescription>Assign a published test to an entire department.</DrawerDescription>
-          </DrawerHeader>
-          <div className="space-y-4 px-4">
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Assessment module</span>
-              <select
-                value={testId}
-                onChange={(event) => setTestId(event.target.value)}
-                required
-                className="h-8 w-full rounded-lg border border-input bg-input px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {tests.length === 0 ? <option value="">No published tests available</option> : null}
-                {tests.map((test) => (
-                  <option key={test.id} value={test.id}>
-                    {test.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Target department</span>
-              <DepartmentSelect
-                departments={departments}
-                value={department}
-                onChange={setDepartment}
-              />
-            </label>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-800">
-              <p className="typography-small">
-                New assignments start as pending. Existing assignments and completed attempts are
-                preserved.
-              </p>
-            </div>
-          </div>
-          <DrawerFooter className="mt-auto">
-            <Button type="submit" disabled={isSubmitting || !testId}>
-              {isSubmitting ? "Assigning..." : "Execute assignment"}
-            </Button>
-            <DrawerClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </form>
-      </DrawerContent>
-    </Drawer>
   )
 }
 
@@ -658,14 +461,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         </DataTableShell>
       </div>
 
-      <InviteEmployeeDrawer
+      <InviteEmployeeModal
         open={isInviteOpen}
         departments={departments}
         isSubmitting={isInviting}
         onOpenChange={setIsInviteOpen}
         onSubmit={handleInvite}
       />
-      <BulkAssignDrawer
+      <BulkAssignModal
         open={isBulkAssignOpen}
         departments={departments}
         tests={data.tests}

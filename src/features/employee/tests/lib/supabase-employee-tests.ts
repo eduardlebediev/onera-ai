@@ -6,6 +6,7 @@ import type { TestDifficulty } from "@/features/tests/mock/tests"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
+import { parseOptions } from "@/shared/db/parse-json-fields"
 import {
   isMissingMaxAttemptsColumnError,
   warnMissingMaxAttemptsFallback,
@@ -93,25 +94,6 @@ function mapDifficulty(difficulty: string): TestDifficulty {
   }
 
   return "medium"
-}
-
-function parseOptions(value: Json): EmployeeSafeQuestionOption[] {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((item) => {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      "id" in item &&
-      "text" in item &&
-      typeof item.id === "string" &&
-      typeof item.text === "string"
-    ) {
-      return [{ id: item.id, text: item.text }]
-    }
-
-    return []
-  })
 }
 
 function mapQuestionType(questionType: string): EmployeeSafeQuestion["questionType"] {

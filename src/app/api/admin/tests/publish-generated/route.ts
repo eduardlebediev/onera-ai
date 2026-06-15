@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import type { PostgrestError } from "@supabase/supabase-js"
 
 import {
   SourceDocumentValidationError,
@@ -13,6 +14,25 @@ import {
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
+
+type PublishGeneratedTestRpc = (
+  fn: "publish_generated_test",
+  args: {
+    p_organization_id: string
+    p_source_document_id: string
+    p_title: string
+    p_description: string | null
+    p_difficulty: string
+    p_language: string
+    p_target_role: string | null
+    p_question_count: number
+    p_passing_score: number
+    p_created_by: string
+    p_published_at: string
+    p_document_ids: string[]
+    p_questions: Json
+  }
+) => Promise<{ data: string | null; error: PostgrestError | null }>
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
@@ -183,7 +203,8 @@ export async function POST(request: Request) {
       order_index: index,
     }))
 
-    const { data: savedTestId, error: publishError } = await supabase.rpc(
+    const publishGeneratedTest = supabase.rpc as unknown as PublishGeneratedTestRpc
+    const { data: savedTestId, error: publishError } = await publishGeneratedTest(
       "publish_generated_test",
       {
         p_organization_id: primaryDocument.organizationId,

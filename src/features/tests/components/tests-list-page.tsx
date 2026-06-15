@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ClipboardList, Filter } from "lucide-react"
 import Link from "next/link"
@@ -96,18 +96,7 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
         header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
         enableSorting: true,
         meta: { width: 240 },
-        cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              handleOpenDrawer(row.original)
-            }}
-            className="typography-small line-clamp-1 text-left font-medium text-foreground transition-colors group-hover:text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {row.original.title}
-          </button>
-        ),
+        cell: ({ row }) => <TestTitleCell test={row.original} onOpenDrawer={handleOpenDrawer} />,
       },
       {
         id: "status",
@@ -197,16 +186,7 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
         header: "Action",
         enableSorting: false,
         meta: { width: 150, headerClassName: "text-right", cellClassName: "text-right" },
-        cell: ({ row }) => (
-          <div
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-              <Link href={`/admin/tests/${row.original.id}`}>View details</Link>
-            </Button>
-          </div>
-        ),
+        cell: ({ row }) => <TestActionsCell testId={row.original.id} />,
       },
     ],
     [handleOpenDrawer]
@@ -276,7 +256,41 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
   )
 }
 
-function TestStatusCell({ test }: { test: ResolvedMockTest }) {
+const TestTitleCell = memo(function TestTitleCell({
+  test,
+  onOpenDrawer,
+}: {
+  test: ResolvedMockTest
+  onOpenDrawer: (test: ResolvedMockTest) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation()
+        onOpenDrawer(test)
+      }}
+      className="typography-small line-clamp-1 text-left font-medium text-foreground transition-colors group-hover:text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      {test.title}
+    </button>
+  )
+})
+
+const TestActionsCell = memo(function TestActionsCell({ testId }: { testId: string }) {
+  return (
+    <div
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <Button asChild variant="outline" size="sm" className="h-8 text-xs">
+        <Link href={`/admin/tests/${testId}`}>View details</Link>
+      </Button>
+    </div>
+  )
+})
+
+const TestStatusCell = memo(function TestStatusCell({ test }: { test: ResolvedMockTest }) {
   const statusStyle = TEST_STATUS_STYLE[test.status]
   const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
   const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
@@ -299,4 +313,4 @@ function TestStatusCell({ test }: { test: ResolvedMockTest }) {
       ) : null}
     </div>
   )
-}
+})

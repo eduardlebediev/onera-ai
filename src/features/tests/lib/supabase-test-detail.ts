@@ -4,7 +4,7 @@ import { getLatestDocumentVersionForDocument } from "@/features/documents/lib/do
 import { buildSourceLabel } from "@/features/tests/lib/source-label"
 import { getTestSourceDocumentsByTestId } from "@/features/tests/lib/test-documents"
 import { createAdminClient } from "@/lib/supabase/admin"
-import type { Json } from "@/lib/supabase/types"
+import { parseCorrectAnswer, parseOptions } from "@/shared/db/parse-json-fields"
 
 export type SavedTestQuestion = {
   id: string
@@ -55,42 +55,6 @@ export type SavedTestDetail = {
   latestSourceDocumentId: string | null
   sourceDocuments: SavedTestSourceDocument[]
   questions: SavedTestQuestion[]
-}
-
-function parseOptions(value: Json): Array<{ id: string; text: string }> {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((item) => {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      "id" in item &&
-      "text" in item &&
-      typeof item.id === "string" &&
-      typeof item.text === "string"
-    ) {
-      return [{ id: item.id, text: item.text }]
-    }
-
-    return []
-  })
-}
-
-function parseCorrectAnswer(value: Json): { optionIds: string[] } {
-  if (
-    typeof value === "object" &&
-    value !== null &&
-    "optionIds" in value &&
-    Array.isArray(value.optionIds)
-  ) {
-    return {
-      optionIds: value.optionIds.filter(
-        (optionId): optionId is string => typeof optionId === "string"
-      ),
-    }
-  }
-
-  return { optionIds: [] }
 }
 
 export async function getSavedTestDetailById(

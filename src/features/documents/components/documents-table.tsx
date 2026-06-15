@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { FileText, Filter, MoreVertical, Trash2 } from "lucide-react"
 import Link from "next/link"
@@ -233,44 +233,9 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         header: ({ column }) => <DataTableColumnHeader column={column} title="Document" />,
         enableSorting: true,
         meta: { width: 280 },
-        cell: ({ row }) => {
-          const document = row.original
-
-          return (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation()
-                handleOpenDrawer(document)
-              }}
-              className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <DocumentFileIcon fileType={document.fileType} />
-              <div className="flex flex-col">
-                <span className="typography-small line-clamp-1 font-medium text-foreground transition-colors group-hover:text-primary">
-                  {document.title}
-                </span>
-                <span className="typography-small mt-0.5 text-xs text-muted-foreground">
-                  {formatFileSize(document.fileSizeMb)}
-                </span>
-                <span className="mt-1 flex items-center gap-1.5">
-                  <Badge variant="outline" className="w-fit text-[10px]">
-                    v{document.versionNumber ?? document.versions[0]?.version ?? 1}
-                  </Badge>
-                  {document.isLatestVersion === false ? (
-                    <Badge variant="secondary" className="w-fit text-[10px]">
-                      Old
-                    </Badge>
-                  ) : (
-                    <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
-                      Latest
-                    </Badge>
-                  )}
-                </span>
-              </div>
-            </button>
-          )
-        },
+        cell: ({ row }) => (
+          <DocumentTitleCell document={row.original} onOpenDrawer={handleOpenDrawer} />
+        ),
       },
       {
         id: "status",
@@ -336,86 +301,15 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         header: "Action",
         enableSorting: false,
         meta: { width: 180, headerClassName: "text-right", cellClassName: "text-right" },
-        cell: ({ row }) => {
-          const document = row.original
-          const isFailed = document.status === "failed"
-          const isProcessing = document.status === "processing"
-          const isGeneratable = canGenerateTest(document)
-          const isRetryPending =
-            pendingDocumentAction?.documentId === document.id &&
-            pendingDocumentAction.action === "retry"
-          const isDeletePending =
-            pendingDocumentAction?.documentId === document.id &&
-            pendingDocumentAction.action === "delete"
-          const hasPendingAction = pendingDocumentAction !== null
-
-          return (
-            <div
-              className="flex items-center justify-end gap-2"
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              {isFailed ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    disabled={hasPendingAction}
-                    onClick={() => void handleRetryFailedDocument(document.id)}
-                  >
-                    {isRetryPending ? "Retrying..." : "Retry"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 border-destructive/20 text-destructive hover:bg-destructive/10"
-                    disabled={hasPendingAction}
-                    aria-label="Delete failed document"
-                    onClick={() => void handleDeleteFailedDocument(document.id)}
-                  >
-                    {isDeletePending ? (
-                      <span className="size-3 animate-pulse rounded-full bg-current" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
-                  </Button>
-                </>
-              ) : isProcessing ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 border border-orange-200 bg-orange-50 text-xs text-orange-600 hover:bg-orange-100 dark:border-orange-900/30 dark:bg-orange-900/20 dark:text-orange-400"
-                  disabled
-                >
-                  Processing...
-                </Button>
-              ) : isGeneratable ? (
-                <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
-                  <Link href={`/admin/documents/${document.id}/generate-test`}>Generate Test</Link>
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs font-medium"
-                  disabled
-                  title={getGenerateBlockReason(document)}
-                >
-                  Generate Test
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={() => handleOpenDrawer(document)}
-              >
-                <MoreVertical className="size-4" />
-              </Button>
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <DocumentActionsCell
+            document={row.original}
+            pendingDocumentAction={pendingDocumentAction}
+            onRetry={handleRetryFailedDocument}
+            onDelete={handleDeleteFailedDocument}
+            onOpenDrawer={handleOpenDrawer}
+          />
+        ),
       },
     ],
     [handleDeleteFailedDocument, handleOpenDrawer, handleRetryFailedDocument, pendingDocumentAction]
@@ -471,7 +365,144 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
   )
 }
 
-function DocumentFileIcon({ fileType }: { fileType: DocumentFileType }) {
+const DocumentTitleCell = memo(function DocumentTitleCell({
+  document,
+  onOpenDrawer,
+}: {
+  document: MockDocumentDetail
+  onOpenDrawer: (document: MockDocumentDetail) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation()
+        onOpenDrawer(document)
+      }}
+      className="flex items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <DocumentFileIcon fileType={document.fileType} />
+      <div className="flex flex-col">
+        <span className="typography-small line-clamp-1 font-medium text-foreground transition-colors group-hover:text-primary">
+          {document.title}
+        </span>
+        <span className="typography-small mt-0.5 text-xs text-muted-foreground">
+          {formatFileSize(document.fileSizeMb)}
+        </span>
+        <span className="mt-1 flex items-center gap-1.5">
+          <Badge variant="outline" className="w-fit text-[10px]">
+            v{document.versionNumber ?? document.versions[0]?.version ?? 1}
+          </Badge>
+          {document.isLatestVersion === false ? (
+            <Badge variant="secondary" className="w-fit text-[10px]">
+              Old
+            </Badge>
+          ) : (
+            <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
+              Latest
+            </Badge>
+          )}
+        </span>
+      </div>
+    </button>
+  )
+})
+
+const DocumentActionsCell = memo(function DocumentActionsCell({
+  document,
+  pendingDocumentAction,
+  onRetry,
+  onDelete,
+  onOpenDrawer,
+}: {
+  document: MockDocumentDetail
+  pendingDocumentAction: PendingDocumentAction | null
+  onRetry: (documentId: string) => Promise<void>
+  onDelete: (documentId: string) => Promise<void>
+  onOpenDrawer: (document: MockDocumentDetail) => void
+}) {
+  const isFailed = document.status === "failed"
+  const isProcessing = document.status === "processing"
+  const isGeneratable = canGenerateTest(document)
+  const isRetryPending =
+    pendingDocumentAction?.documentId === document.id && pendingDocumentAction.action === "retry"
+  const isDeletePending =
+    pendingDocumentAction?.documentId === document.id && pendingDocumentAction.action === "delete"
+  const hasPendingAction = pendingDocumentAction !== null
+
+  return (
+    <div
+      className="flex items-center justify-end gap-2"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {isFailed ? (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs"
+            disabled={hasPendingAction}
+            onClick={() => void onRetry(document.id)}
+          >
+            {isRetryPending ? "Retrying..." : "Retry"}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 border-destructive/20 text-destructive hover:bg-destructive/10"
+            disabled={hasPendingAction}
+            aria-label="Delete failed document"
+            onClick={() => void onDelete(document.id)}
+          >
+            {isDeletePending ? (
+              <span className="size-3 animate-pulse rounded-full bg-current" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+          </Button>
+        </>
+      ) : isProcessing ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-8 border border-orange-200 bg-orange-50 text-xs text-orange-600 hover:bg-orange-100 dark:border-orange-900/30 dark:bg-orange-900/20 dark:text-orange-400"
+          disabled
+        >
+          Processing...
+        </Button>
+      ) : isGeneratable ? (
+        <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
+          <Link href={`/admin/documents/${document.id}/generate-test`}>Generate Test</Link>
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs font-medium"
+          disabled
+          title={getGenerateBlockReason(document)}
+        >
+          Generate Test
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground"
+        onClick={() => onOpenDrawer(document)}
+      >
+        <MoreVertical className="size-4" />
+      </Button>
+    </div>
+  )
+})
+
+const DocumentFileIcon = memo(function DocumentFileIcon({
+  fileType,
+}: {
+  fileType: DocumentFileType
+}) {
   return (
     <span
       className={`inline-flex size-9 shrink-0 flex-col items-center justify-center rounded-lg ${FILE_ICON_STYLES[fileType]}`}
@@ -482,9 +513,13 @@ function DocumentFileIcon({ fileType }: { fileType: DocumentFileType }) {
       </span>
     </span>
   )
-}
+})
 
-function DocumentStatusBadge({ status }: { status: DocumentStatus }) {
+const DocumentStatusBadge = memo(function DocumentStatusBadge({
+  status,
+}: {
+  status: DocumentStatus
+}) {
   return (
     <Badge
       variant={STATUS_VARIANTS[status]}
@@ -505,4 +540,4 @@ function DocumentStatusBadge({ status }: { status: DocumentStatus }) {
       {STATUS_LABELS[status]}
     </Badge>
   )
-}
+})

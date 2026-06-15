@@ -3,7 +3,12 @@ import OpenAI from "openai"
 
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
-import { buildEmbeddingInput, createEmbedding, EMBEDDING_MODEL } from "@/shared/ai/chunk-embeddings"
+import {
+  buildEmbeddingInput,
+  createEmbedding,
+  EMBEDDING_MODEL,
+  serializePgvectorEmbedding,
+} from "@/shared/ai/chunk-embeddings"
 
 const VERIFICATION_QUERIES = [
   {
@@ -102,7 +107,7 @@ async function embedChunks(
       const { error } = await supabase
         .from("document_chunks")
         .update({
-          embedding,
+          embedding: serializePgvectorEmbedding(embedding),
           metadata,
         })
         .eq("id", chunk.id)
@@ -133,7 +138,7 @@ async function runVerification(openai: OpenAI): Promise<void> {
     const queryEmbedding = await createEmbedding(openai, verification.query)
 
     const { data, error } = await supabase.rpc("match_document_chunks", {
-      query_embedding: queryEmbedding,
+      query_embedding: serializePgvectorEmbedding(queryEmbedding),
       match_count: 5,
       match_threshold: 0.2,
     })

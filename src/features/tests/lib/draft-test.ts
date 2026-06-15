@@ -14,6 +14,7 @@ import {
 import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
+import { parseCorrectAnswer, parseOptions } from "@/shared/db/parse-json-fields"
 
 type DraftTestRow = {
   id: string
@@ -44,40 +45,6 @@ type DraftQuestionRow = {
   source_document_id: string | null
   source_status: string
   review_status: string
-}
-
-function parseOptions(value: Json): Array<{ id: string; text: string }> {
-  if (!Array.isArray(value)) return []
-
-  return value.flatMap((item) => {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      "id" in item &&
-      "text" in item &&
-      typeof item.id === "string" &&
-      typeof item.text === "string"
-    ) {
-      return [{ id: item.id, text: item.text }]
-    }
-
-    return []
-  })
-}
-
-function parseCorrectAnswer(value: Json): { optionIds?: string[]; expectedAnswer?: string } {
-  if (typeof value !== "object" || value === null) {
-    return {}
-  }
-
-  const record = value as Record<string, unknown>
-  const optionIds = Array.isArray(record.optionIds)
-    ? record.optionIds.filter((id): id is string => typeof id === "string")
-    : undefined
-  const expectedAnswer =
-    typeof record.expectedAnswer === "string" ? record.expectedAnswer : undefined
-
-  return { optionIds, expectedAnswer }
 }
 
 function resolveCorrectAnswerTexts(

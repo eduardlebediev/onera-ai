@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, type KeyboardEvent, type ReactNode } from "react"
+import { memo, useMemo, type KeyboardEvent, type ReactNode } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { Bell } from "lucide-react"
 import { toast } from "sonner"
@@ -108,19 +108,7 @@ export function EmployeesTable({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
         enableSorting: true,
         meta: { pin: "left", width: 280 },
-        cell: ({ row }) => (
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
-              {getInitials(row.original.name)}
-            </div>
-            <div>
-              <p className="typography-small font-medium text-foreground">{row.original.name}</p>
-              {row.original.memberStatus === "invited" ? (
-                <p className="text-xs text-muted-foreground">Invite pending</p>
-              ) : null}
-            </div>
-          </div>
-        ),
+        cell: ({ row }) => <EmployeeNameCell employee={row.original} />,
       },
       {
         id: "email",
@@ -143,17 +131,7 @@ export function EmployeesTable({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Progress" />,
         enableSorting: true,
         meta: { width: 170 },
-        cell: ({ row }) => (
-          <div className="min-w-28">
-            <div className="h-2 rounded-full bg-muted">
-              <div
-                className="h-2 rounded-full bg-primary"
-                style={{ width: `${row.original.progress}%` }}
-              />
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{row.original.progress}% complete</p>
-          </div>
-        ),
+        cell: ({ row }) => <EmployeeProgressCell progress={row.original.progress} />,
       },
       {
         id: "status",
@@ -161,16 +139,7 @@ export function EmployeesTable({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
         enableSorting: true,
         meta: { width: 150 },
-        cell: ({ row }) => {
-          const statusStyle = STATUS_STYLE[row.original.status]
-
-          return (
-            <Badge variant="outline" className={cn("status-badge", statusStyle.className)}>
-              <span className={cn("mr-1 size-1.5 rounded-full", statusStyle.dotClassName)} />
-              {statusStyle.label}
-            </Badge>
-          )
-        },
+        cell: ({ row }) => <EmployeeStatusCell status={row.original.status} />,
       },
       {
         id: "averageScore",
@@ -202,51 +171,13 @@ export function EmployeesTable({
           headerClassName: "text-right",
           cellClassName: "text-right",
         },
-        cell: ({ row }) => {
-          const employee = row.original
-          const isNudging = nudgingIds.includes(employee.id)
-
-          return (
-            <div
-              onClick={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              {employee.status === "completed" ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    toast.message("Employee already completed", {
-                      description: `${employee.name} has completed assigned work.`,
-                      position: "bottom-right",
-                    })
-                  }
-                >
-                  Completed
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant={employee.status === "overdue" ? "destructive" : "outline"}
-                  size="sm"
-                  disabled={isNudging}
-                  onClick={() =>
-                    onNudge(
-                      [employee.id],
-                      employee.status === "overdue"
-                        ? "Please complete your overdue assigned training."
-                        : "Please complete your assigned training."
-                    )
-                  }
-                >
-                  <Bell />
-                  {isNudging ? "Sending..." : "Nudge"}
-                </Button>
-              )}
-            </div>
-          )
-        },
+        cell: ({ row }) => (
+          <EmployeeActionsCell
+            employee={row.original}
+            isNudging={nudgingIds.includes(row.original.id)}
+            onNudge={onNudge}
+          />
+        ),
       },
     ],
     [nudgingIds, onNudge]
@@ -271,3 +202,104 @@ export function EmployeesTable({
     />
   )
 }
+
+const EmployeeNameCell = memo(function EmployeeNameCell({
+  employee,
+}: {
+  employee: EmployeeTableRow
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
+        {getInitials(employee.name)}
+      </div>
+      <div>
+        <p className="typography-small font-medium text-foreground">{employee.name}</p>
+        {employee.memberStatus === "invited" ? (
+          <p className="text-xs text-muted-foreground">Invite pending</p>
+        ) : null}
+      </div>
+    </div>
+  )
+})
+
+const EmployeeProgressCell = memo(function EmployeeProgressCell({
+  progress,
+}: {
+  progress: number
+}) {
+  return (
+    <div className="min-w-28">
+      <div className="h-2 rounded-full bg-muted">
+        <div className="h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">{progress}% complete</p>
+    </div>
+  )
+})
+
+const EmployeeStatusCell = memo(function EmployeeStatusCell({
+  status,
+}: {
+  status: EmployeeProgressStatus
+}) {
+  const statusStyle = STATUS_STYLE[status]
+
+  return (
+    <Badge variant="outline" className={cn("status-badge", statusStyle.className)}>
+      <span className={cn("mr-1 size-1.5 rounded-full", statusStyle.dotClassName)} />
+      {statusStyle.label}
+    </Badge>
+  )
+})
+
+const EmployeeActionsCell = memo(function EmployeeActionsCell({
+  employee,
+  isNudging,
+  onNudge,
+}: {
+  employee: EmployeeTableRow
+  isNudging: boolean
+  onNudge: (employeeIds: string[], label: string) => void
+}) {
+  return (
+    <div
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {employee.status === "completed" ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            toast.message("Employee already completed", {
+              description: `${employee.name} has completed assigned work.`,
+              position: "bottom-right",
+            })
+          }
+        >
+          Completed
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant={employee.status === "overdue" ? "destructive" : "outline"}
+          size="sm"
+          disabled={isNudging}
+          onClick={() =>
+            onNudge(
+              [employee.id],
+              employee.status === "overdue"
+                ? "Please complete your overdue assigned training."
+                : "Please complete your assigned training."
+            )
+          }
+        >
+          <Bell />
+          {isNudging ? "Sending..." : "Nudge"}
+        </Button>
+      )}
+    </div>
+  )
+})

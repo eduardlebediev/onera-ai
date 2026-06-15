@@ -38,3 +38,7 @@ export async function createEmbedding(openai: OpenAI, input: string): Promise<nu
 
   return embedding
 }
+
+export function serializePgvectorEmbedding(embedding: number[]): string {
+  return `[${embedding.join(",")}]`
+}

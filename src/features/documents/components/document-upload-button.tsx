@@ -6,12 +6,26 @@ import { useRef, useState, type ChangeEvent } from "react"
 import { toast } from "sonner"
 
 import { uploadDocument } from "@/features/documents/lib/document-upload-api-client"
+import { cn } from "@/lib/utils"
 import { Button } from "@/shared/ui/button"
 
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.pptx,.txt,.md"
-const MAX_UPLOAD_MB = 10
 
-export function DocumentUploadButton() {
+interface DocumentUploadButtonProps {
+  className?: string
+  iconClassName?: string
+  showInlineError?: boolean
+  size?: React.ComponentProps<typeof Button>["size"]
+  variant?: React.ComponentProps<typeof Button>["variant"]
+}
+
+export function DocumentUploadButton({
+  className = "shrink-0",
+  iconClassName = "mr-2 size-4",
+  showInlineError = true,
+  size = "lg",
+  variant = "default",
+}: DocumentUploadButtonProps = {}) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -47,7 +61,7 @@ export function DocumentUploadButton() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className={cn(showInlineError && "flex flex-col items-end gap-2")}>
       <input
         ref={inputRef}
         type="file"
@@ -55,14 +69,17 @@ export function DocumentUploadButton() {
         className="hidden"
         onChange={handleFileChange}
       />
-      <Button className="shrink-0 rounded-full" onClick={handleChooseFile} disabled={isUploading}>
-        <Upload className="mr-2 size-4" />
+      <Button
+        className={className}
+        disabled={isUploading}
+        onClick={handleChooseFile}
+        size={size}
+        variant={variant}
+      >
+        <Upload className={iconClassName} />
         {isUploading ? "Uploading..." : "Upload Document"}
       </Button>
-      <p className="max-w-sm text-right text-xs text-muted-foreground">
-        Supported: PDF, DOCX, PPTX, TXT, MD. Max {MAX_UPLOAD_MB} MB.
-      </p>
-      {errorMessage ? (
+      {showInlineError && errorMessage ? (
         <p className="max-w-sm text-right text-xs text-destructive">{errorMessage}</p>
       ) : null}
     </div>

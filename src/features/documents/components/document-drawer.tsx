@@ -29,7 +29,7 @@ export function DocumentDrawer({
         className="h-[90vh] overflow-hidden bg-background"
         leftAction={
           document ? (
-            <Button asChild variant="ghost" size="icon-sm" className="rounded-full">
+            <Button asChild variant="ghost" size="icon">
               <Link href={`/admin/documents/${document.id}`} aria-label="Open full page">
                 <Maximize2 className="size-4" />
               </Link>
@@ -38,7 +38,7 @@ export function DocumentDrawer({
         }
         rightAction={
           <DrawerClose asChild>
-            <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Close">
+            <Button variant="ghost" size="icon" aria-label="Close">
               <X className="size-4" />
             </Button>
           </DrawerClose>

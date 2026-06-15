@@ -227,16 +227,10 @@ export function TestAnswerReview({
                   <p className="typography-small">{item.explanation}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-x-4 gap-y-1 typography-small text-muted-foreground">
-                  <span>
-                    <span className="font-medium text-foreground">Topic: </span>
-                    {item.topic}
-                  </span>
-                  <span>
-                    <span className="font-medium text-foreground">Source: </span>
-                    {item.sourceChunkReference}
-                  </span>
-                </div>
+                <p className="typography-small text-muted-foreground">
+                  <span className="font-medium text-foreground">Topic: </span>
+                  {item.topic}
+                </p>
 
                 {showFollowUp ? (
                   <div className="space-y-3 pt-1">

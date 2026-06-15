@@ -1,5 +1,9 @@
 # Decisions
 
+## 069 — Employees access source material via scoped document view
+
+Employees cannot open `/admin/documents/...`. **Review Source Material** links to `/employee/documents/[id]` with optional `testId` and `attemptId` query params. Server-side access requires an assignment or completed attempt on a test linked to that document (`test_documents` or `tests.source_document_id`). Original files are served via `POST /api/employee/documents/[id]/download-url` (signed URL); extracted text is shown on the employee page when no file is stored.
+
 ## 068 — Documents can be directly archived or deleted
 
 Admin document archive and delete actions support every non-deleted Supabase-backed document, including seeded demo documents and ready uploaded documents. Archiving remains optional and is not a prerequisite for permanent deletion.

@@ -14,30 +14,25 @@ import {
 } from "@/shared/ui/drawer"
 import { Input } from "@/shared/ui/input"
 
-import { DepartmentSelect } from "./department-select"
-
 interface InviteEmployeeModalProps {
   open: boolean
-  departments: string[]
   isSubmitting: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: { fullName: string; email: string; department: string }) => Promise<void>
+  onSubmit: (data: { fullName: string; email: string }) => Promise<void>
 }
 
 export function InviteEmployeeModal({
   open,
-  departments,
   isSubmitting,
   onOpenChange,
   onSubmit,
 }: InviteEmployeeModalProps) {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
-  const [department, setDepartment] = useState(departments[0] ?? "Unassigned")
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    await onSubmit({ fullName, email, department })
+    await onSubmit({ fullName, email })
     setFullName("")
     setEmail("")
   }
@@ -70,15 +65,6 @@ export function InviteEmployeeModal({
                 onChange={(event) => setEmail(event.target.value)}
                 required
                 placeholder="alex@company.com"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="typography-small font-medium">Department</span>
-              <DepartmentSelect
-                departments={departments}
-                value={department}
-                includeAll={false}
-                onChange={setDepartment}
               />
             </label>
           </div>

@@ -1,22 +1,17 @@
-import type {
-  KpiStat,
-  MockAiDraft,
-  MockDocument,
-  MockTest,
-  WeeklyCompletion,
-} from "@/data/mock/admin-dashboard"
+import type { KpiStat, MockDocument, MockTest, WeeklyCompletion } from "@/data/mock/admin-dashboard"
 import type { AdminDashboardRecentAttempt } from "@/features/analytics/lib/supabase-admin-dashboard"
-import { AiDraftsList } from "@/features/analytics/components/ai-drafts-list"
 import { DashboardHeader } from "@/features/analytics/components/dashboard-header"
 import { KpiCards } from "@/features/analytics/components/kpi-cards"
 import { RecentAttemptsCard } from "@/features/analytics/components/recent-attempts-card"
+import { TestCompletionPieChart } from "@/features/analytics/components/test-completion-pie-chart"
 import { TestCompletionsChart } from "@/features/analytics/components/test-completions-chart"
 import { TestPerformanceTable } from "@/features/analytics/components/test-performance-table"
 import { RecentDocumentsCard } from "@/features/analytics/components/recent-documents-card"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface AdminDashboardProps {
-  aiDrafts: MockAiDraft[]
+  adminName: string
+  generateTestHref: string
   kpiStats: KpiStat[]
   loadError?: boolean
   recentDocuments: MockDocument[]
@@ -26,7 +21,8 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({
-  aiDrafts,
+  adminName,
+  generateTestHref,
   kpiStats,
   loadError = false,
   recentDocuments,
@@ -36,7 +32,7 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   return (
     <>
-      <DashboardHeader />
+      <DashboardHeader adminName={adminName} generateTestHref={generateTestHref} />
 
       {loadError ? (
         <Card className="mt-8">
@@ -49,17 +45,23 @@ export function AdminDashboard({
         </Card>
       ) : null}
 
-      <div className="mt-12 grid grid-cols-12 gap-2">
-        <KpiCards stats={kpiStats} />
+      {!loadError ? (
+        <>
+          <div className="mt-8">
+            <KpiCards stats={kpiStats} />
+          </div>
 
-        <RecentDocumentsCard documents={recentDocuments} />
-        <AiDraftsList drafts={aiDrafts} />
+          <div className="mt-2 grid grid-cols-12 gap-2">
+            <RecentDocumentsCard documents={recentDocuments} />
+            <TestCompletionPieChart recentAttempts={recentAttempts} />
 
-        <TestPerformanceTable tests={testPerformance} />
-        <TestCompletionsChart data={weeklyCompletions} />
+            <TestPerformanceTable tests={testPerformance} />
+            <TestCompletionsChart data={weeklyCompletions} />
 
-        <RecentAttemptsCard attempts={recentAttempts} />
-      </div>
+            <RecentAttemptsCard attempts={recentAttempts} />
+          </div>
+        </>
+      ) : null}
     </>
   )
 }

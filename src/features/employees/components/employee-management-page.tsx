@@ -1,14 +1,13 @@
 "use client"
 
-import { Bell, CheckCircle2, Clock, ClipboardList, MailPlus, Send, Users } from "lucide-react"
+import { Bell, MailPlus, Send, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { AssignSelectedEmployeesModal } from "@/features/employees/components/assign-selected-employees-modal"
-import { BulkAssignModal } from "@/features/employees/components/bulk-assign-modal"
-import { DepartmentSelect } from "@/features/employees/components/department-select"
 import { EmployeeDetailDrawer } from "@/features/employees/components/employee-detail-drawer"
+import { EmployeesKpiSection } from "@/features/employees/components/employees-kpi-section"
 import { EmployeesTable } from "@/features/employees/components/employees-table"
 import { InviteEmployeeModal } from "@/features/employees/components/invite-employee-modal"
 import type { EmployeeDetail } from "@/features/employees/lib/supabase-employee-detail"
@@ -18,7 +17,7 @@ import type {
   EmployeeProgressStatus,
 } from "@/features/employees/lib/supabase-employees"
 import { Button } from "@/shared/ui/button"
-import { Card, CardContent } from "@/shared/ui/card"
+import { DataTableFilterSelect } from "@/shared/ui/data-table/data-table-filter-select"
 import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
 import { useSelection } from "@/shared/ui/use-selection"
@@ -27,14 +26,6 @@ type StatusFilter = "all" | EmployeeProgressStatus
 
 type InviteResponse = {
   employee?: EmployeeListItem
-  error?: string
-}
-
-type BulkAssignResponse = {
-  testTitle?: string
-  targetCount?: number
-  createdCount?: number
-  skippedCount?: number
   error?: string
 }
 
@@ -66,60 +57,8 @@ const STATUS_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
   { label: "Overdue", value: "overdue" },
 ]
 
-function formatScore(score: number | null): string {
-  return typeof score === "number" ? `${score}%` : "--"
-}
-
 function getErrorMessage(payload: { error?: string } | null, fallback: string): string {
   return payload?.error ?? fallback
-}
-
-function EmployeeKpiCards({ data }: { data: EmployeeManagementData }) {
-  const cards = [
-    {
-      label: "Total employees",
-      value: String(data.metrics.totalEmployees),
-      description: "Team members in this organization",
-      icon: Users,
-    },
-    {
-      label: "Avg score",
-      value: formatScore(data.metrics.averageScore),
-      description: "Across completed attempts",
-      icon: CheckCircle2,
-    },
-    {
-      label: "Pending",
-      value: String(data.metrics.pendingCount),
-      description: "Need to finish assigned tests",
-      icon: ClipboardList,
-    },
-    {
-      label: "Overdue",
-      value: String(data.metrics.overdueCount),
-      description: "Past assignment deadline",
-      icon: Clock,
-    },
-  ]
-
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
-        <Card key={card.label}>
-          <CardContent className="flex min-h-28 flex-col justify-between px-5 py-4">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <card.icon className="size-5 shrink-0" />
-              <span className="typography-small">{card.label}</span>
-            </div>
-            <div>
-              <p className="typography-h2">{card.value}</p>
-              <p className="typography-small text-muted-foreground">{card.description}</p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
 }
 
 export function EmployeeManagementPage({ data, loadError = false }: EmployeeManagementPageProps) {
@@ -129,10 +68,8 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
   const [departmentFilter, setDepartmentFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [isInviteOpen, setIsInviteOpen] = useState(false)
-  const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false)
   const [isAssignSelectedOpen, setIsAssignSelectedOpen] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
-  const [isBulkAssigning, setIsBulkAssigning] = useState(false)
   const [isAssigningSelected, setIsAssigningSelected] = useState(false)
   const [nudgingIds, setNudgingIds] = useState<string[]>([])
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeListItem | null>(null)
@@ -193,6 +130,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     [departmentFilter, employees, statusFilter]
   )
 
+  const departmentFilterOptions = useMemo(
+    () => [
+      { label: "All departments", value: "all" },
+      ...departments.map((department) => ({ label: department, value: department })),
+    ],
+    [departments]
+  )
+
   const overdueEmployeeIds = employees
     .filter((employee) => employee.status === "overdue")
     .map((employee) => employee.id)
@@ -214,18 +159,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     nudgingIds.length === 0 &&
     selectedEmployees.every((employee) => employee.status !== "completed")
 
-  const handleInvite = async (formData: {
-    fullName: string
-    email: string
-    department: string
-  }) => {
+  const handleInvite = async (formData: { fullName: string; email: string }) => {
     setIsInviting(true)
 
     try {
       const response = await fetch("/api/admin/employees/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, department: "Unassigned" }),
       })
       const payload = (await response.json().catch(() => null)) as InviteResponse | null
 
@@ -250,39 +191,6 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
       })
     } finally {
       setIsInviting(false)
-    }
-  }
-
-  const handleBulkAssign = async (formData: { testId: string; department: string | null }) => {
-    setIsBulkAssigning(true)
-
-    try {
-      const response = await fetch("/api/admin/tests/assign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-      const payload = (await response.json().catch(() => null)) as BulkAssignResponse | null
-
-      if (!response.ok) {
-        throw new Error(getErrorMessage(payload, "Bulk assignment failed"))
-      }
-
-      setIsBulkAssignOpen(false)
-      toast.success("Bulk assignment complete", {
-        description: `${payload?.createdCount ?? 0} new assignment${
-          payload?.createdCount === 1 ? "" : "s"
-        } created for ${payload?.testTitle ?? "the selected test"}.`,
-        position: "bottom-right",
-      })
-      router.refresh()
-    } catch (error) {
-      toast.error("Bulk assignment failed", {
-        description: error instanceof Error ? error.message : "Try again later.",
-        position: "bottom-right",
-      })
-    } finally {
-      setIsBulkAssigning(false)
     }
   }
 
@@ -444,26 +352,18 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button className="rounded-full" onClick={() => setIsInviteOpen(true)}>
+          <Button size="lg" onClick={() => setIsInviteOpen(true)}>
             <MailPlus />
             Invite employee
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-full"
-            onClick={() => setIsBulkAssignOpen(true)}
-          >
-            <Send />
-            Bulk assign
           </Button>
         </div>
       </div>
 
       <div className="mt-8">
-        <EmployeeKpiCards data={metricsData} />
+        <EmployeesKpiSection metrics={metricsData.metrics} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-2">
         <DataTableShell
           icon={Users}
           title="All Employees"
@@ -515,7 +415,7 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
                   Invite your first employee to start assigning onboarding tests.
                 </p>
               </div>
-              <Button className="rounded-full" onClick={() => setIsInviteOpen(true)}>
+              <Button size="lg" onClick={() => setIsInviteOpen(true)}>
                 Invite your first employee
               </Button>
             </div>
@@ -530,22 +430,16 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
               onSelectAll={selectAll}
               toolbar={
                 <>
-                  <DepartmentSelect
-                    departments={departments}
+                  <DataTableFilterSelect
                     value={departmentFilter}
                     onChange={setDepartmentFilter}
+                    options={departmentFilterOptions}
                   />
-                  <select
+                  <DataTableFilterSelect
                     value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                    className="h-8 rounded-lg border border-input bg-input px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setStatusFilter(value as StatusFilter)}
+                    options={STATUS_OPTIONS}
+                  />
                   <Button
                     type="button"
                     variant="outline"
@@ -569,18 +463,9 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
 
       <InviteEmployeeModal
         open={isInviteOpen}
-        departments={departments}
         isSubmitting={isInviting}
         onOpenChange={setIsInviteOpen}
         onSubmit={handleInvite}
-      />
-      <BulkAssignModal
-        open={isBulkAssignOpen}
-        departments={departments}
-        tests={data.tests}
-        isSubmitting={isBulkAssigning}
-        onOpenChange={setIsBulkAssignOpen}
-        onSubmit={handleBulkAssign}
       />
       <AssignSelectedEmployeesModal
         open={isAssignSelectedOpen}

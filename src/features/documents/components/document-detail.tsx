@@ -230,6 +230,10 @@ export function DocumentDetail({
                   documentId={document.id}
                   disabled={!canUploadNewVersion}
                 />
+                <DocumentLifecycleActions
+                  document={document}
+                  onLifecycleComplete={onLifecycleComplete}
+                />
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
@@ -275,11 +279,7 @@ export function DocumentDetail({
             <Link href={`/admin/documents/${latestDocumentId}`}>Open latest version</Link>
           </Button>
         </div>
-      ) : (
-        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300">
-          This is the latest version.
-        </div>
-      )}
+      ) : null}
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
@@ -495,12 +495,6 @@ export function DocumentDetail({
                         ) : null}
                       </>
                     ) : null}
-                  </div>
-                  <div className="mt-6 border-t border-border pt-4">
-                    <DocumentLifecycleActions
-                      document={document}
-                      onLifecycleComplete={onLifecycleComplete}
-                    />
                   </div>
                 </CardContent>
               </Card>

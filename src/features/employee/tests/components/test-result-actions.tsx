@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { ArrowLeft, BookOpen, RotateCcw } from "lucide-react"
 
+import { getEmployeeSourceDocumentHref } from "@/features/employee/documents/lib/employee-source-document-route"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface TestResultActionsProps {
   testId: string
+  attemptId?: string
   sourceDocumentId: string
   passed: boolean
   canRetake?: boolean
@@ -14,6 +16,7 @@ interface TestResultActionsProps {
 
 export function TestResultActions({
   testId,
+  attemptId,
   sourceDocumentId,
   passed,
   canRetake,
@@ -32,7 +35,7 @@ export function TestResultActions({
         </Button>
 
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/admin/documents/${sourceDocumentId}`}>
+          <Link href={getEmployeeSourceDocumentHref(sourceDocumentId, { testId, attemptId })}>
             <BookOpen className="size-4" />
             Review Source Material
           </Link>

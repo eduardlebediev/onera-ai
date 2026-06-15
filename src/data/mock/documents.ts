@@ -80,7 +80,7 @@ export const mockDocuments: MockDocumentDetail[] = [
     fileSizeMb: 1.8,
     description:
       "Company-wide security standards covering password policy, data classification, access control, and phishing awareness for all employees.",
-    uploadedAt: "2024-05-10",
+    uploadedAt: "2026-05-10",
     topicsCount: 4,
     topics: [
       "Password Policy",
@@ -133,8 +133,8 @@ export const mockDocuments: MockDocumentDetail[] = [
       },
     ],
     versions: [
-      { id: "v2", version: 2, uploadedAt: "2024-05-10", status: "ready" },
-      { id: "v1", version: 1, uploadedAt: "2024-05-01", status: "ready" },
+      { id: "v2", version: 2, uploadedAt: "2026-05-10", status: "ready" },
+      { id: "v1", version: 1, uploadedAt: "2026-05-01", status: "ready" },
     ],
   },
   {
@@ -145,7 +145,7 @@ export const mockDocuments: MockDocumentDetail[] = [
     fileSizeMb: 3.2,
     description:
       "Mandatory safety training document for all operational staff. Covers workplace hazards, emergency procedures, fire safety protocols, and regulatory compliance requirements.",
-    uploadedAt: "2024-06-03",
+    uploadedAt: "2026-06-03",
     topicsCount: 5,
     topics: [
       "Workplace Hazards",
@@ -185,7 +185,7 @@ export const mockDocuments: MockDocumentDetail[] = [
         status: "published",
       },
     ],
-    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-03", status: "ready" }],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2026-06-03", status: "ready" }],
   },
   {
     id: "doc-3",
@@ -195,12 +195,12 @@ export const mockDocuments: MockDocumentDetail[] = [
     fileSizeMb: 0.9,
     description:
       "Internal engineering reference covering the product architecture, system boundaries, coding standards, and deployment conventions used across the engineering team.",
-    uploadedAt: "2024-06-15",
+    uploadedAt: "2026-06-15",
     topicsCount: 4,
     topics: ["System Architecture", "Coding Standards", "Deployment Conventions", "API Design"],
     chunks: [],
     linkedTests: [],
-    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-15", status: "processing" }],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2026-06-15", status: "processing" }],
   },
   {
     id: "doc-4",
@@ -210,7 +210,7 @@ export const mockDocuments: MockDocumentDetail[] = [
     fileSizeMb: 2.1,
     description:
       "Playbook for the customer support team covering escalation paths, communication templates, SLA definitions, and common resolution patterns for tier-1 and tier-2 issues.",
-    uploadedAt: "2024-04-20",
+    uploadedAt: "2026-04-20",
     topicsCount: 5,
     topics: [
       "Escalation Paths",
@@ -247,9 +247,9 @@ export const mockDocuments: MockDocumentDetail[] = [
       { id: "test-5", title: "SLA & Escalation Test", questionCount: 8, status: "draft" },
     ],
     versions: [
-      { id: "v3", version: 3, uploadedAt: "2024-04-20", status: "ready" },
-      { id: "v2", version: 2, uploadedAt: "2024-04-10", status: "ready" },
-      { id: "v1", version: 1, uploadedAt: "2024-03-15", status: "ready" },
+      { id: "v3", version: 3, uploadedAt: "2026-04-20", status: "ready" },
+      { id: "v2", version: 2, uploadedAt: "2026-04-10", status: "ready" },
+      { id: "v1", version: 1, uploadedAt: "2026-03-15", status: "ready" },
     ],
   },
   {
@@ -260,11 +260,11 @@ export const mockDocuments: MockDocumentDetail[] = [
     fileSizeMb: 4.7,
     description:
       "Guidelines on data handling, GDPR compliance requirements, user consent management, and breach notification procedures for all staff handling personal data.",
-    uploadedAt: "2024-06-18",
+    uploadedAt: "2026-06-18",
     topicsCount: 0,
     topics: [],
     chunks: [],
     linkedTests: [],
-    versions: [{ id: "v1", version: 1, uploadedAt: "2024-06-18", status: "failed" }],
+    versions: [{ id: "v1", version: 1, uploadedAt: "2026-06-18", status: "failed" }],
   },
 ]

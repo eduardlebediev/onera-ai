@@ -4,26 +4,8 @@ import {
   getSupabaseEmployeeAssignments,
   type SupabaseEmployeeAssignmentsResult,
 } from "@/features/employee/tests/lib/supabase-employee-assignments"
-import type { MockEmployee } from "@/features/tests/mock/employees"
 
 export const dynamic = "force-dynamic"
-
-function buildEmployeeFallback(user: {
-  userId: string
-  email: string
-  profile: { fullName: string | null }
-}): MockEmployee {
-  return {
-    id: user.userId,
-    name: user.profile.fullName ?? user.email,
-    email: user.email,
-    role: "Employee",
-    department: "Unassigned",
-    completedTestsCount: 0,
-    averageScore: 0,
-    riskLevel: "on_track",
-  }
-}
 
 async function loadEmployeeTestsData(
   userId: string,
@@ -46,10 +28,5 @@ export default async function EmployeeTestsRoute() {
 
   const result = await loadEmployeeTestsData(user.userId, user.membership.organizationId)
 
-  return (
-    <EmployeeTestsPage
-      employee={result?.employee ?? buildEmployeeFallback(user)}
-      tests={result?.tests ?? []}
-    />
-  )
+  return <EmployeeTestsPage tests={result?.tests ?? []} />
 }

@@ -42,7 +42,7 @@ export function EmployeeDashboardNextTest({ nextTest }: EmployeeDashboardNextTes
                 </p>
               </div>
 
-              <Button asChild className="shrink-0 rounded-full">
+              <Button asChild className="shrink-0">
                 <Link href={nextTest.actionHref}>{nextTest.actionLabel}</Link>
               </Button>
             </div>

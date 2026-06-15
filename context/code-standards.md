@@ -41,6 +41,9 @@
 
 - Use Tailwind utility classes and project design tokens.
 - Prefer consistent spacing, radius, borders, and typography.
+- Follow page rhythm from `context/ui-context.md`: header → `mt-8` KPI → `mt-2` content with `gap-2`.
+- Use `KpiStatGrid` for KPI rows; use `DataTableFilterSelect` for table filter dropdowns.
+- Page-header primary buttons: `size="lg"`; do not override `Button` with `rounded-full`.
 - Do not hardcode random colors in components.
 - Use shadcn/ui components where appropriate.
 - Follow the shadcn/ui component pattern: use `class-variance-authority` for variants, accept `className` for extension, forward refs, and export as named functions.

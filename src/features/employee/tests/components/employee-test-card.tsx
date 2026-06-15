@@ -82,14 +82,14 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
             <Button
               variant={action.variant}
               size="sm"
-              className="shrink-0 rounded-full"
+              className="shrink-0"
               disabled
               title={action.disabledReason}
             >
               {action.label}
             </Button>
           ) : (
-            <Button asChild variant={action.variant} size="sm" className="shrink-0 rounded-full">
+            <Button asChild variant={action.variant} size="sm" className="shrink-0">
               <Link href={action.href}>{action.label}</Link>
             </Button>
           )}

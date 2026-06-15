@@ -8,6 +8,8 @@ Production Readiness Cleanup
 
 ## In Progress
 
+- Feature Spec 59 deferred: merge analytics insights into admin dashboard and remove `/admin/analytics` nav.
+
 ## Next Up
 
 - Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 38–49 in `context/current-plan.md`.
@@ -15,6 +17,8 @@ Production Readiness Cleanup
 ## Open Questions
 
 ## Completed
+
+- Feature Spec 59: UI Polish and Consistency Pass
 
 - Feature Spec 58 Follow-up: One-click Demo Login
 

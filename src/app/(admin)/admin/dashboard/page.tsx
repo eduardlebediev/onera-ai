@@ -5,7 +5,8 @@ import {
   type AdminDashboardRecentAttempt,
 } from "@/features/analytics/lib/supabase-admin-dashboard"
 import { requireAdminUser } from "@/features/auth/lib/require-auth"
-import type { MockAiDraft, MockDocument } from "@/data/mock/admin-dashboard"
+import { getNewTestRoute } from "@/features/tests/lib/new-test-route"
+import type { MockDocument } from "@/data/mock/admin-dashboard"
 
 export const dynamic = "force-dynamic"
 
@@ -15,9 +16,9 @@ export default async function DashboardPage() {
 
   let dashboardMetrics = buildEmptyAdminDashboardMetrics()
   let dashboardRecentDocuments: MockDocument[] = []
-  let dashboardAiDrafts: MockAiDraft[] = []
   let recentAttempts: AdminDashboardRecentAttempt[] = []
   let loadError = false
+  let generateTestHref = "/admin/documents"
 
   try {
     const result = await getAdminDashboardFromSupabase(organizationId)
@@ -28,16 +29,24 @@ export default async function DashboardPage() {
     }
 
     dashboardRecentDocuments = result.recentDocuments
-    dashboardAiDrafts = result.recentDrafts
   } catch (error) {
     console.error("Failed to load admin dashboard from Supabase:", error)
     loadError = true
   }
 
+  try {
+    generateTestHref = await getNewTestRoute(organizationId)
+  } catch (error) {
+    console.error("Failed to resolve generate test route:", error)
+  }
+
+  const adminName = user.profile.fullName ?? user.email
+
   return (
     <div className="page-shell">
       <AdminDashboard
-        aiDrafts={dashboardAiDrafts}
+        adminName={adminName}
+        generateTestHref={generateTestHref}
         kpiStats={dashboardMetrics.kpiStats}
         loadError={loadError}
         recentDocuments={dashboardRecentDocuments}

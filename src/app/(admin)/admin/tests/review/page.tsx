@@ -29,7 +29,7 @@ function EmptyReviewState() {
               Generate a test from a ready document to review AI-created questions.
             </p>
           </div>
-          <Button asChild className="rounded-full">
+          <Button asChild size="lg">
             <Link href="/admin/documents">Generate Test</Link>
           </Button>
         </CardContent>

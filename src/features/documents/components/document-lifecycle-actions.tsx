@@ -17,6 +17,7 @@ import type {
 } from "@/features/documents/schemas/document-upload-schema"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/shared/ui/dropdown-menu"
 
 type LifecycleAction = "archive" | "delete"
 
@@ -151,69 +152,25 @@ export function DocumentLifecycleActions({
     }
   }
 
-  if (isDeleted) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        This document was permanently deleted. Completed test results remain available.
-      </p>
-    )
+  if (isDeleted || (!canArchive && !canDelete)) {
+    return null
   }
 
   return (
     <>
-      <div className="space-y-3">
-        {canArchive ? (
-          <Button variant="outline" className="w-full" onClick={() => setPendingAction("archive")}>
-            <Archive className="mr-2 size-4" />
-            Archive Document
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled
-            title={
-              !supportsArchiveDelete
-                ? "Apply migration 00006 before archiving documents."
-                : !isApiBacked
-                  ? "Only Supabase-backed documents can be archived"
-                  : isArchived
-                    ? "Document is already archived"
-                    : "Deleted documents cannot be archived"
-            }
-          >
-            <Archive className="mr-2 size-4" />
-            Archive Document
-          </Button>
-        )}
-
-        {canDelete ? (
-          <Button
-            variant="outline"
-            className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setPendingAction("delete")}
-          >
-            <Trash2 className="mr-2 size-4" />
-            Permanently Delete
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled
-            title={
-              !supportsArchiveDelete
-                ? "Apply migration 00006 before permanently deleting documents."
-                : !isApiBacked
-                  ? "Only Supabase-backed documents can be permanently deleted"
-                  : "This document is already permanently deleted"
-            }
-          >
-            <Trash2 className="mr-2 size-4" />
-            Permanently Delete
-          </Button>
-        )}
-      </div>
+      <DropdownMenuSeparator />
+      {canArchive ? (
+        <DropdownMenuItem onSelect={() => setPendingAction("archive")}>
+          <Archive />
+          Archive Document
+        </DropdownMenuItem>
+      ) : null}
+      {canDelete ? (
+        <DropdownMenuItem variant="destructive" onSelect={() => setPendingAction("delete")}>
+          <Trash2 />
+          Permanently Delete
+        </DropdownMenuItem>
+      ) : null}
 
       {pendingAction ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

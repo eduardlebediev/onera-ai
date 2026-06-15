@@ -61,7 +61,7 @@ export function EmployeeDashboardReminders({ reminders }: EmployeeDashboardRemin
               ))}
             </ul>
 
-            <Button asChild variant="outline" className="rounded-full">
+            <Button asChild variant="outline">
               <Link href="/employee/tests">View assigned tests</Link>
             </Button>
           </div>

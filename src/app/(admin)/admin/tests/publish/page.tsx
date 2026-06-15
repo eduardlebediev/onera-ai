@@ -34,7 +34,7 @@ function EmptyPublishState() {
               Generate and review a test draft before publishing it.
             </p>
           </div>
-          <Button asChild className="rounded-full">
+          <Button asChild size="lg">
             <Link href="/admin/documents">Generate Test</Link>
           </Button>
         </CardContent>

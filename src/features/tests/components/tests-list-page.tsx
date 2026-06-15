@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Archive, ClipboardList, Filter, Trash2 } from "lucide-react"
+import { Archive, ClipboardList, Filter, Sparkles, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -42,11 +42,12 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
 interface TestsListPageProps {
   tests: ResolvedMockTest[]
   loadError?: boolean
+  newTestHref: string
 }
 
 type BulkTestAction = "archive" | "delete"
 
-function TestsEmptyState() {
+function TestsEmptyState({ newTestHref }: { newTestHref: string }) {
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
@@ -56,8 +57,11 @@ function TestsEmptyState() {
             Generate your first test from a ready document.
           </p>
         </div>
-        <Button asChild className="rounded-full">
-          <Link href="/admin/documents">Generate Test</Link>
+        <Button asChild size="lg">
+          <Link href={newTestHref}>
+            <Sparkles className="size-4" />
+            Generate Test
+          </Link>
         </Button>
       </CardContent>
     </Card>
@@ -77,7 +81,7 @@ function TestsLoadErrorState() {
   )
 }
 
-export function TestsListPage({ tests, loadError = false }: TestsListPageProps) {
+export function TestsListPage({ tests, loadError = false, newTestHref }: TestsListPageProps) {
   const router = useRouter()
   const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
@@ -305,8 +309,11 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
             Manage AI-generated knowledge tests for your team.
           </p>
         </div>
-        <Button asChild className="shrink-0 rounded-full">
-          <Link href="/admin/documents">New Test</Link>
+        <Button asChild className="shrink-0" size="lg">
+          <Link href={newTestHref}>
+            <Sparkles className="size-4" />
+            New Test
+          </Link>
         </Button>
       </div>
 
@@ -314,11 +321,11 @@ export function TestsListPage({ tests, loadError = false }: TestsListPageProps) 
         <TestsKpiSection tests={tests} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-2">
         {loadError ? (
           <TestsLoadErrorState />
         ) : tests.length === 0 ? (
-          <TestsEmptyState />
+          <TestsEmptyState newTestHref={newTestHref} />
         ) : (
           <DataTableShell
             icon={ClipboardList}

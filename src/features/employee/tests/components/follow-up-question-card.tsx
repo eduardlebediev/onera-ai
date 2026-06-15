@@ -124,6 +124,7 @@ export function FollowUpQuestionCard({
           followUp={resolvedFollowUp}
           isCorrect={isCorrect}
           sourceDocumentId={sourceDocumentId}
+          testId={testId}
           onTryAnother={handleTryAnother}
           onBackToResults={onBackToResults}
           showTryAgain={!testId}

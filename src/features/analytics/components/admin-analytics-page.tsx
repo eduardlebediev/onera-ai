@@ -1,4 +1,4 @@
-import { Award, BarChart3, CheckCircle2, HelpCircle, TrendingDown, Users } from "lucide-react"
+import { BarChart3, HelpCircle, TrendingDown, Users } from "lucide-react"
 
 import type {
   AdminAnalyticsData,
@@ -7,20 +7,11 @@ import type {
   AnalyticsWeakTopic,
 } from "@/features/analytics/lib/supabase-analytics"
 import { getScoreColorClass } from "@/features/analytics/lib/dashboard-formatters"
+import { mapAnalyticsOverviewStatsToGridItems } from "@/features/analytics/lib/analytics-overview-kpi-grid-items"
 import { TestPerformanceTable } from "@/features/analytics/components/test-performance-table"
-import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
-import { KpiCard } from "@/shared/ui/kpi-card"
+import { KpiStatGrid } from "@/shared/ui/kpi-stat-grid"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
-
-const KPI_ICON_BY_LABEL = {
-  "Team Average Score": CheckCircle2,
-  "Completion Rate": BarChart3,
-  "Completed Attempts": Award,
-  "Weak Topics": TrendingDown,
-  "Difficult Questions": HelpCircle,
-  "Failed Attempts": Users,
-} as const
 
 type AdminAnalyticsPageProps = {
   analytics: AdminAnalyticsData
@@ -28,7 +19,7 @@ type AdminAnalyticsPageProps = {
 
 function EmptyAnalyticsState() {
   return (
-    <Card className="mt-12">
+    <Card className="mt-8">
       <CardContent className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
         <BarChart3 className="mb-4 size-10 text-muted-foreground" />
         <h2 className="typography-h2">Complete some tests to see analytics</h2>
@@ -96,27 +87,29 @@ function DifficultQuestionsTable({ questions }: { questions: AnalyticsDifficultQ
         {questions.length === 0 ? (
           <p className="px-6 py-8 typography-muted">No difficult questions yet</p>
         ) : (
-          <Table className="text-left">
+          <Table className="w-full table-fixed text-left">
             <TableHeader>
               <TableRow>
-                <TableHead>Question</TableHead>
-                <TableHead>Test</TableHead>
-                <TableHead>Wrong Ratio</TableHead>
+                <TableHead className="w-[50%]">Question</TableHead>
+                <TableHead className="w-[30%]">Test</TableHead>
+                <TableHead className="w-[20%] text-right">Wrong Ratio</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {questions.map((question) => (
                 <TableRow key={question.id}>
-                  <TableCell>
-                    <div className="max-w-[320px]">
-                      <p className="typography-small font-medium">{question.questionText}</p>
+                  <TableCell className="min-w-0 align-top whitespace-normal">
+                    <div className="min-w-0">
+                      <p className="wrap-break-word typography-small font-medium">
+                        {question.questionText}
+                      </p>
                       <p className="typography-small text-muted-foreground">{question.topic}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="typography-small text-muted-foreground">
+                  <TableCell className="align-top whitespace-normal typography-small text-muted-foreground">
                     {question.testTitle}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="align-top text-right whitespace-nowrap">
                     <span className="font-medium text-red-500">{question.wrongRatioPct}%</span>
                     <span className="ml-1 typography-small text-muted-foreground">
                       ({question.wrongAnswers}/{question.totalAnswers})
@@ -211,39 +204,27 @@ export function AdminAnalyticsPage({ analytics }: AdminAnalyticsPageProps) {
         </div>
       </div>
 
-      <Breadcrumbs
-        className="mt-6"
-        items={[{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Analytics" }]}
-      />
-
       {!analytics.hasActivity ? (
         <EmptyAnalyticsState />
       ) : (
-        <div className="mt-12 grid grid-cols-12 gap-2">
-          {analytics.overviewStats.map((stat) => {
-            const Icon =
-              KPI_ICON_BY_LABEL[stat.label as keyof typeof KPI_ICON_BY_LABEL] ?? BarChart3
+        <>
+          <div className="mt-8">
+            <KpiStatGrid
+              columns={6}
+              stats={mapAnalyticsOverviewStatsToGridItems(analytics.overviewStats)}
+            />
+          </div>
 
-            return (
-              <KpiCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-                description={stat.description}
-                icon={Icon}
-                valueColor={stat.label === "Weak Topics" ? "text-red-500" : undefined}
-              />
-            )
-          })}
-
-          <WeakTopicsTable topics={analytics.weakTopics} />
-          <DifficultQuestionsTable questions={analytics.difficultQuestions} />
-          <EmployeePerformanceList
-            failedEmployees={analytics.failedEmployees}
-            bestPerformers={analytics.bestPerformers}
-          />
-          <TestPerformanceTable tests={analytics.testPerformance} />
-        </div>
+          <div className="mt-2 grid grid-cols-12 gap-2">
+            <WeakTopicsTable topics={analytics.weakTopics} />
+            <DifficultQuestionsTable questions={analytics.difficultQuestions} />
+            <EmployeePerformanceList
+              failedEmployees={analytics.failedEmployees}
+              bestPerformers={analytics.bestPerformers}
+            />
+            <TestPerformanceTable tests={analytics.testPerformance} />
+          </div>
+        </>
       )}
     </>
   )

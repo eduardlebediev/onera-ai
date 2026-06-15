@@ -305,7 +305,7 @@ export function GenerateTestSetup({
 
   return (
     <div className="page-shell-narrow">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="typography-h1">Generate Test Setup</h1>
           <p className="mt-1 typography-p text-muted-foreground">
@@ -318,7 +318,7 @@ export function GenerateTestSetup({
           ) : null}
         </div>
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" className="h-10 rounded-xl">
+          <Button asChild variant="outline" size="lg">
             <Link href={`/admin/documents/${routeDocumentId}`}>
               <ArrowLeft className="mr-2 size-4" />
               Back to Document
@@ -327,7 +327,7 @@ export function GenerateTestSetup({
           <Button
             type="button"
             variant="outline"
-            className="h-10 rounded-xl"
+            size="lg"
             onClick={handleReset}
             disabled={selectedDocuments.length === 0}
           >
@@ -336,8 +336,8 @@ export function GenerateTestSetup({
           </Button>
           <Button
             type="button"
+            size="lg"
             disabled={!canPreview || isGenerating}
-            className="h-10 rounded-xl bg-foreground text-background"
             title={
               canPreview
                 ? undefined
@@ -355,92 +355,95 @@ export function GenerateTestSetup({
         </div>
       </div>
 
-      <Breadcrumbs
-        className="mb-6"
-        items={[
-          { label: "Documents", href: "/admin/documents" },
-          { label: document.title, href: `/admin/documents/${routeDocumentId}` },
-          { label: "Generate Test" },
-        ]}
-      />
+      <div className="mt-2 flex flex-col gap-2">
+        <Breadcrumbs
+          items={[
+            { label: "Documents", href: "/admin/documents" },
+            { label: document.title, href: `/admin/documents/${routeDocumentId}` },
+            { label: "Generate Test" },
+          ]}
+        />
 
-      {generationError ? (
-        <div className="mb-6 space-y-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
-            <p>{generationError}</p>
+        {generationError ? (
+          <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
+              <p>{generationError}</p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={handleMockPreview}>
+              Continue with mock preview
+            </Button>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={handleMockPreview}>
-            Continue with mock preview
-          </Button>
-        </div>
-      ) : null}
+        ) : null}
 
-      {!isLatestVersion && !hasAcceptedOldVersion ? (
-        <div className="mb-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
-            <div>
-              <p className="font-medium">This is not the latest document version.</p>
-              <p className="mt-1">Use the latest version instead, or explicitly continue here.</p>
+        {!isLatestVersion && !hasAcceptedOldVersion ? (
+          <div className="flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
+              <div>
+                <p className="font-medium">This is not the latest document version.</p>
+                <p className="mt-1">Use the latest version instead, or explicitly continue here.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/admin/documents/${latestDocumentId}/generate-test`}>
+                  Use latest version
+                </Link>
+              </Button>
+              <Button type="button" size="sm" onClick={() => setHasAcceptedOldVersion(true)}>
+                Continue with this version
+              </Button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/documents/${latestDocumentId}/generate-test`}>
-                Use latest version
-              </Link>
-            </Button>
-            <Button type="button" size="sm" onClick={() => setHasAcceptedOldVersion(true)}>
-              Continue with this version
-            </Button>
+        ) : null}
+
+        {!isGeneratable && (
+          <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
+            <p>{getGenerateBlockReason(firstInvalidSelectedDocument ?? document)}</p>
           </div>
-        </div>
-      ) : null}
+        )}
 
-      {!isGeneratable && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
-          <p>{getGenerateBlockReason(firstInvalidSelectedDocument ?? document)}</p>
-        </div>
-      )}
+        {isGeneratable && (selectedTopicIds.length === 0 || selectedChunkIds.length === 0) && (
+          <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+            Select at least one topic and one source chunk across the selected documents.
+          </div>
+        )}
 
-      {isGeneratable && (selectedTopicIds.length === 0 || selectedChunkIds.length === 0) && (
-        <div className="mb-6 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-          Select at least one topic and one source chunk across the selected documents.
-        </div>
-      )}
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="space-y-6 lg:col-span-8">
-          <MultiDocumentSelector
-            selectableDocuments={selectableDocuments.length > 0 ? selectableDocuments : [document]}
-            selectedDocumentIds={selectedDocumentIds}
-            lockedDocumentId={initialDocumentId}
-            onToggleDocument={handleToggleDocument}
-          />
-          <GenerateTestForm settings={settings} onSettingsChange={handleSettingsChange} />
-          {selectedDocuments.map((selectedDocument) => (
-            <DocumentTopicSelectionGroup
-              key={selectedDocument.id}
-              document={selectedDocument}
-              selectedTopicIds={selectedTopicIds}
-              selectedChunkIds={selectedChunkIds}
-              onToggleTopic={handleToggleTopic}
-              onToggleChunk={handleToggleChunk}
-              onSelectAllChunks={handleSelectAllChunks}
-              onClearAllChunks={handleClearAllChunks}
+        <div className="grid grid-cols-1 gap-2 lg:grid-cols-12">
+          <div className="flex flex-col gap-2 lg:col-span-8">
+            <MultiDocumentSelector
+              selectableDocuments={
+                selectableDocuments.length > 0 ? selectableDocuments : [document]
+              }
+              selectedDocumentIds={selectedDocumentIds}
+              lockedDocumentId={initialDocumentId}
+              onToggleDocument={handleToggleDocument}
             />
-          ))}
-        </div>
+            <GenerateTestForm settings={settings} onSettingsChange={handleSettingsChange} />
+            {selectedDocuments.map((selectedDocument) => (
+              <DocumentTopicSelectionGroup
+                key={selectedDocument.id}
+                document={selectedDocument}
+                selectedTopicIds={selectedTopicIds}
+                selectedChunkIds={selectedChunkIds}
+                onToggleTopic={handleToggleTopic}
+                onToggleChunk={handleToggleChunk}
+                onSelectAllChunks={handleSelectAllChunks}
+                onClearAllChunks={handleClearAllChunks}
+              />
+            ))}
+          </div>
 
-        <div className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start">
-          <GenerateTestSummary
-            selectedDocuments={selectedDocuments}
-            settings={settings}
-            selectedTopicsCount={selectedTopicIds.length}
-            selectedChunksCount={selectedChunkIds.length}
-          />
+          <div className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start">
+            <GenerateTestSummary
+              selectedDocuments={selectedDocuments}
+              settings={settings}
+              selectedTopicsCount={selectedTopicIds.length}
+              selectedChunksCount={selectedChunkIds.length}
+            />
+          </div>
         </div>
       </div>
     </div>

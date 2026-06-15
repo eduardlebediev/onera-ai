@@ -395,11 +395,11 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" className="rounded-full">
+              <Button variant="outline">
                 <Download className="mr-2 size-4" />
                 Export Report
               </Button>
-              <Button variant="outline" size="icon" className="rounded-full">
+              <Button variant="outline" size="icon">
                 <MoreVertical className="size-4" />
               </Button>
             </div>

@@ -44,11 +44,11 @@ export async function EmployeeDashboard({
     <div className="page-shell">
       <EmployeeDashboardHeader employee={employee} />
 
-      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-12">
-          <EmployeeDashboardKpiSection stats={kpiStats} />
-        </div>
+      <div className="mt-8">
+        <EmployeeDashboardKpiSection stats={kpiStats} />
+      </div>
 
+      <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <EmployeeDashboardNextTest nextTest={nextTest} />
         </div>

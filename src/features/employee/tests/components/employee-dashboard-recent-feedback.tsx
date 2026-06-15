@@ -45,7 +45,7 @@ export function EmployeeDashboardRecentFeedback({
                 </p>
               </div>
 
-              <Button asChild variant="outline" className="shrink-0 rounded-full">
+              <Button asChild variant="outline" className="shrink-0">
                 <Link href={recentFeedback.resultHref}>View Result</Link>
               </Button>
             </div>

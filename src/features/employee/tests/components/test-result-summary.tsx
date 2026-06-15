@@ -3,6 +3,7 @@ import { CheckCircle2, FileText, XCircle } from "lucide-react"
 import { formatEmployeeTestDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
+import { formatTestResultTimeSpent } from "@/features/employee/tests/lib/test-result-model"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
@@ -34,7 +35,7 @@ export function TestResultSummary({ result }: TestResultSummaryProps) {
         </div>
 
         <div className="space-y-1">
-          <p className="typography-h2 font-semibold">
+          <p className="typography-h3 font-semibold">
             You scored {result.score}%. Passing score: {result.passingScore}%.
           </p>
           <p className="typography-p text-muted-foreground">{result.description}</p>
@@ -56,6 +57,25 @@ export function TestResultSummary({ result }: TestResultSummaryProps) {
               {result.wrongCount}
             </span>{" "}
             wrong
+          </span>
+          <span>
+            <span
+              className={cn(
+                "font-medium",
+                result.weakTopics.length > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-foreground"
+              )}
+            >
+              {result.weakTopics.length}
+            </span>{" "}
+            weak topics
+          </span>
+          <span>
+            <span className="font-medium text-foreground">
+              {formatTestResultTimeSpent(result.timeSpentMinutes)}
+            </span>{" "}
+            spent
           </span>
         </div>
       </CardContent>

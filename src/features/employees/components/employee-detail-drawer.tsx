@@ -36,7 +36,7 @@ export function EmployeeDetailDrawer({
         className="h-[90vh] overflow-hidden bg-background"
         leftAction={
           employeeId ? (
-            <Button asChild variant="ghost" size="icon-sm" className="rounded-full">
+            <Button asChild variant="ghost" size="icon">
               <Link href={`/admin/employees/${employeeId}`} aria-label="Open full page">
                 <Maximize2 className="size-4" />
               </Link>
@@ -45,7 +45,7 @@ export function EmployeeDetailDrawer({
         }
         rightAction={
           <DrawerClose asChild>
-            <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Close">
+            <Button variant="ghost" size="icon" aria-label="Close">
               <X className="size-4" />
             </Button>
           </DrawerClose>
@@ -68,7 +68,7 @@ export function EmployeeDetailDrawer({
                 <p className="typography-h3 font-semibold">Employee preview could not be loaded</p>
                 <p className="mt-2 max-w-md typography-p text-muted-foreground">{error}</p>
                 {employeeId ? (
-                  <Button asChild variant="outline" className="mt-4 rounded-full">
+                  <Button asChild variant="outline" className="mt-4">
                     <Link href={`/admin/employees/${employeeId}`}>Open full page</Link>
                   </Button>
                 ) : null}

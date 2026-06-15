@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from "react"
 import { TestAiFeedback } from "@/features/employee/tests/components/test-ai-feedback"
 import { TestAnswerReview } from "@/features/employee/tests/components/test-answer-review"
 import { TestResultActions } from "@/features/employee/tests/components/test-result-actions"
-import { TestResultKpiSection } from "@/features/employee/tests/components/test-result-kpi-section"
 import { TestResultSummary } from "@/features/employee/tests/components/test-result-summary"
 import { TestWeakTopics } from "@/features/employee/tests/components/test-weak-topics"
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
@@ -62,7 +61,6 @@ export function TestResultPage({ result }: TestResultPageProps) {
   return (
     <div className="page-shell">
       <Breadcrumbs
-        className="mb-6"
         items={[
           { label: "My Tests", href: "/employee/tests" },
           { label: result.title, href: `/employee/tests/${result.id}/take` },
@@ -70,13 +68,9 @@ export function TestResultPage({ result }: TestResultPageProps) {
         ]}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
+      <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex flex-col gap-2">
           <TestResultSummary result={result} />
-
-          <div className="lg:hidden">
-            <TestResultKpiSection result={result} />
-          </div>
 
           <TestAiFeedback feedback={result.aiFeedback} />
 
@@ -96,6 +90,7 @@ export function TestResultPage({ result }: TestResultPageProps) {
           <div className="lg:hidden">
             <TestResultActions
               testId={result.id}
+              attemptId={result.attemptId}
               sourceDocumentId={result.sourceDocumentId}
               passed={result.passed}
               canRetake={result.canRetake}
@@ -104,16 +99,16 @@ export function TestResultPage({ result }: TestResultPageProps) {
           </div>
         </div>
 
-        <aside className="hidden space-y-4 lg:block">
-          <TestResultKpiSection result={result} />
-          <TestWeakTopics {...weakTopicsProps} />
+        <aside className="hidden lg:flex lg:flex-col lg:gap-2">
           <TestResultActions
             testId={result.id}
+            attemptId={result.attemptId}
             sourceDocumentId={result.sourceDocumentId}
             passed={result.passed}
             canRetake={result.canRetake}
             retakeDisabledReason={result.retakeDisabledReason}
           />
+          <TestWeakTopics {...weakTopicsProps} />
         </aside>
       </div>
     </div>

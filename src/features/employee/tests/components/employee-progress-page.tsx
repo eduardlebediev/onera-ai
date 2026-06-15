@@ -1,5 +1,4 @@
-import { AlertTriangle, ListChecks, Sparkles, Target } from "lucide-react"
-
+import { EmployeeProgressKpiSection } from "@/features/employee/tests/components/employee-progress-kpi-section"
 import type {
   EmployeeProgress,
   EmployeeProgressAttempt,
@@ -7,10 +6,8 @@ import type {
 } from "@/features/employee/tests/lib/supabase-employee-progress"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import { cn } from "@/lib/utils"
-import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
-import { KpiCard } from "@/shared/ui/kpi-card"
 
 interface EmployeeProgressPageProps {
   progress: EmployeeProgress
@@ -157,16 +154,11 @@ export function EmployeeProgressPage({ progress, loadError = false }: EmployeePr
   return (
     <div className="page-shell">
       <div>
-        <h1 className="typography-h1">Progress</h1>
+        <h2 className="typography-h2">Progress</h2>
         <p className="mt-1 typography-p text-muted-foreground">
           Track completed tests, topic strengths, weak topics, and your full attempt history.
         </p>
       </div>
-
-      <Breadcrumbs
-        className="mt-6"
-        items={[{ label: "Dashboard", href: "/employee/dashboard" }, { label: "Progress" }]}
-      />
 
       {loadError ? (
         <Card className="mt-8">
@@ -187,59 +179,30 @@ export function EmployeeProgressPage({ progress, loadError = false }: EmployeePr
         </Card>
       ) : (
         <>
-          <section className="mt-8" aria-labelledby="progress-overview-heading">
-            <h2 id="progress-overview-heading" className="sr-only">
-              Overview
-            </h2>
-            <div className="grid grid-cols-12 gap-2 lg:grid-cols-8">
-              <KpiCard
-                label="Tests Completed"
-                value={String(progress.completedTestsCount)}
-                description="Completed attempts"
-                icon={ListChecks}
-              />
-              <KpiCard
-                label="Average Score"
-                value={progress.completedTestsCount > 0 ? `${progress.averageScore}%` : "—"}
-                description="Across completed tests"
-                icon={Target}
-              />
-              <KpiCard
-                label="Strengths"
-                value={String(progress.strengths.length)}
-                description="Topics above 80%"
-                icon={Sparkles}
-              />
-              <KpiCard
-                label="Weak Topics"
-                value={String(progress.weakTopics.length)}
-                description="Topics below 60%"
-                icon={AlertTriangle}
-              />
-            </div>
-          </section>
+          <div className="mt-8">
+            <EmployeeProgressKpiSection progress={progress} />
+          </div>
 
-          <section
-            className="mt-6 grid grid-cols-1 gap-2 lg:grid-cols-2"
-            aria-label="Topic progress"
-          >
-            <TopicListCard
-              title="Strengths"
-              topics={progress.strengths}
-              emptyText="No strengths above 80% yet."
-              tone="strength"
-            />
-            <TopicListCard
-              title="Weak Topics"
-              topics={progress.weakTopics}
-              emptyText="All topics understood"
-              tone="weak"
-            />
-          </section>
+          <div className="mt-2 flex flex-col gap-2">
+            <section className="grid grid-cols-1 gap-2 lg:grid-cols-2" aria-label="Topic progress">
+              <TopicListCard
+                title="Strengths"
+                topics={progress.strengths}
+                emptyText="No strengths above 80% yet."
+                tone="strength"
+              />
+              <TopicListCard
+                title="Weak Topics"
+                topics={progress.weakTopics}
+                emptyText="All topics understood"
+                tone="weak"
+              />
+            </section>
 
-          <section className="mt-2" aria-label="Attempt history">
-            <AttemptHistoryTable attempts={progress.attempts} />
-          </section>
+            <section aria-label="Attempt history">
+              <AttemptHistoryTable attempts={progress.attempts} />
+            </section>
+          </div>
         </>
       )}
     </div>

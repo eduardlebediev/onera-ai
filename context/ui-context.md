@@ -19,10 +19,10 @@ Light theme with dark navbar. The application uses a light gray page background 
 
 ## Typography
 
-| Role        | Font                          | Variable      |
-| ----------- | ----------------------------- | ------------- |
-| UI text     | **Geist Sans** (Google Fonts) | `--font-sans` |
-| Code / mono | _Not defined_                 | —             |
+| Role        | Font                                               | Variable      |
+| ----------- | -------------------------------------------------- | ------------- |
+| UI text     | **Geist Sans** (local files via `next/font/local`) | `--font-sans` |
+| Code / mono | _Not defined_                                      | —             |
 
 Responsive type tokens live in `src/app/globals.css`:
 

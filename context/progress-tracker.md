@@ -10,12 +10,11 @@ Production Readiness Cleanup
 
 ## Next Up
 
-- Feature Spec 59 deferred: merge analytics insights into admin dashboard and remove `/admin/analytics` nav.
-- Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 38–49 in `context/current-plan.md`.
-
 ## Open Questions
 
 ## Completed
+
+- Feature Spec 66: Product Readiness Before Deployment
 
 - Feature Spec 65: Generate Test and Review Improvements
 

@@ -18,7 +18,7 @@
 
 ## System Boundaries
 
-- `src/app/` owns App Router route groups, layouts, pages, middleware-connected auth refresh, and API route handlers.
+- `src/app/` owns App Router route groups, layouts, pages, proxy-connected auth refresh, and API route handlers.
 - `src/app/(auth)/` owns login and access-denied routes.
 - `src/app/(admin)/admin/*` owns admin pages for dashboard, documents, generation, review, publish, tests, assignment, and analytics.
 - `src/app/(employee)/employee/*` owns employee dashboard, assigned tests, test taking, results, and progress.
@@ -460,7 +460,7 @@ There is at most one answer per follow-up question.
 
 - Ontera AI is invite-only. There is no public registration or self sign-up.
 - Users authenticate through Supabase Auth with email/password for MVP.
-- `src/middleware.ts` refreshes Supabase SSR cookies with `@supabase/ssr` when Supabase public environment variables are configured.
+- `src/proxy.ts` refreshes Supabase SSR cookies with `@supabase/ssr` when Supabase public environment variables are configured.
 - `getAuthenticatedSession()` calls `supabase.auth.getUser()`, loads `profiles`, and loads an active `organization_members` row.
 - `getCurrentUser()` returns only users with an active membership.
 - `/admin/*` layouts require active admin membership through `requireAdminUser()`.

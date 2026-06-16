@@ -2,6 +2,7 @@
 
 import { Check, Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useSyncExternalStore } from "react"
 
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/shared/i18n/use-translation"
@@ -27,11 +28,19 @@ type ThemeModeSelectorProps = {
   className?: string
 }
 
+const subscribeNoop = () => () => {}
+
 export function ThemeModeSelector({ variant = "dropdown", className }: ThemeModeSelectorProps) {
   const { theme, setTheme } = useTheme()
   const { t } = useTranslation()
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  )
 
-  const activeTheme = theme as ThemeMode | undefined
+  // next-themes reads persisted preference only after mount; defer active state to avoid hydration mismatch.
+  const activeTheme = mounted ? (theme as ThemeMode | undefined) : undefined
 
   if (variant === "login" || variant === "minimal") {
     const isMinimal = variant === "minimal"

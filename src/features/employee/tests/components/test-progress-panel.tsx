@@ -34,7 +34,7 @@ function getNavigatorButtonClass(state: QuestionNavigatorState): string {
     case "current":
       return "border-primary bg-primary text-primary-foreground"
     case "answered":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400"
+      return "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 dark:border-primary/40 dark:bg-primary/15"
     case "unanswered":
       return "border-border bg-background text-muted-foreground hover:bg-muted/30"
   }

@@ -1,22 +1,19 @@
 "use client"
 
-import { AlertTriangle, ArrowLeft, Loader2, RotateCcw, Sparkles } from "lucide-react"
+import { AlertTriangle, Loader2, RotateCcw, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 
 import { type DocumentDetail } from "@/features/documents/types/document"
 import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
-import { DocumentTopicSelectionGroup } from "@/features/documents/components/document-topic-selection-group"
 import { GenerateTestForm } from "@/features/documents/components/generate-test-form"
 import {
   canGenerateTest,
-  deriveTopicsFromChunks,
   getDefaultGenerateTestSettings,
-  getDefaultSelectedChunkIds,
-  getDefaultSelectedTopics,
   getGenerateBlockReason,
   MAX_SELECTABLE_DOCUMENTS,
+  type GenerateTestTargetEmployee,
   type GenerateTestSettings,
 } from "@/features/documents/components/generate-test-model"
 import { GenerateTestSummary } from "@/features/documents/components/generate-test-summary"
@@ -31,6 +28,7 @@ interface GenerateTestSetupProps {
   document: DocumentDetail
   routeDocumentId: string
   selectableDocuments: DocumentDetail[]
+  targetEmployees: GenerateTestTargetEmployee[]
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -43,6 +41,7 @@ export function GenerateTestSetup({
   document,
   routeDocumentId,
   selectableDocuments,
+  targetEmployees,
 }: GenerateTestSetupProps) {
   const router = useRouter()
   const { locale, t } = useTranslation()
@@ -59,17 +58,10 @@ export function GenerateTestSetup({
   }, [document, selectableDocuments])
 
   const initialDocumentId = document.id
-  const defaultTopics = useMemo(() => getDefaultSelectedTopics(document), [document])
-  const defaultChunkIds = useMemo(
-    () => getDefaultSelectedChunkIds(document, defaultTopics),
-    [defaultTopics, document]
-  )
   const defaultSettings = useMemo(() => getDefaultGenerateTestSettings(document, t), [document, t])
 
   const [settings, setSettings] = useState<GenerateTestSettings>(defaultSettings)
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([initialDocumentId])
-  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(defaultTopics)
-  const [selectedChunkIds, setSelectedChunkIds] = useState<string[]>(defaultChunkIds)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [hasAcceptedOldVersion, setHasAcceptedOldVersion] = useState(
@@ -92,11 +84,7 @@ export function GenerateTestSetup({
   const isLatestVersion = document.isLatestVersion !== false
   const latestDocumentId = document.latestDocumentId ?? document.id
   const canPreview =
-    isGeneratable &&
-    selectedDocumentIds.length > 0 &&
-    selectedChunkIds.length > 0 &&
-    selectedTopicIds.length > 0 &&
-    (isLatestVersion || hasAcceptedOldVersion)
+    isGeneratable && selectedDocumentIds.length > 0 && (isLatestVersion || hasAcceptedOldVersion)
 
   const handleSettingsChange = useCallback((updates: Partial<GenerateTestSettings>) => {
     setSettings((currentSettings) => ({ ...currentSettings, ...updates }))
@@ -110,20 +98,7 @@ export function GenerateTestSetup({
             return currentIds
           }
 
-          const nextIds = currentIds.filter((id) => id !== documentId)
-          const removedDocument = documentsById.get(documentId)
-
-          if (removedDocument) {
-            const removedChunkIds = new Set(removedDocument.chunks.map((chunk) => chunk.id))
-            setSelectedChunkIds((chunkIds) =>
-              chunkIds.filter((chunkId) => !removedChunkIds.has(chunkId))
-            )
-            setSelectedTopicIds((topicIds) =>
-              topicIds.filter((topicId) => !topicId.startsWith(`${documentId}:`))
-            )
-          }
-
-          return nextIds
+          return currentIds.filter((id) => id !== documentId)
         }
 
         if (currentIds.length >= MAX_SELECTABLE_DOCUMENTS) {
@@ -133,101 +108,14 @@ export function GenerateTestSetup({
         return [...currentIds, documentId]
       })
     },
-    [documentsById, initialDocumentId]
-  )
-
-  const handleToggleTopic = useCallback(
-    (documentId: string, topicKey: string, topicChunkIds: string[]) => {
-      const isSelected = selectedTopicIds.includes(topicKey)
-
-      setSelectedTopicIds((currentTopics) =>
-        isSelected
-          ? currentTopics.filter((currentTopic) => currentTopic !== topicKey)
-          : [...currentTopics, topicKey]
-      )
-      setSelectedChunkIds((currentChunkIds) =>
-        isSelected
-          ? currentChunkIds.filter((chunkId) => !topicChunkIds.includes(chunkId))
-          : Array.from(new Set([...currentChunkIds, ...topicChunkIds]))
-      )
-    },
-    [selectedTopicIds]
-  )
-
-  const handleToggleChunk = useCallback(
-    (documentId: string, chunkId: string, topicKey?: string) => {
-      const selectedDocument = documentsById.get(documentId)
-      const isRemoving = selectedChunkIds.includes(chunkId)
-
-      const nextChunkIds = isRemoving
-        ? selectedChunkIds.filter((id) => id !== chunkId)
-        : [...selectedChunkIds, chunkId]
-
-      setSelectedChunkIds(nextChunkIds)
-
-      if (selectedDocument) {
-        setSelectedTopicIds(deriveTopicsFromChunks(selectedDocument, nextChunkIds))
-      } else if (topicKey && !isRemoving) {
-        setSelectedTopicIds((currentTopics) =>
-          currentTopics.includes(topicKey) ? currentTopics : [...currentTopics, topicKey]
-        )
-      }
-    },
-    [documentsById, selectedChunkIds]
-  )
-
-  const handleSelectAllChunks = useCallback(
-    (documentId: string) => {
-      const selectedDocument = documentsById.get(documentId)
-
-      if (!selectedDocument) {
-        return
-      }
-
-      const documentChunkIds = selectedDocument.chunks.map((chunk) => chunk.id)
-
-      setSelectedChunkIds((currentChunkIds) =>
-        Array.from(new Set([...currentChunkIds, ...documentChunkIds]))
-      )
-      setSelectedTopicIds((currentTopics) =>
-        Array.from(
-          new Set([
-            ...currentTopics,
-            ...getDefaultSelectedTopics(selectedDocument).map((topic) => `${documentId}:${topic}`),
-          ])
-        )
-      )
-    },
-    [documentsById]
-  )
-
-  const handleClearAllChunks = useCallback(
-    (documentId: string) => {
-      const selectedDocument = documentsById.get(documentId)
-
-      if (!selectedDocument) {
-        return
-      }
-
-      const documentChunkIds = new Set(selectedDocument.chunks.map((chunk) => chunk.id))
-
-      setSelectedChunkIds((currentChunkIds) =>
-        currentChunkIds.filter((chunkId) => !documentChunkIds.has(chunkId))
-      )
-      setSelectedTopicIds((currentTopics) =>
-        currentTopics.filter((topicId) => !topicId.startsWith(`${documentId}:`))
-      )
-    },
-    [documentsById]
+    [initialDocumentId]
   )
 
   const handleReset = useCallback(() => {
     setSettings(defaultSettings)
     setSelectedDocumentIds([initialDocumentId])
-    setSelectedTopicIds(defaultTopics)
-    setSelectedChunkIds(defaultChunkIds)
     setGenerationError(null)
-  }, [defaultChunkIds, defaultSettings, defaultTopics, initialDocumentId])
+  }, [defaultSettings, initialDocumentId])
 
   const handleGeneratePreview = useCallback(async () => {
     if (!canPreview || isGenerating) return
@@ -247,17 +135,13 @@ export function GenerateTestSetup({
     setIsGenerating(true)
 
     try {
-      const apiTopicIds = selectedTopicIds.filter(isUuid)
-      const apiChunkIds = selectedChunkIds.filter(isUuid)
-
       const response = await generateTestFromDocument({
         documentIds: apiDocumentIds,
-        selectedTopicIds: apiTopicIds.length > 0 ? apiTopicIds : undefined,
-        selectedChunkIds: apiChunkIds.length > 0 ? apiChunkIds : undefined,
         questionCount: settings.questionCount,
         difficulty: settings.difficulty,
         language: locale,
         targetRole: settings.targetRole,
+        targetEmployeeIds: settings.targetEmployeeIds,
       })
 
       saveGeneratedTestDraft(response)
@@ -283,13 +167,12 @@ export function GenerateTestSetup({
     canPreview,
     isGenerating,
     router,
-    selectedChunkIds,
     selectedDocumentIds,
-    selectedTopicIds,
     settings.difficulty,
     locale,
     settings.questionCount,
     settings.targetRole,
+    settings.targetEmployeeIds,
     t,
   ])
 
@@ -306,12 +189,6 @@ export function GenerateTestSetup({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button asChild variant="outline" size="lg">
-            <Link href={`/admin/documents/${routeDocumentId}`}>
-              <ArrowLeft className="mr-2 size-4" />
-              {t("documents.generateTest.backToDocument")}
-            </Link>
-          </Button>
           <Button
             type="button"
             variant="outline"
@@ -392,14 +269,13 @@ export function GenerateTestSetup({
           </div>
         )}
 
-        {isGeneratable && (selectedTopicIds.length === 0 || selectedChunkIds.length === 0) && (
-          <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-            {t("documents.generateTest.selectTopicsChunks")}
-          </div>
-        )}
-
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-12">
           <div className="flex flex-col gap-2 lg:col-span-8">
+            <GenerateTestForm
+              settings={settings}
+              targetEmployees={targetEmployees}
+              onSettingsChange={handleSettingsChange}
+            />
             <MultiDocumentSelector
               selectableDocuments={
                 selectableDocuments.length > 0 ? selectableDocuments : [document]
@@ -408,28 +284,10 @@ export function GenerateTestSetup({
               lockedDocumentId={initialDocumentId}
               onToggleDocument={handleToggleDocument}
             />
-            <GenerateTestForm settings={settings} onSettingsChange={handleSettingsChange} />
-            {selectedDocuments.map((selectedDocument) => (
-              <DocumentTopicSelectionGroup
-                key={selectedDocument.id}
-                document={selectedDocument}
-                selectedTopicIds={selectedTopicIds}
-                selectedChunkIds={selectedChunkIds}
-                onToggleTopic={handleToggleTopic}
-                onToggleChunk={handleToggleChunk}
-                onSelectAllChunks={handleSelectAllChunks}
-                onClearAllChunks={handleClearAllChunks}
-              />
-            ))}
           </div>
 
           <div className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start">
-            <GenerateTestSummary
-              selectedDocuments={selectedDocuments}
-              settings={settings}
-              selectedTopicsCount={selectedTopicIds.length}
-              selectedChunksCount={selectedChunkIds.length}
-            />
+            <GenerateTestSummary selectedDocuments={selectedDocuments} settings={settings} />
           </div>
         </div>
       </div>

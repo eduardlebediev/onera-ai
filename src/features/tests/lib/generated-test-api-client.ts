@@ -4,8 +4,10 @@ import type {
 } from "@/features/tests/schemas/generated-test-schema"
 import { GeneratedTestResponseSchema } from "@/features/tests/schemas/generated-test-schema"
 
+const CONTEXT_ERROR_MESSAGE =
+  "Could not generate the test draft. Please check that the selected documents are ready and have embedded chunks, then try again."
 const DEFAULT_ERROR_MESSAGE =
-  "Could not generate the test draft. Please check that this document has embedded chunks and try again."
+  "Could not generate the test draft. The AI output did not pass validation, so please try again."
 
 function getFriendlyErrorMessage(status: number, serverMessage?: string): string {
   if (status === 400) {
@@ -19,6 +21,17 @@ function getFriendlyErrorMessage(status: number, serverMessage?: string): string
   }
 
   if (status === 422) {
+    if (
+      serverMessage?.toLowerCase().includes("embedded chunks") ||
+      serverMessage?.toLowerCase().includes("insufficient context")
+    ) {
+      return CONTEXT_ERROR_MESSAGE
+    }
+
+    if (serverMessage?.trim()) {
+      return serverMessage
+    }
+
     return DEFAULT_ERROR_MESSAGE
   }
 

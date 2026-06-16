@@ -93,6 +93,7 @@ function mapDraftQuestionRowToReviewQuestion(
     topic: row.topic ?? "General",
     sourceChunkReference,
     sourceChunkId: row.source_chunk_id,
+    sourceDocumentId: row.source_document_id,
     testedSkill: "Knowledge recall",
     pedagogicalGoal: "Verify understanding of source document content",
     difficulty: (row.difficulty ?? "medium") as ReviewQuestion["difficulty"],

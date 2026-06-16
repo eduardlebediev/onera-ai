@@ -67,6 +67,7 @@ export const de = {
     appName: "Ontera AI",
     welcomeBack: "Willkommen zurück",
     cancel: "Abbrechen",
+    clear: "Leeren",
     close: "Schließen",
     save: "Speichern",
     reset: "Zurücksetzen",
@@ -588,7 +589,7 @@ export const de = {
     generateTest: {
       title: "Testgenerierung einrichten",
       subtitle:
-        "Testeinstellungen aus einem oder mehreren Quelldokumenten, Themen und Abschnitten konfigurieren.",
+        "Testeinstellungen aus einem oder mehreren Quelldokumenten konfigurieren. Alle eingebetteten Abschnitte der ausgewählten Dokumente werden verwendet.",
       aiDraftHint: "KI-generierter Entwurf. Vor Veröffentlichung prüfen.",
       backToDocument: "Zurück zum Dokument",
       generatePreview: "Testvorschau generieren",
@@ -596,7 +597,7 @@ export const de = {
       selectSupabaseDocument:
         "Wählen Sie mindestens ein gespeichertes Supabase-Dokument, bevor Sie einen Test generieren.",
       generationFailed:
-        "Testentwurf konnte nicht generiert werden. Prüfen Sie, ob die ausgewählten Dokumente eingebettete Abschnitte haben, und versuchen Sie es erneut.",
+        "Testentwurf konnte nicht generiert werden. Die KI-Ausgabe hat die Validierung nicht bestanden. Bitte erneut versuchen.",
       notLatestVersion: {
         title: "Dies ist nicht die neueste Dokumentversion.",
         body: "Verwenden Sie stattdessen die neueste Version oder fahren Sie hier explizit fort.",
@@ -604,7 +605,7 @@ export const de = {
         continue: "Mit dieser Version fortfahren",
       },
       selectTopicsChunks:
-        "Wählen Sie mindestens ein Thema und einen Quellabschnitt über die ausgewählten Dokumente.",
+        "Wählen Sie mindestens ein bereites Quelldokument mit eingebetteten Abschnitten, bevor Sie generieren.",
       noSelectableDocuments: "Keine auswählbaren bereiten Dokumente verfügbar.",
       configuration: {
         title: "Testkonfiguration",
@@ -612,6 +613,8 @@ export const de = {
         testTitlePlaceholder: "Testtitel eingeben",
         difficulty: "Schwierigkeit",
         targetRole: "Zielgruppe",
+        searchTargetRole: "Mitarbeitende suchen…",
+        noTargetRoles: "Keine Mitarbeitenden gefunden.",
         questionCount: "Anzahl Fragen",
         passingScore: "Bestehensgrenze (%)",
         contentLanguage: "Testsprache",
@@ -625,13 +628,15 @@ export const de = {
         selectedDocuments: "Ausgewählte Dokumente",
         selectedTopics: "Ausgewählte Themen",
         selectedChunks: "Ausgewählte Abschnitte",
+        sourceChunks: "Quellabschnitte",
         selectedChunksOf: "{selected} von {total} Abschnitten",
+        allSourceChunks: "Alle Abschnitte ({count})",
         contentLanguage: "Testsprache",
         estimatedTime: "Geschätzte Dauer",
         previewHint:
           "Eine Vorschau wird basierend auf Ihren aktuellen Einstellungen generiert. Sie können vor dem Abschluss prüfen und anpassen.",
         footerHint:
-          "Verwenden Sie oben „Testvorschau generieren“, wenn Themen und Abschnitte ausgewählt sind.",
+          "Verwenden Sie oben „Testvorschau generieren“, wenn Quelldokumente ausgewählt sind.",
       },
       defaultTestTitle: "Wissenstest: {title}",
       topicSummary: "Im Quelldokument erkannt und für die Testgenerierung verfügbar.",

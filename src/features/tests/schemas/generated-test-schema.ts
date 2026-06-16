@@ -11,12 +11,11 @@ export const QuestionTypeSchema = z.enum([
 
 const BaseGenerateTestRequestSchema = z.object({
   templateTestId: z.string().uuid("templateTestId must be a valid UUID").optional(),
-  selectedTopicIds: z.array(z.string().uuid()).optional(),
-  selectedChunkIds: z.array(z.string().uuid()).optional(),
   questionCount: z.number().int().min(3).max(10).default(5),
   difficulty: TestDifficultySchema.default("medium"),
   language: TestLanguageSchema.default("en"),
-  targetRole: z.string().trim().min(1).max(120).default("General employee"),
+  targetRole: z.string().trim().min(1).max(500).default("General employee"),
+  targetEmployeeIds: z.array(z.string().uuid()).max(500).default([]),
   questionTypes: z
     .array(QuestionTypeSchema)
     .min(1)
@@ -136,10 +135,10 @@ export const GeneratedTestQuestionSchema = z
     }
 
     if (question.questionType === "single_choice") {
-      if (question.options.length !== 4) {
+      if (question.options.length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "single_choice questions must have exactly 4 options",
+          message: "single_choice questions must have at least 2 options",
           path: ["options"],
         })
       }
@@ -154,10 +153,10 @@ export const GeneratedTestQuestionSchema = z
     }
 
     if (question.questionType === "multiple_choice") {
-      if (question.options.length !== 4) {
+      if (question.options.length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "multiple_choice questions must have exactly 4 options",
+          message: "multiple_choice questions must have at least 2 options",
           path: ["options"],
         })
       }
@@ -185,17 +184,24 @@ export const GeneratedTestDraftSchema = z.object({
 export type GeneratedTestDraft = z.infer<typeof GeneratedTestDraftSchema>
 export type GeneratedTestQuestion = z.infer<typeof GeneratedTestQuestionSchema>
 
-const GeneratedTestQuestionLlmSchema = z.object({
+const GeneratedTestCorrectAnswerLlmSchema = z.object({
+  optionIds: z.array(z.string().min(1)),
+  expectedAnswer: z.string(),
+})
+
+export const GeneratedTestQuestionLlmSchema = z.object({
   questionText: z.string(),
   questionType: QuestionTypeSchema,
   options: z.array(GeneratedTestOptionSchema),
-  correctAnswer: GeneratedTestCorrectAnswerSchema,
+  correctAnswer: GeneratedTestCorrectAnswerLlmSchema,
   explanation: z.string(),
   topic: z.string(),
   difficulty: TestDifficultySchema,
   sourceChunkId: z.string(),
   sourceChunkTitle: z.string(),
 })
+
+export type GeneratedTestQuestionLlm = z.infer<typeof GeneratedTestQuestionLlmSchema>
 
 /** Simpler schema for LLM structured output; validated post-generation with GeneratedTestDraftSchema. */
 export const GeneratedTestDraftLlmSchema = z.object({
@@ -207,6 +213,81 @@ export const GeneratedTestDraftLlmSchema = z.object({
   passingScore: z.number(),
   questions: z.array(GeneratedTestQuestionLlmSchema),
 })
+
+export type GeneratedTestDraftLlm = z.infer<typeof GeneratedTestDraftLlmSchema>
+
+function normalizeLlmCorrectAnswer(
+  correctAnswer: GeneratedTestQuestionLlm["correctAnswer"]
+): GeneratedTestQuestion["correctAnswer"] {
+  const expectedAnswer = correctAnswer.expectedAnswer.trim()
+
+  return {
+    optionIds: correctAnswer.optionIds.length > 0 ? correctAnswer.optionIds : undefined,
+    expectedAnswer: expectedAnswer.length > 0 ? expectedAnswer : undefined,
+  }
+}
+
+function isTrueFalseOptionSet(options: GeneratedTestQuestionLlm["options"]): boolean {
+  const normalizedOptions = options.map((option) => option.text.trim().toLowerCase())
+  return (
+    normalizedOptions.length === 2 &&
+    normalizedOptions.some((option) => option === "true" || option === "wahr") &&
+    normalizedOptions.some((option) => option === "false" || option === "falsch")
+  )
+}
+
+function normalizeLlmQuestionType(question: GeneratedTestQuestionLlm): QuestionType {
+  if (question.questionType === "open_question") {
+    return question.questionType
+  }
+
+  const correctOptionCount = question.correctAnswer.optionIds.length
+
+  if (
+    question.questionType === "true_false" &&
+    correctOptionCount === 1 &&
+    question.options.length === 2
+  ) {
+    return "true_false"
+  }
+
+  if (correctOptionCount >= 2) {
+    return "multiple_choice"
+  }
+
+  if (correctOptionCount === 1 && isTrueFalseOptionSet(question.options)) {
+    return "true_false"
+  }
+
+  if (correctOptionCount === 1) {
+    return "single_choice"
+  }
+
+  return question.questionType
+}
+
+export function normalizeGeneratedTestQuestionLlm(
+  question: GeneratedTestQuestionLlm,
+  source?: {
+    documentId?: string
+    documentTitle?: string
+  }
+): GeneratedTestQuestion {
+  return {
+    ...question,
+    questionType: normalizeLlmQuestionType(question),
+    correctAnswer: normalizeLlmCorrectAnswer(question.correctAnswer),
+    sourceDocumentId: source?.documentId,
+    sourceDocumentTitle: source?.documentTitle,
+  }
+}
+
+export function normalizeGeneratedTestDraftLlm(draft: GeneratedTestDraftLlm): GeneratedTestDraft {
+  return {
+    ...draft,
+    questions: draft.questions.map((question) => normalizeGeneratedTestQuestionLlm(question)),
+  }
+}
 
 export const RetrievedChunkSummarySchema = z.object({
   id: z.string().uuid(),
@@ -225,6 +306,7 @@ export const GeneratedTestDocumentSummarySchema = z.object({
 export const GeneratedTestResponseSchema = z.object({
   generationRunId: z.string().uuid(),
   testId: z.string().uuid().optional(),
+  targetEmployeeIds: z.array(z.string().uuid()).default([]),
   document: GeneratedTestDocumentSummarySchema,
   documents: z.array(GeneratedTestDocumentSummarySchema).min(1),
   draft: GeneratedTestDraftSchema,

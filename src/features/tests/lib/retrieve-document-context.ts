@@ -1,24 +1,11 @@
 import "server-only"
 
-import OpenAI from "openai"
-
-import {
-  loadChunksByTopicIds,
-  loadExplicitChunksByIds,
-  type MultiDocumentSummary,
-} from "@/features/tests/lib/multi-document-generation"
-import { buildRetrievalQuery } from "@/features/tests/lib/generate-test-prompt"
+import type { MultiDocumentSummary } from "@/features/tests/lib/multi-document-generation"
 import type { TestDifficulty, TestLanguage } from "@/features/tests/schemas/generated-test-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
-import {
-  createEmbedding,
-  EMBEDDING_MODEL,
-  serializePgvectorEmbedding,
-} from "@/shared/ai/chunk-embeddings"
+import { EMBEDDING_MODEL } from "@/shared/ai/chunk-embeddings"
 
 export { EMBEDDING_MODEL }
-
-const MIN_CONTEXT_CHUNKS = 3
 
 export type RetrievedChunk = {
   id: string
@@ -82,6 +69,7 @@ export class InsufficientContextError extends Error {
 
 type EmbeddedChunkRow = {
   id: string
+  organization_id: string
   document_id: string
   title: string | null
   topic: string | null
@@ -89,56 +77,28 @@ type EmbeddedChunkRow = {
   chunk_index: number
 }
 
-export function computeMatchCount(questionCount: number, documentCount: number): number {
-  const perDocument = Math.min(
-    Math.max(Math.ceil(questionCount / Math.max(documentCount, 1)) * 2, 3),
-    8
-  )
-  return Math.min(Math.max(perDocument * documentCount, MIN_CONTEXT_CHUNKS), 16)
+function mapEmbeddedRowsToRetrievedChunks(chunks: EmbeddedChunkRow[]): RetrievedChunk[] {
+  return chunks.map((chunk) => ({
+    id: chunk.id,
+    documentId: chunk.document_id,
+    title: chunk.title,
+    topic: chunk.topic,
+    content: chunk.content,
+    similarity: 0,
+  }))
 }
 
-function mergeRetrievedChunks(
-  primary: RetrievedChunk[],
-  fallback: EmbeddedChunkRow[]
-): RetrievedChunk[] {
-  const merged: RetrievedChunk[] = []
-  const seen = new Set<string>()
-
-  for (const chunk of primary) {
-    if (seen.has(chunk.id)) {
-      continue
-    }
-
-    seen.add(chunk.id)
-    merged.push(chunk)
-  }
-
-  for (const chunk of fallback) {
-    if (seen.has(chunk.id)) {
-      continue
-    }
-
-    seen.add(chunk.id)
-    merged.push({
-      id: chunk.id,
-      documentId: chunk.document_id,
-      title: chunk.title,
-      topic: chunk.topic,
-      content: chunk.content,
-      similarity: 0,
-    })
-  }
-
-  return merged
-}
-
-async function fetchEmbeddedChunksForDocuments(documentIds: string[]): Promise<EmbeddedChunkRow[]> {
+async function fetchEmbeddedChunksForDocuments(input: {
+  documentIds: string[]
+  organizationId: string
+}): Promise<EmbeddedChunkRow[]> {
   const supabase = createAdminClient()
 
   const { data: embeddedChunks, error: chunksError } = await supabase
     .from("document_chunks")
-    .select("id, document_id, title, topic, content, chunk_index")
-    .in("document_id", documentIds)
+    .select("id, organization_id, document_id, title, topic, content, chunk_index")
+    .eq("organization_id", input.organizationId)
+    .in("document_id", input.documentIds)
     .not("embedding", "is", null)
     .order("chunk_index", { ascending: true })
 
@@ -149,53 +109,12 @@ async function fetchEmbeddedChunksForDocuments(documentIds: string[]): Promise<E
   return (embeddedChunks ?? []) as EmbeddedChunkRow[]
 }
 
-async function retrieveVectorMatchesForDocument(input: {
-  document: MultiDocumentSummary
-  questionCount: number
-  difficulty: TestDifficulty
-  language: TestLanguage
-  targetRole: string
-  openai: OpenAI
-  matchCount: number
-}): Promise<RetrievedChunk[]> {
-  const supabase = createAdminClient()
-  const retrievalQuery = buildRetrievalQuery({
-    targetRole: input.targetRole,
-    difficulty: input.difficulty,
-    language: input.language,
-  })
-
-  const queryEmbedding = await createEmbedding(input.openai, retrievalQuery)
-
-  const { data: rpcMatches, error: rpcError } = await supabase.rpc("match_document_chunks", {
-    query_embedding: serializePgvectorEmbedding(queryEmbedding),
-    match_count: input.matchCount,
-    document_id_filter: input.document.id,
-    organization_id_filter: input.document.organizationId,
-    match_threshold: 0.2,
-  })
-
-  if (rpcError) {
-    throw new Error(`Chunk retrieval failed: ${rpcError.message}`)
-  }
-
-  return (rpcMatches ?? []).map((match) => ({
-    id: match.id,
-    documentId: match.document_id ?? input.document.id,
-    title: match.title,
-    topic: match.topic,
-    content: match.content,
-    similarity: match.similarity,
-  }))
-}
-
 export async function retrieveDocumentContext(input: {
   document: DocumentSummary
   questionCount: number
   difficulty: TestDifficulty
   language: TestLanguage
   targetRole: string
-  openai: OpenAI
 }): Promise<RetrievedDocumentContext> {
   return retrieveMultiDocumentContext({
     documents: [
@@ -209,7 +128,6 @@ export async function retrieveDocumentContext(input: {
     difficulty: input.difficulty,
     language: input.language,
     targetRole: input.targetRole,
-    openai: input.openai,
   })
 }
 
@@ -219,9 +137,6 @@ export async function retrieveMultiDocumentContext(input: {
   difficulty: TestDifficulty
   language: TestLanguage
   targetRole: string
-  openai: OpenAI
-  selectedChunkIds?: string[]
-  selectedTopicIds?: string[]
 }): Promise<RetrievedDocumentContext> {
   const documentIds = input.documents.map((document) => document.id)
 
@@ -235,79 +150,21 @@ export async function retrieveMultiDocumentContext(input: {
     throw new InsufficientContextError("Missing organization for document retrieval")
   }
 
-  const embeddedChunkRows = await fetchEmbeddedChunksForDocuments(documentIds)
+  const hasMixedOrganizations = input.documents.some(
+    (document) => document.organizationId !== organizationId
+  )
+
+  if (hasMixedOrganizations) {
+    throw new InsufficientContextError("Selected documents must belong to the same organization")
+  }
+
+  const embeddedChunkRows = await fetchEmbeddedChunksForDocuments({ documentIds, organizationId })
 
   if (embeddedChunkRows.length === 0) {
     throw new InsufficientContextError("Selected documents have no embedded chunks")
   }
 
-  if (embeddedChunkRows.length < MIN_CONTEXT_CHUNKS && !input.selectedChunkIds?.length) {
-    throw new InsufficientContextError(
-      "Selected documents have insufficient embedded chunks for generation"
-    )
-  }
-
-  let contextChunks: RetrievedChunk[] = []
-
-  if (input.selectedChunkIds && input.selectedChunkIds.length > 0) {
-    contextChunks = await loadExplicitChunksByIds({
-      organizationId,
-      documentIds,
-      chunkIds: input.selectedChunkIds,
-    })
-  } else {
-    const topicChunkIds =
-      input.selectedTopicIds && input.selectedTopicIds.length > 0
-        ? await loadChunksByTopicIds({
-            organizationId,
-            documentIds,
-            topicIds: input.selectedTopicIds,
-          })
-        : []
-
-    if (topicChunkIds.length > 0) {
-      contextChunks = await loadExplicitChunksByIds({
-        organizationId,
-        documentIds,
-        chunkIds: topicChunkIds,
-      })
-    }
-  }
-
-  if (contextChunks.length === 0) {
-    const matchCount = computeMatchCount(input.questionCount, input.documents.length)
-    const perDocumentMatchCount = Math.max(Math.ceil(matchCount / input.documents.length), 2)
-
-    const vectorMatches = await Promise.all(
-      input.documents.map((document) =>
-        retrieveVectorMatchesForDocument({
-          document,
-          questionCount: input.questionCount,
-          difficulty: input.difficulty,
-          language: input.language,
-          targetRole: input.targetRole,
-          openai: input.openai,
-          matchCount: perDocumentMatchCount,
-        })
-      )
-    )
-
-    contextChunks = mergeRetrievedChunks(
-      vectorMatches.flat(),
-      embeddedChunkRows.slice(0, matchCount)
-    )
-  }
-
-  if (contextChunks.length < MIN_CONTEXT_CHUNKS) {
-    contextChunks = mergeRetrievedChunks(
-      contextChunks,
-      embeddedChunkRows.slice(0, computeMatchCount(input.questionCount, input.documents.length))
-    )
-  }
-
-  if (contextChunks.length < MIN_CONTEXT_CHUNKS) {
-    throw new InsufficientContextError("Insufficient context chunks after retrieval fallback")
-  }
+  const contextChunks = mapEmbeddedRowsToRetrievedChunks(embeddedChunkRows)
 
   return {
     documents: input.documents,

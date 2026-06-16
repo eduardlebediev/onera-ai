@@ -20,6 +20,7 @@ export interface ReviewQuestion {
   topic: string
   sourceChunkReference: string
   sourceChunkId?: string | null
+  sourceDocumentId?: string | null
   sourceDocumentTitle?: string
   testedSkill: string
   pedagogicalGoal: string

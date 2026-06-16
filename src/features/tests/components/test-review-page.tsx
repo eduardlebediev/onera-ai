@@ -144,6 +144,7 @@ export function TestReviewPage({
       difficulty: question.difficulty,
       reviewStatus: question.status,
       sourceChunkId: question.sourceChunkId ?? null,
+      sourceDocumentId: question.sourceDocumentId ?? null,
       isAiGenerated: question.isAiGenerated,
       orderIndex,
     }
@@ -198,6 +199,27 @@ export function TestReviewPage({
 
     void persistQuestionChanges({
       upsert: [{ ...nextQuestion, status }],
+    }).catch((error) => {
+      setActionError(
+        error instanceof Error ? error.message : t("tests.review.errors.saveReviewStatus")
+      )
+    })
+  }
+
+  const canApproveAll = questions.some((question) => question.status !== "approved")
+
+  const handleApproveAll = () => {
+    const toApprove = questions.filter((question) => question.status !== "approved")
+    if (toApprove.length === 0) return
+
+    updateQuestions((prev) =>
+      prev.map((question) =>
+        question.status !== "approved" ? { ...question, status: "approved" } : question
+      )
+    )
+
+    void persistQuestionChanges({
+      upsert: toApprove.map((question) => ({ ...question, status: "approved" as const })),
     }).catch((error) => {
       setActionError(
         error instanceof Error ? error.message : t("tests.review.errors.saveReviewStatus")
@@ -331,7 +353,7 @@ export function TestReviewPage({
   }, [documentId, generationRunId])
 
   return (
-    <div className="page-shell flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="page-shell flex flex-col">
       <div className="mb-6 shrink-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
@@ -439,7 +461,7 @@ export function TestReviewPage({
         />
       </div>
 
-      <div className="flex flex-col flex-1 min-h-0 bg-card rounded-xl border border-border/50 shadow-sm">
+      <div className="flex flex-col bg-card rounded-xl border border-border/50 shadow-sm">
         <div className="px-6 pt-4 shrink-0 bg-card rounded-t-xl">
           <ReviewFilterBar
             totalQuestions={totalQuestions}
@@ -456,21 +478,22 @@ export function TestReviewPage({
           />
         </div>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0 bg-card rounded-b-xl overflow-hidden">
-          <div className="lg:col-span-4 min-h-0 border-r border-border/50">
+        <div className="grid grid-cols-1 lg:grid-cols-12 bg-card rounded-b-xl">
+          <div className="lg:col-span-4 border-r border-border/50">
             <ReviewQuestionList
               questions={filteredQuestions}
               allQuestionsCount={totalQuestions}
               selectedQuestionId={selectedQuestionId}
               onSelectQuestion={setSelectedQuestionId}
-              onApprove={(id) => handleSetStatus(id, "approved")}
+              onApproveAll={handleApproveAll}
+              canApproveAll={canApproveAll}
               topics={reviewData.selectedTopics}
               showAddForm={showAddForm}
               onToggleAddForm={() => setShowAddForm((value) => !value)}
               onAddQuestion={handleAddQuestion}
             />
           </div>
-          <div className="lg:col-span-8 min-h-0 bg-card">
+          <div className="lg:col-span-8 bg-card">
             {selectedQuestion ? (
               <ReviewQuestionDetail
                 question={selectedQuestion}
@@ -486,7 +509,7 @@ export function TestReviewPage({
                 onNext={handleNext}
               />
             ) : (
-              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-card">
+              <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-card py-16">
                 <p className="text-sm text-muted-foreground">{t("tests.review.selectQuestion")}</p>
               </div>
             )}

@@ -17,6 +17,7 @@ export function saveGeneratedTestDraft(response: GeneratedTestResponse): void {
   const payload: StoredGeneratedTestDraft = {
     generationRunId: response.generationRunId,
     testId: response.testId,
+    targetEmployeeIds: response.targetEmployeeIds,
     document: response.document,
     documents: response.documents,
     draft: response.draft,

@@ -61,6 +61,7 @@ export async function POST(request: Request, { params }: AssignTestRouteContext)
       testId: id,
       userIds: parsedRequest.data.userIds,
       deadline: parsedRequest.data.deadline ?? null,
+      assignedBy: admin.userId,
     })
 
     if (!result) {

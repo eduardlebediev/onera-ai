@@ -1,7 +1,6 @@
 import { openai } from "@ai-sdk/openai"
 import { generateObject, JSONParseError, NoObjectGeneratedError, TypeValidationError } from "ai"
 import { NextResponse } from "next/server"
-import OpenAI from "openai"
 
 import { buildGenerateTestPrompt } from "@/features/tests/lib/generate-test-prompt"
 import { createDraftTestFromGeneration } from "@/features/tests/lib/draft-test"
@@ -21,6 +20,7 @@ import {
   GeneratedTestDraftLlmSchema,
   GeneratedTestDraftSchema,
   GenerateTestRequestSchema,
+  normalizeGeneratedTestDraftLlm,
   normalizeGenerateTestDocumentIds,
   validateDraftAgainstRetrievedChunks,
 } from "@/features/tests/schemas/generated-test-schema"
@@ -95,12 +95,11 @@ type EffectiveGenerationSettings = {
   difficulty: TestDifficulty
   language: TestLanguage
   targetRole: string
+  targetEmployeeIds: string[]
   passingScore: number
   questionTypes: QuestionType[]
   templateTestId?: string
   templateTitle?: string
-  selectedTopicIds?: string[]
-  selectedChunkIds?: string[]
 }
 
 type TemplateTestRow = {
@@ -184,10 +183,6 @@ export async function POST(request: Request) {
       return jsonError("Server configuration error", 500)
     }
 
-    const openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-
     let validatedDocuments
 
     try {
@@ -215,11 +210,10 @@ export async function POST(request: Request) {
       difficulty: input.difficulty,
       language: normalizeLanguage(uiLocale),
       targetRole: input.targetRole,
+      targetEmployeeIds: input.targetEmployeeIds,
       passingScore: 70,
       questionTypes: input.questionTypes,
       templateTestId: input.templateTestId,
-      selectedTopicIds: input.selectedTopicIds,
-      selectedChunkIds: input.selectedChunkIds,
     }
 
     if (input.templateTestId) {
@@ -289,12 +283,12 @@ export async function POST(request: Request) {
         embedding_model: EMBEDDING_MODEL,
         input_config: {
           documentIds: effectiveSettings.documentIds,
-          selectedTopicIds: effectiveSettings.selectedTopicIds ?? [],
-          selectedChunkIds: effectiveSettings.selectedChunkIds ?? [],
+          sourceChunkScope: "all_embedded_chunks",
           questionCount: effectiveSettings.questionCount,
           difficulty: effectiveSettings.difficulty,
           language: effectiveSettings.language,
           targetRole: effectiveSettings.targetRole,
+          targetEmployeeIds: effectiveSettings.targetEmployeeIds,
           questionTypes: effectiveSettings.questionTypes,
           templateTestId: effectiveSettings.templateTestId ?? null,
         } satisfies Json,
@@ -331,9 +325,6 @@ export async function POST(request: Request) {
         difficulty: effectiveSettings.difficulty,
         language: effectiveSettings.language,
         targetRole: effectiveSettings.targetRole,
-        openai: openaiClient,
-        selectedChunkIds: effectiveSettings.selectedChunkIds,
-        selectedTopicIds: effectiveSettings.selectedTopicIds,
       })
     } catch (error) {
       if (error instanceof InsufficientContextError) {
@@ -386,7 +377,7 @@ export async function POST(request: Request) {
         prompt,
       })
 
-      generatedDraft = result.object
+      generatedDraft = normalizeGeneratedTestDraftLlm(result.object)
     } catch (error) {
       const message = error instanceof Error ? error.message : "AI generation failed"
       console.error("Generate test AI error:", error)
@@ -468,6 +459,7 @@ export async function POST(request: Request) {
           review_draft: {
             document: responseDocuments[0],
             documents: responseDocuments,
+            targetEmployeeIds: effectiveSettings.targetEmployeeIds,
             draft: validatedDraft.data,
             retrievedChunks,
           },
@@ -497,6 +489,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       generationRunId,
       testId: draftTestId,
+      targetEmployeeIds: effectiveSettings.targetEmployeeIds,
       document: responseDocuments[0],
       documents: responseDocuments,
       draft: validatedDraft.data,

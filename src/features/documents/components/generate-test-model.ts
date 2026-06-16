@@ -7,6 +7,7 @@ export interface GenerateTestSettings {
   title: string
   difficulty: TestDifficulty
   targetRole: string
+  targetEmployeeIds: string[]
   questionCount: number
   passingScore: number
 }
@@ -17,14 +18,51 @@ export const DIFFICULTY_OPTIONS: Array<{ value: TestDifficulty; label: string }>
   { value: "hard", label: "Hard" },
 ]
 
-export const TARGET_ROLE_OPTIONS = [
-  "All employees",
-  "New employees",
-  "Engineering team",
-  "Customer support",
-  "Operations staff",
-  "HR team",
-]
+export const ALL_EMPLOYEES_TARGET = "All employees"
+export const TARGET_ROLE_OPTIONS = [ALL_EMPLOYEES_TARGET]
+
+export type GenerateTestTargetEmployee = {
+  id: string
+  name: string
+  email: string
+  jobTitle: string | null
+  department: string | null
+}
+
+export function formatEmployeeTarget(
+  employee: GenerateTestTargetEmployee,
+  allEmployees: GenerateTestTargetEmployee[] = []
+): string {
+  const duplicateNameCount = allEmployees.filter(
+    (candidate) => candidate.name === employee.name
+  ).length
+
+  if (duplicateNameCount <= 1) {
+    return employee.name
+  }
+
+  const qualifier = employee.jobTitle ?? employee.department
+  return qualifier ? `${employee.name} (${qualifier})` : employee.name
+}
+
+export function formatTargetRoleLabel(
+  targetRole: string,
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
+  return targetRole
+    .split(",")
+    .map((role) => role.trim())
+    .filter(Boolean)
+    .map((role) => {
+      if (role === ALL_EMPLOYEES_TARGET) {
+        return t("common.targetRoles.allEmployees")
+      }
+
+      const legacyEmailSuffix = role.match(/^(.+?)\s*<[^>]+>$/)
+      return legacyEmailSuffix ? legacyEmailSuffix[1].trim() : role
+    })
+    .join(", ")
+}
 
 export const MAX_SELECTABLE_DOCUMENTS = 5
 
@@ -84,7 +122,8 @@ export function getDefaultGenerateTestSettings(
   return {
     title: t("documents.generateTest.defaultTestTitle", { title: document.title }),
     difficulty: "medium",
-    targetRole: TARGET_ROLE_OPTIONS[0],
+    targetRole: ALL_EMPLOYEES_TARGET,
+    targetEmployeeIds: [],
     questionCount: Math.min(Math.max(document.chunks.length * 2, 5), 10),
     passingScore: 80,
   }

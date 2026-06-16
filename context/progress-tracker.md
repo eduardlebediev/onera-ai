@@ -17,6 +17,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 65: Generate Test and Review Improvements
+
 - Feature Spec 64: Login Page Redesign
 
 - Feature Spec 63: Employee Test Table Drawer

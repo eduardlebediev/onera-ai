@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 
 import { getDraftTestForReview } from "@/features/tests/lib/draft-test"
-import { PatchReviewQuestionsRequestSchema } from "@/features/tests/schemas/review-question-schema"
+import {
+  PatchReviewQuestionsRequestSchema,
+  type ReviewQuestionPayload,
+} from "@/features/tests/schemas/review-question-schema"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
@@ -12,6 +16,34 @@ interface PatchQuestionsRouteContext {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status })
+}
+
+function resolveExistingQuestion(
+  question: ReviewQuestionPayload,
+  draftQuestions: ReviewQuestion[]
+): ReviewQuestion | undefined {
+  if (question.id) {
+    return draftQuestions.find((draftQuestion) => draftQuestion.dbQuestionId === question.id)
+  }
+
+  if (question.clientId) {
+    const byClientId = draftQuestions.find(
+      (draftQuestion) =>
+        draftQuestion.id === question.clientId ||
+        draftQuestion.clientId === question.clientId ||
+        draftQuestion.dbQuestionId === question.clientId
+    )
+
+    if (byClientId) {
+      return byClientId
+    }
+  }
+
+  if (typeof question.orderIndex === "number") {
+    return draftQuestions[question.orderIndex]
+  }
+
+  return undefined
 }
 
 export async function PATCH(request: Request, { params }: PatchQuestionsRouteContext) {
@@ -57,6 +89,8 @@ export async function PATCH(request: Request, { params }: PatchQuestionsRouteCon
     const upsertResults: Array<{ clientId?: string; id: string }> = []
 
     for (const question of upsert) {
+      const existingQuestion = resolveExistingQuestion(question, draft.questions)
+      const existingQuestionId = question.id ?? existingQuestion?.dbQuestionId
       const sourceStatus = question.isAiGenerated ? "valid" : "manual_kept"
       const reviewStatus =
         question.reviewStatus === "needs_review" ? "pending" : question.reviewStatus
@@ -73,17 +107,17 @@ export async function PATCH(request: Request, { params }: PatchQuestionsRouteCon
         difficulty: question.difficulty,
         order_index: question.orderIndex ?? 0,
         source_chunk_id: question.sourceChunkId ?? null,
-        source_document_id: question.sourceDocumentId ?? null,
+        source_document_id: question.sourceDocumentId ?? existingQuestion?.sourceDocumentId ?? null,
         source_status: sourceStatus,
         review_status: reviewStatus,
         is_active: true,
       }
 
-      if (question.id) {
+      if (existingQuestionId) {
         const { data, error } = await supabase
           .from("test_questions")
           .update(row)
-          .eq("id", question.id)
+          .eq("id", existingQuestionId)
           .eq("test_id", testId)
           .eq("organization_id", organizationId)
           .select("id")

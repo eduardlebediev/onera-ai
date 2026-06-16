@@ -55,6 +55,7 @@ function mapQuestionToReviewQuestion(
     topic: question.topic,
     sourceChunkReference,
     sourceChunkId: question.sourceChunkId,
+    sourceDocumentId: question.sourceDocumentId,
     sourceDocumentTitle: documentTitle,
     testedSkill: "Knowledge recall",
     pedagogicalGoal: "Verify understanding of source document content",
@@ -241,6 +242,7 @@ export function mapReviewedDraftToPublishRequest(
     difficulty: stored.draft.difficulty,
     language: stored.draft.language,
     targetRole: stored.draft.targetRole,
+    targetEmployeeIds: stored.targetEmployeeIds,
     passingScore: stored.draft.passingScore,
     questions: publishQuestions,
   }

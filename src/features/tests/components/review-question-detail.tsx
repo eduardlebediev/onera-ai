@@ -134,8 +134,107 @@ export function ReviewQuestionDetail({
   const isOpenQuestion = question.questionType === "open_question"
   const canRegenerate = question.isAiGenerated && Boolean(onRegenerate)
 
+  const actionButtonClassName = "h-9 px-4"
+
+  const actionToolbar = (
+    <div className="flex flex-col gap-3 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        {isEditing ? (
+          <>
+            <Button
+              variant="outline"
+              className={`${actionButtonClassName} border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20`}
+              onClick={handleSave}
+            >
+              <Save className="mr-2 size-4" />
+              Save Changes
+            </Button>
+            <Button variant="outline" className={actionButtonClassName} onClick={handleCancelEdit}>
+              <X className="mr-2 size-4" />
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              className={`${actionButtonClassName} border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20`}
+              onClick={() => onApprove(question.id)}
+            >
+              <CheckCircle2 className="mr-2 size-4" />
+              Approve
+            </Button>
+            <Button variant="outline" className={actionButtonClassName} onClick={handleStartEdit}>
+              <PencilLine className="mr-2 size-4" />
+              Edit
+            </Button>
+            <Button
+              variant="outline"
+              className={`${actionButtonClassName} border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20`}
+              onClick={() => onReject(question.id)}
+            >
+              <XCircle className="mr-2 size-4" />
+              Reject
+            </Button>
+            {onDelete ? (
+              showDeleteConfirm ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-9 px-4 border-red-200 text-red-700"
+                    onClick={() => {
+                      onDelete(question.id)
+                      setShowDeleteConfirm(false)
+                    }}
+                  >
+                    Confirm delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="h-9 px-4"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className={actionButtonClassName}
+                  title="Remove this question from the draft"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="mr-2 size-4" />
+                  Delete
+                </Button>
+              )
+            ) : null}
+          </>
+        )}
+      </div>
+
+      {!isEditing && canRegenerate ? (
+        <div className="flex shrink-0 items-center sm:justify-end">
+          <Button
+            variant="outline"
+            className={actionButtonClassName}
+            disabled={isRegenerating}
+            onClick={() => void onRegenerate?.(question.id)}
+          >
+            {isRegenerating ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <RotateCw className="mr-2 size-4" />
+            )}
+            Regenerate
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+
   return (
-    <div className="flex flex-col h-full bg-card">
+    <div className="flex flex-col bg-card">
       {/* Header: navigation + status */}
       <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-4">
@@ -181,9 +280,11 @@ export function ReviewQuestionDetail({
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+      {actionToolbar}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12">
         {/* Main content column */}
-        <div className="lg:col-span-8 p-6 lg:p-8 overflow-y-auto border-r border-border/50">
+        <div className="lg:col-span-8 p-6 lg:p-8 border-r border-border/50">
           <div className="space-y-8">
             {/* Question text */}
             <div className="space-y-4">
@@ -312,102 +413,11 @@ export function ReviewQuestionDetail({
                 />
               </div>
             )}
-
-            {/* Action buttons */}
-            <div className="flex flex-wrap items-center gap-3 pt-4">
-              {isEditing ? (
-                <>
-                  <Button
-                    variant="outline"
-                    className="h-10 px-6 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
-                    onClick={handleSave}
-                  >
-                    <Save className="mr-2 size-4" />
-                    Save Changes
-                  </Button>
-                  <Button variant="outline" className="h-10 px-6" onClick={handleCancelEdit}>
-                    <X className="mr-2 size-4" />
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    className="h-10 px-6 border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
-                    onClick={() => onApprove(question.id)}
-                  >
-                    <CheckCircle2 className="mr-2 size-4" />
-                    Approve
-                  </Button>
-                  <Button variant="outline" className="h-10 px-6" onClick={handleStartEdit}>
-                    <PencilLine className="mr-2 size-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-10 px-6 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20"
-                    onClick={() => onReject(question.id)}
-                  >
-                    <XCircle className="mr-2 size-4" />
-                    Reject
-                  </Button>
-                  {onDelete ? (
-                    showDeleteConfirm ? (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          className="h-10 px-4 border-red-200 text-red-700"
-                          onClick={() => {
-                            onDelete(question.id)
-                            setShowDeleteConfirm(false)
-                          }}
-                        >
-                          Confirm delete
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-10 px-4"
-                          onClick={() => setShowDeleteConfirm(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="h-10 px-6"
-                        title="Remove this question from the draft"
-                        onClick={() => setShowDeleteConfirm(true)}
-                      >
-                        <Trash2 className="mr-2 size-4" />
-                        Delete
-                      </Button>
-                    )
-                  ) : null}
-                  {canRegenerate ? (
-                    <Button
-                      variant="outline"
-                      className="h-10 px-6 ml-auto"
-                      disabled={isRegenerating}
-                      onClick={() => void onRegenerate?.(question.id)}
-                    >
-                      {isRegenerating ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      ) : (
-                        <RotateCw className="mr-2 size-4" />
-                      )}
-                      Regenerate
-                    </Button>
-                  ) : null}
-                </>
-              )}
-            </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="lg:col-span-4 p-6 lg:p-8 overflow-y-auto">
+        <div className="lg:col-span-4 p-6 lg:p-8">
           <div className="space-y-8">
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">Correct Answer</h4>

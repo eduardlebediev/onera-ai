@@ -121,9 +121,9 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
           <DataTableColumnHeader column={column} title={t("dataTable.test")} />
         ),
         enableSorting: true,
-        meta: { width: 300 },
+        meta: { width: 300, cellClassName: "whitespace-normal" },
         cell: ({ row }) => (
-          <div className="min-w-0 space-y-1">
+          <div className="min-w-0 max-w-[300px] space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <p className="typography-small line-clamp-1 font-medium text-foreground">
                 {row.original.title}

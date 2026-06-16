@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation"
 
 import type { DocumentDetail } from "@/features/documents/types/document"
+import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { GenerateTestSetup } from "@/features/documents/components/generate-test-setup"
-import { canGenerateTest } from "@/features/documents/components/generate-test-model"
+import {
+  canGenerateTest,
+  type GenerateTestTargetEmployee,
+} from "@/features/documents/components/generate-test-model"
+import { getGenerateTestTargetEmployees } from "@/features/documents/lib/generate-test-target-employees"
 import {
   getDocumentDetailById,
   getDocumentsFromSupabase,
@@ -20,15 +25,21 @@ function isSelectableDocument(document: DocumentDetail): boolean {
 
 export default async function GenerateTestPage({ params }: GenerateTestPageProps) {
   const { id } = await params
+  const admin = await requireAdminUser()
 
   let document: DocumentDetail | undefined
   let selectableDocuments: DocumentDetail[] = []
+  let targetEmployees: GenerateTestTargetEmployee[] = []
 
   try {
     document = (await getDocumentDetailById(id)) ?? undefined
 
-    const documentsResult = await getDocumentsFromSupabase()
+    const [documentsResult, employees] = await Promise.all([
+      getDocumentsFromSupabase(),
+      getGenerateTestTargetEmployees(admin.membership.organizationId),
+    ])
     selectableDocuments = documentsResult.documents.filter(isSelectableDocument)
+    targetEmployees = employees
   } catch (error) {
     console.error(`Failed to load document ${id} for generate-test:`, error)
   }
@@ -46,6 +57,7 @@ export default async function GenerateTestPage({ params }: GenerateTestPageProps
       document={document}
       routeDocumentId={id}
       selectableDocuments={selectableDocuments}
+      targetEmployees={targetEmployees}
     />
   )
 }

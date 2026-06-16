@@ -4,8 +4,9 @@ import { openai } from "@ai-sdk/openai"
 import { generateObject, JSONParseError, NoObjectGeneratedError, TypeValidationError } from "ai"
 
 import {
+  ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH,
   AttemptFeedbackLlmSchema,
-  AttemptFeedbackOutputSchema,
+  normalizeAttemptFeedbackOutput,
   type AttemptFeedbackOutput,
 } from "@/features/employee/tests/schemas/attempt-feedback-schema"
 import type { AppLocale } from "@/shared/i18n/locale-config"
@@ -93,6 +94,7 @@ function buildAttemptFeedbackPrompt(input: AttemptFeedbackInput): string {
     "- understoodWell: name specific topics or question areas the employee answered correctly.",
     "- needsImprovement: name specific missed topics or mistakes; reference actual wrong answers when relevant.",
     "- recommendedNextStep: one concrete next action (what to review, in which topic order).",
+    `- Keep each field under ${ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH} characters.`,
     "- Do not use generic phrases like 'try again' or 'study harder' without naming topics.",
     `- Write all output in ${formatOutputLanguage(input.language)}.`,
     allCorrect
@@ -135,16 +137,15 @@ export async function generateAttemptFeedback(
     abortSignal: AbortSignal.timeout(getAttemptFeedbackTimeoutMs()),
   })
 
-  const validated = AttemptFeedbackOutputSchema.safeParse(result.object)
-
-  if (!validated.success) {
+  try {
+    return normalizeAttemptFeedbackOutput(result.object)
+  } catch (error) {
     throw new Error(
-      validated.error.issues.map((issue) => issue.message).join("; ") ||
-        "Attempt feedback output failed validation"
+      error instanceof Error && error.message
+        ? error.message
+        : "Attempt feedback output failed validation"
     )
   }
-
-  return validated.data
 }
 
 export async function generateAttemptFeedbackBestEffort(

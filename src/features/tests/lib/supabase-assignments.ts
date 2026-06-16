@@ -344,6 +344,13 @@ async function getActiveEmployeeMembers(
   return (data ?? []) as OrganizationMemberRow[]
 }
 
+export async function getActiveEmployeeUserIds(organizationId: string): Promise<string[]> {
+  const members = await getActiveEmployeeMembers(organizationId)
+  return members
+    .map((member) => member.user_id)
+    .filter((userId): userId is string => Boolean(userId))
+}
+
 function mapMemberToEmployee(
   member: OrganizationMemberRow,
   profile: ProfileRow | undefined
@@ -429,10 +436,12 @@ export async function createSupabaseTestAssignments({
   testId,
   userIds,
   deadline,
+  assignedBy,
 }: {
   testId: string
   userIds: string[]
   deadline: string | null
+  assignedBy?: string | null
 }): Promise<CreateAssignmentsResult | null> {
   const test = await getTestRowById(testId)
 
@@ -502,7 +511,7 @@ export async function createSupabaseTestAssignments({
           organization_id: test.organization_id,
           test_id: test.id,
           user_id: userId,
-          assigned_by: null,
+          assigned_by: assignedBy ?? null,
           status: "not_started",
           deadline,
         })),

@@ -99,10 +99,10 @@ export const PublishGeneratedQuestionSchema = z
     }
 
     if (question.questionType === "single_choice") {
-      if (question.options.length !== 4) {
+      if (question.options.length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "single_choice questions must have exactly 4 options",
+          message: "single_choice questions must have at least 2 options",
           path: ["options"],
         })
       }
@@ -117,10 +117,10 @@ export const PublishGeneratedQuestionSchema = z
     }
 
     if (question.questionType === "multiple_choice") {
-      if (question.options.length !== 4) {
+      if (question.options.length < 2) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "multiple_choice questions must have exactly 4 options",
+          message: "multiple_choice questions must have at least 2 options",
           path: ["options"],
         })
       }
@@ -145,6 +145,7 @@ export const PublishGeneratedTestRequestSchema = z
     difficulty: TestDifficultySchema,
     language: TestLanguageSchema,
     targetRole: z.string().optional(),
+    targetEmployeeIds: z.array(z.string().uuid()).max(500).default([]),
     passingScore: z.number().int().min(0).max(100),
     questions: z.array(PublishGeneratedQuestionSchema).min(1),
   })

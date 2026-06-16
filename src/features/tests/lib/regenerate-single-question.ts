@@ -6,7 +6,9 @@ import { z } from "zod"
 
 import type { GeneratedTestQuestion } from "@/features/tests/schemas/generated-test-schema"
 import {
+  GeneratedTestQuestionLlmSchema,
   GeneratedTestQuestionSchema,
+  normalizeGeneratedTestQuestionLlm,
   QuestionTypeSchema,
   TestDifficultySchema,
 } from "@/features/tests/schemas/generated-test-schema"
@@ -15,26 +17,6 @@ import {
   type RetrievedChunkForPrompt,
 } from "@/features/tests/lib/generate-test-prompt"
 import { GENERATION_MODEL } from "@/app/api/admin/generate-test/route"
-
-const SingleQuestionLlmSchema = z.object({
-  questionText: z.string(),
-  questionType: QuestionTypeSchema,
-  options: z.array(
-    z.object({
-      id: z.string().min(1),
-      text: z.string().min(1),
-    })
-  ),
-  correctAnswer: z.object({
-    optionIds: z.array(z.string().min(1)).optional(),
-    expectedAnswer: z.string().min(1).optional(),
-  }),
-  explanation: z.string(),
-  topic: z.string(),
-  difficulty: TestDifficultySchema,
-  sourceChunkId: z.string(),
-  sourceChunkTitle: z.string(),
-})
 
 export async function regenerateSingleQuestion(input: {
   questionType: z.infer<typeof QuestionTypeSchema>
@@ -65,15 +47,14 @@ export async function regenerateSingleQuestion(input: {
   try {
     const result = await generateObject({
       model: openai(GENERATION_MODEL),
-      schema: SingleQuestionLlmSchema,
+      schema: GeneratedTestQuestionLlmSchema,
       prompt,
     })
 
-    const normalized: GeneratedTestQuestion = {
-      ...result.object,
-      sourceDocumentId: input.chunk.documentId,
-      sourceDocumentTitle: input.chunk.documentTitle,
-    }
+    const normalized: GeneratedTestQuestion = normalizeGeneratedTestQuestionLlm(result.object, {
+      documentId: input.chunk.documentId,
+      documentTitle: input.chunk.documentTitle,
+    })
 
     const validated = GeneratedTestQuestionSchema.safeParse(normalized)
     return validated.success ? validated.data : null

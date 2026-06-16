@@ -8,7 +8,8 @@ interface ReviewQuestionListProps {
   allQuestionsCount: number
   selectedQuestionId: string | null
   onSelectQuestion: (questionId: string) => void
-  onApprove?: (questionId: string) => void
+  onApproveAll?: () => void
+  canApproveAll?: boolean
   topics: string[]
   showAddForm: boolean
   onToggleAddForm: () => void
@@ -40,24 +41,39 @@ export function ReviewQuestionList({
   allQuestionsCount,
   selectedQuestionId,
   onSelectQuestion,
-  onApprove,
+  onApproveAll,
+  canApproveAll = false,
   topics,
   showAddForm,
   onToggleAddForm,
   onAddQuestion,
 }: ReviewQuestionListProps) {
   return (
-    <div className="flex flex-col h-full bg-card">
-      <div className="flex items-center justify-between p-4 border-b border-border/50">
+    <div className="flex flex-col bg-card">
+      <div className="flex items-center justify-between gap-3 p-4 border-b border-border/50">
         <h3 className="text-sm font-semibold text-foreground">Questions</h3>
-        <span className="text-sm font-medium text-muted-foreground">
-          {questions.length === allQuestionsCount
-            ? allQuestionsCount
-            : `${questions.length} of ${allQuestionsCount}`}
-        </span>
+        <div className="flex items-center gap-2">
+          {onApproveAll ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!canApproveAll}
+              onClick={onApproveAll}
+              className="h-7 border-green-200 px-2.5 text-xs font-medium text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
+            >
+              Approve all
+            </Button>
+          ) : null}
+          <span className="text-sm font-medium text-muted-foreground">
+            {questions.length === allQuestionsCount
+              ? allQuestionsCount
+              : `${questions.length} of ${allQuestionsCount}`}
+          </span>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="max-h-[800px] overflow-y-auto p-4 space-y-2">
         {questions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center pt-8">
             No questions match the current filters.
@@ -68,7 +84,7 @@ export function ReviewQuestionList({
             const statusVariant = getStatusBadgeVariant(question.status)
 
             return (
-              <div key={question.id} className="relative">
+              <div key={question.id}>
                 <button
                   type="button"
                   onClick={() => onSelectQuestion(question.id)}
@@ -83,7 +99,7 @@ export function ReviewQuestionList({
                     <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                       {index + 1}
                     </div>
-                    <div className="flex-1 space-y-3 min-w-0 pr-16">
+                    <div className="flex-1 space-y-3 min-w-0">
                       <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">
                         {question.questionText}
                       </p>
@@ -105,20 +121,6 @@ export function ReviewQuestionList({
                     </div>
                   </div>
                 </button>
-
-                {question.status !== "approved" && onApprove && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onApprove(question.id)
-                    }}
-                    aria-label={`Approve question ${index + 1}: ${question.questionText.slice(0, 60)}…`}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 flex h-5 items-center justify-center rounded-md border border-green-200 bg-transparent px-2 text-[10px] font-medium text-green-700 transition-colors hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                  >
-                    Approve
-                  </button>
-                )}
               </div>
             )
           })

@@ -8,7 +8,7 @@
 | UI                | React 19, Tailwind CSS v4, shadcn/ui v4, Radix primitives | Admin and employee dashboards with reusable project UI                                               |
 | Auth              | Supabase Auth + `@supabase/ssr`                           | Invite-only identity, session refresh, and role-gated route access                                   |
 | Database          | Supabase Postgres                                         | Organization-scoped records for documents, tests, assignments, attempts, analytics, and AI run state |
-| Vector Search     | Supabase pgvector (`extensions.vector`)                   | Document chunk embeddings and semantic retrieval through `match_document_chunks`                     |
+| Vector Search     | Supabase pgvector (`extensions.vector`)                   | Document chunk embeddings and optional semantic retrieval through `match_document_chunks`            |
 | File Storage      | Supabase Storage                                          | Private uploaded source documents in the `documents` bucket                                          |
 | AI                | Vercel AI SDK 6 + OpenAI SDK                              | Topic extraction, AI chunking, embeddings, question generation, grading, feedback, and follow-ups    |
 | Validation        | Zod 4                                                     | Runtime validation for route inputs, forms, and structured AI output                                 |
@@ -197,7 +197,7 @@ Fields:
 
 ### document_chunks
 
-Document sections used for topic display, generation context, and semantic retrieval.
+Document sections used for topic display, generation context, and optional semantic retrieval.
 
 Fields:
 
@@ -504,14 +504,14 @@ There is at most one answer per follow-up question.
 ### Test Generation and Review
 
 1. Admin selects one or more ready documents and generation settings.
-2. `POST /api/admin/generate-test` validates the admin, organization, source documents, selected topics/chunks, and request body.
-3. The backend retrieves grounded context through explicit chunk/topic selections and/or `match_document_chunks`.
+2. `POST /api/admin/generate-test` validates the admin, organization, source documents, and request body.
+3. The backend retrieves all embedded chunks for the selected source documents as grounded context.
 4. Vercel AI SDK generates structured output with `gpt-4.1-mini`.
 5. Zod validates the AI output and source chunk references.
 6. A draft `tests` row and `test_questions` rows are persisted immediately for review mutations.
 7. `ai_generation_runs` records input config, retrieved chunks, output summary, model, embedding model, and completion/failure state.
 8. Admin review can edit, approve, reject, add, delete, and regenerate questions before publishing.
-9. Publishing validates approved question readiness and source grounding, then calls `publish_generated_test` so published `tests`, `test_documents`, and `test_questions` rows are inserted atomically with `tests.created_by` set to the acting admin.
+9. Publishing validates approved question readiness and source grounding, then calls `publish_generated_test` so published `tests`, `test_documents`, and `test_questions` rows are inserted atomically with `tests.created_by` set to the acting admin. If the generated draft targets specific employees or all employees, publishing also creates `test_assignments` for active target employees.
 
 ### Test Assignment and Taking
 
@@ -561,7 +561,7 @@ AI must not:
 The test generation flow is:
 
 ```text
-Selected document(s) -> document chunks/topics -> pgvector retrieval -> AI structured output -> Zod validation -> persisted draft test -> admin review/edit -> publish
+Selected document(s) -> all embedded document chunks -> AI structured output -> Zod validation -> persisted draft test -> admin review/edit -> publish
 ```
 
 ---

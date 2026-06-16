@@ -64,6 +64,7 @@ export const en = {
     appName: "Ontera AI",
     welcomeBack: "Welcome back",
     cancel: "Cancel",
+    clear: "Clear",
     close: "Close",
     save: "Save",
     reset: "Reset",
@@ -575,7 +576,8 @@ export const en = {
     },
     generateTest: {
       title: "Generate Test Setup",
-      subtitle: "Configure test settings from one or more source documents, topics, and chunks.",
+      subtitle:
+        "Configure test settings from one or more source documents. All embedded chunks from the selected documents are used.",
       aiDraftHint: "AI-generated draft. Review before publishing.",
       backToDocument: "Back to Document",
       generatePreview: "Generate Test Preview",
@@ -583,7 +585,7 @@ export const en = {
       selectSupabaseDocument:
         "Select at least one saved Supabase document before generating a test.",
       generationFailed:
-        "Could not generate the test draft. Please check that selected documents have embedded chunks and try again.",
+        "Could not generate the test draft. The AI output did not pass validation, so please try again.",
       notLatestVersion: {
         title: "This is not the latest document version.",
         body: "Use the latest version instead, or explicitly continue here.",
@@ -591,7 +593,7 @@ export const en = {
         continue: "Continue with this version",
       },
       selectTopicsChunks:
-        "Select at least one topic and one source chunk across the selected documents.",
+        "Select at least one ready source document with embedded chunks before generating.",
       noSelectableDocuments: "No selectable ready documents are available.",
       configuration: {
         title: "Test Configuration",
@@ -599,6 +601,8 @@ export const en = {
         testTitlePlaceholder: "Enter a test title",
         difficulty: "Difficulty",
         targetRole: "Target Role",
+        searchTargetRole: "Search employees...",
+        noTargetRoles: "No employees found.",
         questionCount: "Question Count",
         passingScore: "Passing Score (%)",
         contentLanguage: "Test content language",
@@ -612,12 +616,14 @@ export const en = {
         selectedDocuments: "Selected Documents",
         selectedTopics: "Selected Topics",
         selectedChunks: "Selected Chunks",
+        sourceChunks: "Source Chunks",
         selectedChunksOf: "{selected} of {total} chunks",
+        allSourceChunks: "All chunks ({count})",
         contentLanguage: "Test content language",
         estimatedTime: "Estimated Time",
         previewHint:
           "A preview will be generated based on your current settings. You can review and adjust before finalizing the test.",
-        footerHint: "Use Generate Test Preview above when your topics and chunks are selected.",
+        footerHint: "Use Generate Test Preview above when your source documents are selected.",
       },
       defaultTestTitle: "{title} Knowledge Test",
       topicSummary: "Detected in the source document and available for test generation.",

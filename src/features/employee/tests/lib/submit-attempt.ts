@@ -276,20 +276,18 @@ export async function submitEmployeeTestAttempt(input: {
     is_correct: item.isCorrect,
   }))
 
-  const completeTestAttempt = supabase.rpc as unknown as CompleteTestAttemptRpc
-  const { data: completedAttemptRows, error: completeAttemptError } = await completeTestAttempt(
-    "complete_test_attempt",
-    {
-      p_attempt_id: attempt.id,
-      p_test_id: input.testId,
-      p_user_id: userId,
-      p_organization_id: organizationId,
-      p_score: score,
-      p_passed: passed,
-      p_completed_at: now,
-      p_answers: answerPayload as unknown as Json,
-    }
-  )
+  const { data: completedAttemptRows, error: completeAttemptError } = await (
+    supabase.rpc as unknown as CompleteTestAttemptRpc
+  )("complete_test_attempt", {
+    p_attempt_id: attempt.id,
+    p_test_id: input.testId,
+    p_user_id: userId,
+    p_organization_id: organizationId,
+    p_score: score,
+    p_passed: passed,
+    p_completed_at: now,
+    p_answers: answerPayload as unknown as Json,
+  })
 
   if (completeAttemptError) {
     if (completeAttemptError.message.includes("already")) {

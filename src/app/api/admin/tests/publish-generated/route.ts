@@ -11,7 +11,12 @@ import {
   PublishGeneratedTestRequestSchema,
   type PublishGeneratedQuestion,
 } from "@/features/tests/schemas/publish-generated-test-schema"
+import { ALL_EMPLOYEES_TARGET } from "@/features/documents/components/generate-test-model"
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
+import {
+  createSupabaseTestAssignments,
+  getActiveEmployeeUserIds,
+} from "@/features/tests/lib/supabase-assignments"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 
@@ -42,6 +47,22 @@ function filterSaveableQuestions(
   questions: PublishGeneratedQuestion[]
 ): PublishGeneratedQuestion[] {
   return questions.filter((question) => question.reviewStatus !== "rejected")
+}
+
+async function resolvePublishAssignmentUserIds(input: {
+  organizationId: string
+  targetRole?: string
+  targetEmployeeIds: string[]
+}): Promise<string[]> {
+  if (input.targetEmployeeIds.length > 0) {
+    return [...new Set(input.targetEmployeeIds)]
+  }
+
+  if (input.targetRole?.trim() === ALL_EMPLOYEES_TARGET) {
+    return getActiveEmployeeUserIds(input.organizationId)
+  }
+
+  return []
 }
 
 function hasExactSameIds(left: string[], right: string[]): boolean {
@@ -203,29 +224,50 @@ export async function POST(request: Request) {
       order_index: index,
     }))
 
-    const publishGeneratedTest = supabase.rpc as unknown as PublishGeneratedTestRpc
-    const { data: savedTestId, error: publishError } = await publishGeneratedTest(
-      "publish_generated_test",
-      {
-        p_organization_id: primaryDocument.organizationId,
-        p_source_document_id: primaryDocument.id,
-        p_title: input.title,
-        p_description: input.description ?? null,
-        p_difficulty: input.difficulty,
-        p_language: input.language,
-        p_target_role: input.targetRole ?? null,
-        p_question_count: saveableQuestions.length,
-        p_passing_score: input.passingScore,
-        p_created_by: admin.userId,
-        p_published_at: publishedAt,
-        p_document_ids: validatedDocuments.documentIds,
-        p_questions: questionRows as unknown as Json,
-      }
-    )
+    const { data: savedTestId, error: publishError } = await (
+      supabase.rpc as unknown as PublishGeneratedTestRpc
+    )("publish_generated_test", {
+      p_organization_id: primaryDocument.organizationId,
+      p_source_document_id: primaryDocument.id,
+      p_title: input.title,
+      p_description: input.description ?? null,
+      p_difficulty: input.difficulty,
+      p_language: input.language,
+      p_target_role: input.targetRole ?? null,
+      p_question_count: saveableQuestions.length,
+      p_passing_score: input.passingScore,
+      p_created_by: admin.userId,
+      p_published_at: publishedAt,
+      p_document_ids: validatedDocuments.documentIds,
+      p_questions: questionRows as unknown as Json,
+    })
 
     if (publishError || !savedTestId) {
       console.error("Failed to publish generated test:", publishError?.message)
       return jsonError("Failed to save generated test", 500)
+    }
+
+    const assignmentUserIds = await resolvePublishAssignmentUserIds({
+      organizationId: admin.membership.organizationId,
+      targetRole: input.targetRole,
+      targetEmployeeIds: input.targetEmployeeIds,
+    })
+
+    if (assignmentUserIds.length > 0) {
+      try {
+        const assignmentResult = await createSupabaseTestAssignments({
+          testId: savedTestId,
+          userIds: assignmentUserIds,
+          deadline: null,
+          assignedBy: admin.userId,
+        })
+
+        if (assignmentResult?.invalidUserIds.length) {
+          console.warn("Skipped invalid publish target employees:", assignmentResult.invalidUserIds)
+        }
+      } catch (assignmentError) {
+        console.warn("Published test but failed to create target assignments:", assignmentError)
+      }
     }
 
     if (input.generationRunId) {

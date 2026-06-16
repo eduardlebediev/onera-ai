@@ -1,5 +1,13 @@
 # Decisions
 
+## 072 — Generated test target audience creates assignments on publish
+
+When a generated test is published, the selected target audience becomes real `test_assignments`: explicit employee targets assign those users, and `All employees` assigns every active employee in the admin's organization. `tests.target_role` remains display metadata, but employee visibility depends on assignment rows.
+
+## 071 — Test generation uses all chunks from selected documents
+
+The generate-test setup no longer exposes initial topic or chunk filtering. Admins choose source documents and generation settings; `POST /api/admin/generate-test` builds prompt context from every embedded chunk in the selected documents. Generation should fail only when selected documents have zero embedded chunks, not when they have fewer than an arbitrary minimum.
+
 ## 070 — UI locale is the source of truth for new AI-generated content
 
 The selected interface language (`NEXT_LOCALE` cookie, `en`/`de`) drives static UI copy and **new** AI-generated test drafts, attempt feedback, and follow-up questions. Persisted historical feedback and stored test content are not auto-translated on locale switch. Test generation no longer exposes a separate content-language control; the server reads UI locale from cookies when generating content.

@@ -1,10 +1,22 @@
 import { z } from "zod"
 
+export const ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH = 600
+
+function clampFeedbackField(value: string): string {
+  const trimmed = value.trim().replace(/\s+/g, " ")
+
+  if (trimmed.length <= ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH) {
+    return trimmed
+  }
+
+  return `${trimmed.slice(0, ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH - 3).trimEnd()}...`
+}
+
 export const AttemptFeedbackOutputSchema = z.object({
-  performanceSummary: z.string().trim().min(1).max(600),
-  understoodWell: z.string().trim().min(1).max(600),
-  needsImprovement: z.string().trim().min(1).max(600),
-  recommendedNextStep: z.string().trim().min(1).max(600),
+  performanceSummary: z.string().trim().min(1).max(ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH),
+  understoodWell: z.string().trim().min(1).max(ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH),
+  needsImprovement: z.string().trim().min(1).max(ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH),
+  recommendedNextStep: z.string().trim().min(1).max(ATTEMPT_FEEDBACK_FIELD_MAX_LENGTH),
 })
 
 export type AttemptFeedbackOutput = z.infer<typeof AttemptFeedbackOutputSchema>
@@ -16,6 +28,19 @@ export const AttemptFeedbackLlmSchema = z.object({
   needsImprovement: z.string(),
   recommendedNextStep: z.string(),
 })
+
+export type AttemptFeedbackLlm = z.infer<typeof AttemptFeedbackLlmSchema>
+
+export function normalizeAttemptFeedbackOutput(
+  feedback: AttemptFeedbackLlm
+): AttemptFeedbackOutput {
+  return AttemptFeedbackOutputSchema.parse({
+    performanceSummary: clampFeedbackField(feedback.performanceSummary),
+    understoodWell: clampFeedbackField(feedback.understoodWell),
+    needsImprovement: clampFeedbackField(feedback.needsImprovement),
+    recommendedNextStep: clampFeedbackField(feedback.recommendedNextStep),
+  })
+}
 
 export const ATTEMPT_FEEDBACK_ENVELOPE_VERSION = 1
 

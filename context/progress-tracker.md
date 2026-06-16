@@ -17,6 +17,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 64: Login Page Redesign
+
 - Feature Spec 63: Employee Test Table Drawer
 
 - Feature Spec 62: Light and Dark Theme

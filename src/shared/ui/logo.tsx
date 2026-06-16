@@ -1,4 +1,14 @@
+"use client"
+
+import { useId } from "react"
+
 export function Logo() {
+  const id = useId().replace(/:/g, "")
+  const centerHoleId = `onera-center-hole-${id}`
+  const blurMediumId = `onera-blur-medium-${id}`
+  const blurSmallId = `onera-blur-small-${id}`
+  const ringGradientId = `onera-ring-gradient-${id}`
+
   return (
     <div className="flex items-center gap-1.5">
       <svg
@@ -8,23 +18,23 @@ export function Logo() {
         aria-hidden="true"
       >
         <defs>
-          <mask id="onera-center-hole">
+          <mask id={centerHoleId}>
             <rect width="200" height="200" fill="white" />
             <circle cx="100" cy="100" r="29" fill="black" />
           </mask>
-          <filter id="onera-blur-medium" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={blurMediumId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="5" />
           </filter>
-          <filter id="onera-blur-small" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={blurSmallId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2.5" />
           </filter>
-          <linearGradient id="onera-ring-gradient" x1="15%" y1="15%" x2="85%" y2="85%">
+          <linearGradient id={ringGradientId} x1="15%" y1="15%" x2="85%" y2="85%">
             <stop offset="0%" stopColor="#ffdd44" />
             <stop offset="40%" stopColor="#ff6600" />
             <stop offset="100%" stopColor="#b32400" />
           </linearGradient>
         </defs>
-        <g mask="url(#onera-center-hole)">
+        <g mask={`url(#${centerHoleId})`}>
           <g>
             <animateTransform
               attributeName="transform"
@@ -42,7 +52,7 @@ export function Logo() {
               fill="none"
               stroke="#ff2a00"
               strokeWidth="12"
-              filter="url(#onera-blur-medium)"
+              filter={`url(#${blurMediumId})`}
               opacity="0.8"
             />
             <ellipse
@@ -53,7 +63,7 @@ export function Logo() {
               fill="none"
               stroke="#ff5500"
               strokeWidth="14"
-              filter="url(#onera-blur-medium)"
+              filter={`url(#${blurMediumId})`}
               opacity="0.7"
             />
             <circle
@@ -63,7 +73,7 @@ export function Logo() {
               fill="none"
               stroke="#ff1100"
               strokeWidth="10"
-              filter="url(#onera-blur-small)"
+              filter={`url(#${blurSmallId})`}
               opacity="0.6"
             />
           </g>
@@ -72,7 +82,7 @@ export function Logo() {
             cy="100"
             r="36"
             fill="none"
-            stroke="url(#onera-ring-gradient)"
+            stroke={`url(#${ringGradientId})`}
             strokeWidth="15"
           />
           <circle

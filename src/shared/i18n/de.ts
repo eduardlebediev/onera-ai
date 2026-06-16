@@ -38,6 +38,18 @@ export const de = {
     accessDeniedMessage:
       "Ihr Konto ist angemeldet, hat aber keine aktive Organisationsmitgliedschaft. Wenden Sie sich an Ihren Administrator.",
     backToSignIn: "Zurück zur Anmeldung",
+    carousel: {
+      slide1Title: "Eine Plattform für effizienteres Team-Testing",
+      slide1Description:
+        "Verwandeln Sie Dokumentenwissen in professionelle Bewertungen. Halten Sie Support, Vertrieb und Engineering auf dem gleichen Stand.",
+      slide2Title: "Verwandeln Sie Spezifikationen sofort in Live-Quizze",
+      slide2Description:
+        "Laden Sie Handbücher, APIs, Leitfäden oder Spezifikationen hoch und erstellen Sie automatisch benotete Tests mit produktionsreifer KI.",
+      slide3Title: "Verfolgen Sie Wachstum mit präzisen Team-Analysen",
+      slide3Description:
+        "Beobachten Sie Lernfortschritte mit aussagekräftigen Diagrammen, bewerten Sie Abgaben live und erkennen Sie Wissenslücken zuverlässig.",
+      goToSlide: "Zu Folie {number} wechseln",
+    },
     errors: {
       emailPasswordRequired: "E-Mail und Passwort sind erforderlich.",
       invalidCredentials: "Ungültige E-Mail oder ungültiges Passwort.",

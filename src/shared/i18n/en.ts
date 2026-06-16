@@ -36,6 +36,18 @@ export const en = {
     accessDeniedMessage:
       "Your account is signed in but does not have an active organization membership. Contact your administrator for access.",
     backToSignIn: "Back to sign in",
+    carousel: {
+      slide1Title: "One Platform to Streamline Your Team's Testing",
+      slide1Description:
+        "Transform custom document knowledge into professional evaluations. Keep support, sales, and core engineering alignment sharp.",
+      slide2Title: "Turn Spec Documents into Live Quizzes Instantly",
+      slide2Description:
+        "Upload manuals, APIs, guides, or specifications, then automatically synthesize graded tests using production-grade AI.",
+      slide3Title: "Track Growth with Precision Team Analytics",
+      slide3Description:
+        "Observe learning progress with rich charts, grade submissions live, and pinpoint knowledge alignment gaps flawlessly.",
+      goToSlide: "Go to slide {number}",
+    },
     errors: {
       emailPasswordRequired: "Email and password are required.",
       invalidCredentials: "Invalid email or password.",

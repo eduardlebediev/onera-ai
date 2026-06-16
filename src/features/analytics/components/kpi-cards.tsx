@@ -1,4 +1,4 @@
-import type { KpiStat } from "@/data/mock/admin-dashboard"
+import type { KpiStat } from "@/features/analytics/types/admin-dashboard"
 import { mapDashboardKpiStatsToGridItems } from "@/features/analytics/lib/dashboard-kpi-grid-items"
 import { KpiStatGrid } from "@/shared/ui/kpi-stat-grid"
 

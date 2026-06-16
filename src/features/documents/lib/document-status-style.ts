@@ -1,4 +1,4 @@
-import type { DocumentStatus } from "@/data/mock/documents"
+import type { DocumentStatus } from "@/features/documents/types/document"
 
 export interface DocumentStatusStyle {
   label: string

@@ -3,7 +3,7 @@
 import { CheckCircle2, Plus, X } from "lucide-react"
 import { useMemo, useState } from "react"
 
-import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 import type { QuestionType } from "@/features/tests/schemas/generated-test-schema"
 import { Button } from "@/shared/ui/button"
 

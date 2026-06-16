@@ -31,16 +31,16 @@ import {
 } from "@/features/tests/lib/publish-test-model"
 import { useResolvedReviewData } from "@/features/tests/lib/use-resolved-review-data"
 import type { ReviewDataSource } from "@/features/tests/lib/use-resolved-review-data"
-import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
+import type { TestReviewData } from "@/features/tests/types/review"
 import type { StoredGeneratedTestDraft } from "@/features/tests/types/generated-test"
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface PublishTestPageProps {
-  document: MockDocumentDetail
-  reviewData: MockTestReviewData
+  document: DocumentDetail
+  reviewData: TestReviewData
   documentId: string
   generationRunId?: string | null
   reviewDataSource?: Exclude<ReviewDataSource, "session">
@@ -52,7 +52,7 @@ export function PublishTestPage({
   reviewData: initialReviewData,
   documentId,
   generationRunId: routeGenerationRunId,
-  reviewDataSource = "mock",
+  reviewDataSource = "supabase",
   recoveredDraft = null,
 }: PublishTestPageProps) {
   const router = useRouter()

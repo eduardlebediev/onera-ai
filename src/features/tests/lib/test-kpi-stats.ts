@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import { CheckCircle2, ClipboardList, FileEdit, Target, Users } from "lucide-react"
 
-import type { MockTest, TestStatus } from "@/features/tests/mock/tests"
+import type { TestListItem, TestStatus } from "@/features/tests/types/test"
 
 type TestKpiTone = "neutral" | "success" | "warning" | "danger"
 
@@ -14,7 +14,7 @@ export interface TestKpiStat {
   status?: TestStatus
 }
 
-export function getTestKpiStats(tests: MockTest[]): TestKpiStat[] {
+export function getTestKpiStats(tests: TestListItem[]): TestKpiStat[] {
   const totalCount = tests.length
   const publishedCount = tests.filter((test) => test.status === "published").length
   const draftCount = tests.filter((test) => test.status === "draft").length

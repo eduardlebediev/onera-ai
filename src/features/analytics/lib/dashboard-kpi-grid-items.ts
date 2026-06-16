@@ -8,7 +8,7 @@ import {
   Users,
 } from "lucide-react"
 
-import type { KpiStat } from "@/data/mock/admin-dashboard"
+import type { KpiStat } from "@/features/analytics/types/admin-dashboard"
 import type { KpiTone } from "@/shared/lib/kpi-tone-styles"
 import type { KpiStatGridItem } from "@/shared/ui/kpi-stat-grid"
 

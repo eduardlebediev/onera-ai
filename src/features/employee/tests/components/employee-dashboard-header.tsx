@@ -1,7 +1,7 @@
-import type { MockEmployee } from "@/features/tests/mock/employees"
+import type { AssignableEmployee } from "@/features/tests/types/assignment"
 
 interface EmployeeDashboardHeaderProps {
-  employee: MockEmployee
+  employee: AssignableEmployee
 }
 
 export function EmployeeDashboardHeader({ employee }: EmployeeDashboardHeaderProps) {

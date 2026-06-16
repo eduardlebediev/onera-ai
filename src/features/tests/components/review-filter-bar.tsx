@@ -1,6 +1,6 @@
 import { Settings } from "lucide-react"
 
-import type { ReviewStatus } from "@/features/tests/mock/generated-test-review"
+import type { ReviewStatus } from "@/features/tests/types/review"
 import { Badge } from "@/shared/ui/badge"
 import { Input } from "@/shared/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs"

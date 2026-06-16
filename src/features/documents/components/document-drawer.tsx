@@ -1,6 +1,6 @@
 "use client"
 
-import { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail as DocumentDetailData } from "@/features/documents/types/document"
 import { DocumentDetail } from "@/features/documents/components/document-detail"
 import type { DocumentLifecycleCompleteHandler } from "@/features/documents/components/document-lifecycle-actions"
 import { Maximize2, X } from "lucide-react"
@@ -10,7 +10,7 @@ import { Button } from "@/shared/ui/button"
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/shared/ui/drawer"
 
 interface DocumentDrawerProps {
-  document: MockDocumentDetail | null
+  document: DocumentDetailData | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onLifecycleComplete?: DocumentLifecycleCompleteHandler

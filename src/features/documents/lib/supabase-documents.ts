@@ -5,13 +5,13 @@ import type {
   DocumentFileType,
   DocumentStatus,
   DocumentTopic,
-  MockDocumentDetail,
-} from "@/data/mock/documents"
+  DocumentDetail,
+} from "@/features/documents/types/document"
 import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type DocumentsListResult = {
-  documents: MockDocumentDetail[]
+  documents: DocumentDetail[]
   source: "supabase" | "fallback"
 }
 
@@ -256,7 +256,7 @@ function mapDocumentToDetail(
   chunkRows: ChunkRow[],
   topicRows: TopicRow[] = [],
   versionRows: DocumentRow[] = [document]
-): MockDocumentDetail {
+): DocumentDetail {
   const { chunks, hasEmbeddedChunks } = mapChunkRows(chunkRows)
   const { topics, documentTopics } = resolveDocumentTopics(topicRows, chunks)
   const status = normalizeDocumentStatus(document.status)
@@ -490,7 +490,7 @@ export async function getDocumentsFromSupabase(): Promise<DocumentsListResult> {
 
 export async function getDocumentDetailById(
   routeOrDocumentId: string
-): Promise<MockDocumentDetail | null> {
+): Promise<DocumentDetail | null> {
   const apiDocumentId = resolveApiDocumentId(routeOrDocumentId)
 
   if (!apiDocumentId) {

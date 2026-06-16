@@ -1,6 +1,6 @@
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 
 export type EmployeeTestDisplayStatus =
   | "not_started"

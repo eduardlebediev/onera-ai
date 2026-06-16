@@ -1,17 +1,17 @@
 import Link from "next/link"
 import { ClipboardList } from "lucide-react"
 
-import type { MockTest, TestStatus } from "@/data/mock/admin-dashboard"
+import type { DashboardTest, DashboardTestStatus } from "@/features/analytics/types/admin-dashboard"
 import {
   getScoreColorClass,
-  getTestStatusBadgeConfig,
+  getDashboardTestStatusBadgeConfig,
 } from "@/features/analytics/lib/dashboard-formatters"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 
-function TestStatusBadge({ status }: { status: TestStatus }) {
-  const { label, className } = getTestStatusBadgeConfig(status)
+function DashboardTestStatusBadge({ status }: { status: DashboardTestStatus }) {
+  const { label, className } = getDashboardTestStatusBadgeConfig(status)
 
   return (
     <span
@@ -23,7 +23,7 @@ function TestStatusBadge({ status }: { status: TestStatus }) {
 }
 
 interface TestPerformanceTableProps {
-  tests: MockTest[]
+  tests: DashboardTest[]
 }
 
 export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
@@ -115,7 +115,7 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <TestStatusBadge status={test.status} />
+                    <DashboardTestStatusBadge status={test.status} />
                   </TableCell>
                 </TableRow>
               ))}

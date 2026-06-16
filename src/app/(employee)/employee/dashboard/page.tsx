@@ -4,7 +4,7 @@ import {
   getSupabaseEmployeeAssignments,
   type SupabaseEmployeeAssignmentsResult,
 } from "@/features/employee/tests/lib/supabase-employee-assignments"
-import type { MockEmployee } from "@/features/tests/mock/employees"
+import type { AssignableEmployee } from "@/features/tests/types/assignment"
 
 export const dynamic = "force-dynamic"
 
@@ -12,7 +12,7 @@ function buildEmployeeFallback(user: {
   userId: string
   email: string
   profile: { fullName: string | null }
-}): MockEmployee {
+}): AssignableEmployee {
   return {
     id: user.userId,
     name: user.profile.fullName ?? user.email,

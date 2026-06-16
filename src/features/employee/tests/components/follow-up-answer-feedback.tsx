@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowLeft, BookOpen, CheckCircle2, RotateCcw, XCircle } from "lucide-react"
 
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import { getEmployeeSourceDocumentHref } from "@/features/employee/documents/lib/employee-source-document-route"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import { Badge } from "@/shared/ui/badge"

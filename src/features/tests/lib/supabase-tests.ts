@@ -1,12 +1,12 @@
 import "server-only"
 
-import type { DocumentStatus } from "@/data/mock/documents"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
-import type { TestDifficulty, TestLanguage, TestStatus } from "@/features/tests/mock/tests"
+import type { DocumentStatus } from "@/features/documents/types/document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
+import type { TestDifficulty, TestLanguage, TestStatus } from "@/features/tests/types/test"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type TestsListResult = {
-  tests: ResolvedMockTest[]
+  tests: ResolvedTestListItem[]
   source: "supabase" | "fallback"
 }
 
@@ -115,7 +115,7 @@ function mapDocumentStatus(status: string): DocumentStatus {
 function mapTestRowToListItem(
   test: TestRow,
   sourceDocument: DocumentTitleRow | undefined
-): ResolvedMockTest {
+): ResolvedTestListItem {
   const createdAt = (test.published_at ?? test.created_at).slice(0, 10)
 
   return {

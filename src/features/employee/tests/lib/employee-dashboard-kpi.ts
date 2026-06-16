@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import { AlertTriangle, BookOpen, CheckCircle2, ClipboardList, Target } from "lucide-react"
 
 import { isEmployeeTestFinished } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import type { KpiTone } from "@/shared/lib/kpi-tone-styles"
 

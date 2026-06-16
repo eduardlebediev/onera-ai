@@ -1,8 +1,8 @@
 import "server-only"
 
 import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
-import type { TestAssignmentStatus } from "@/features/tests/mock/employees"
-import type { TestDifficulty } from "@/features/tests/mock/tests"
+import type { TestAssignmentStatus } from "@/features/tests/types/assignment"
+import type { TestDifficulty } from "@/features/tests/types/test"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"

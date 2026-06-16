@@ -5,12 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState } from "react"
 
-import { type MockDocumentDetail } from "@/data/mock/documents"
-import {
-  hasApiBackedDocument,
-  resolveApiDocumentId,
-  resolveReviewDocumentRouteId,
-} from "@/features/documents/lib/demo-document-ids"
+import { type DocumentDetail } from "@/features/documents/types/document"
+import { resolveApiDocumentId } from "@/features/documents/lib/demo-document-ids"
 import { DocumentTopicSelectionGroup } from "@/features/documents/components/document-topic-selection-group"
 import { GenerateTestForm } from "@/features/documents/components/generate-test-form"
 import {
@@ -31,9 +27,9 @@ import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 
 interface GenerateTestSetupProps {
-  document: MockDocumentDetail
+  document: DocumentDetail
   routeDocumentId: string
-  selectableDocuments: MockDocumentDetail[]
+  selectableDocuments: DocumentDetail[]
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -49,7 +45,7 @@ export function GenerateTestSetup({
 }: GenerateTestSetupProps) {
   const router = useRouter()
   const documentsById = useMemo(() => {
-    const map = new Map<string, MockDocumentDetail>()
+    const map = new Map<string, DocumentDetail>()
 
     for (const item of selectableDocuments) {
       map.set(item.id, item)
@@ -91,7 +87,6 @@ export function GenerateTestSetup({
     (selectedDocument) => !canGenerateTest(selectedDocument)
   )
   const isGeneratable = selectedDocuments.length > 0 && !firstInvalidSelectedDocument
-  const canCallApi = hasApiBackedDocument(routeDocumentId)
   const isLatestVersion = document.isLatestVersion !== false
   const latestDocumentId = document.latestDocumentId ?? document.id
   const canPreview =
@@ -100,7 +95,6 @@ export function GenerateTestSetup({
     selectedChunkIds.length > 0 &&
     selectedTopicIds.length > 0 &&
     (isLatestVersion || hasAcceptedOldVersion)
-  const reviewDocumentId = resolveReviewDocumentRouteId(routeDocumentId)
 
   const handleSettingsChange = useCallback((updates: Partial<GenerateTestSettings>) => {
     setSettings((currentSettings) => ({ ...currentSettings, ...updates }))
@@ -233,10 +227,6 @@ export function GenerateTestSetup({
     setGenerationError(null)
   }, [defaultChunkIds, defaultSettings, defaultTopics, initialDocumentId])
 
-  const handleMockPreview = useCallback(() => {
-    router.push(`/admin/tests/review?documentId=${encodeURIComponent(reviewDocumentId)}`)
-  }, [reviewDocumentId, router])
-
   const handleGeneratePreview = useCallback(async () => {
     if (!canPreview || isGenerating) return
 
@@ -248,7 +238,7 @@ export function GenerateTestSetup({
     })
 
     if (apiDocumentIds.length === 0) {
-      handleMockPreview()
+      setGenerationError("Select at least one saved Supabase document before generating a test.")
       return
     }
 
@@ -291,7 +281,6 @@ export function GenerateTestSetup({
     }
   }, [
     canPreview,
-    handleMockPreview,
     isGenerating,
     router,
     selectedChunkIds,
@@ -311,11 +300,9 @@ export function GenerateTestSetup({
           <p className="mt-1 typography-p text-muted-foreground">
             Configure test settings from one or more source documents, topics, and chunks.
           </p>
-          {canCallApi ? (
-            <p className="mt-1 typography-small text-muted-foreground">
-              AI-generated draft. Review before publishing.
-            </p>
-          ) : null}
+          <p className="mt-1 typography-small text-muted-foreground">
+            AI-generated draft. Review before publishing.
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" size="lg">
@@ -370,9 +357,6 @@ export function GenerateTestSetup({
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
               <p>{generationError}</p>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={handleMockPreview}>
-              Continue with mock preview
-            </Button>
           </div>
         ) : null}
 

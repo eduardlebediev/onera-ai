@@ -1,4 +1,9 @@
-import type { KpiStat, MockDocument, MockTest, WeeklyCompletion } from "@/data/mock/admin-dashboard"
+import type {
+  KpiStat,
+  DashboardDocument,
+  DashboardTest,
+  WeeklyCompletion,
+} from "@/features/analytics/types/admin-dashboard"
 import type { AdminDashboardRecentAttempt } from "@/features/analytics/lib/supabase-admin-dashboard"
 import { DashboardHeader } from "@/features/analytics/components/dashboard-header"
 import { KpiCards } from "@/features/analytics/components/kpi-cards"
@@ -14,8 +19,8 @@ interface AdminDashboardProps {
   generateTestHref: string
   kpiStats: KpiStat[]
   loadError?: boolean
-  recentDocuments: MockDocument[]
-  testPerformance: MockTest[]
+  recentDocuments: DashboardDocument[]
+  testPerformance: DashboardTest[]
   weeklyCompletions: WeeklyCompletion[]
   recentAttempts?: AdminDashboardRecentAttempt[]
 }
@@ -39,7 +44,7 @@ export function AdminDashboard({
           <CardContent className="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <p className="typography-h3 font-semibold">Dashboard data could not be loaded</p>
             <p className="max-w-md typography-p text-muted-foreground">
-              Refresh the page or try again later. No demo fallback data is shown.
+              Refresh the page or try again later. Only Supabase data is shown.
             </p>
           </CardContent>
         </Card>

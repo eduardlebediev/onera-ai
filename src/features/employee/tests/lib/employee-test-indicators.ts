@@ -6,7 +6,7 @@ import {
   isEmployeeTestFinished,
   isEmployeeTestOverdue,
 } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 
 export type EmployeeTestPriorityIndicatorId = "overdue" | "due_soon" | "low_score" | "required"
 

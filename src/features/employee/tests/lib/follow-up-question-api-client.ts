@@ -1,6 +1,6 @@
 "use client"
 
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import {
   FollowUpQuestionPublicOutputSchema,
   type FollowUpAnswerResult,

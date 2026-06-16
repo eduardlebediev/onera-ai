@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import type { TestAssignmentsSummary, TestStatus } from "@/features/tests/mock/tests"
+import type { TestAssignmentsSummary, TestStatus } from "@/features/tests/types/test"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"

@@ -6,7 +6,7 @@ import {
 } from "@/features/analytics/lib/supabase-admin-dashboard"
 import { requireAdminUser } from "@/features/auth/lib/require-auth"
 import { getNewTestRoute } from "@/features/tests/lib/new-test-route"
-import type { MockDocument } from "@/data/mock/admin-dashboard"
+import type { DashboardDocument } from "@/features/analytics/types/admin-dashboard"
 
 export const dynamic = "force-dynamic"
 
@@ -15,7 +15,7 @@ export default async function DashboardPage() {
   const organizationId = user.membership.organizationId
 
   let dashboardMetrics = buildEmptyAdminDashboardMetrics()
-  let dashboardRecentDocuments: MockDocument[] = []
+  let dashboardRecentDocuments: DashboardDocument[] = []
   let recentAttempts: AdminDashboardRecentAttempt[] = []
   let loadError = false
   let generateTestHref = "/admin/documents"

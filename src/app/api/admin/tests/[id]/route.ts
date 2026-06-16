@@ -46,7 +46,7 @@ export async function PATCH(request: Request, { params }: TestLifecycleRouteCont
 
     if (!isUuid(id)) {
       if (isMockTestId(id)) {
-        return jsonError("Mock tests use the local demo flow", 404)
+        return jsonError("Invalid test id", 400)
       }
 
       return jsonError("Invalid test id", 400)
@@ -93,7 +93,7 @@ export async function DELETE(request: Request, { params }: TestLifecycleRouteCon
 
     if (!isUuid(id)) {
       if (isMockTestId(id)) {
-        return jsonError("Mock tests use the local demo flow", 404)
+        return jsonError("Invalid test id", 400)
       }
 
       return jsonError("Invalid test id", 400)

@@ -3,7 +3,7 @@
 import { Maximize2, X } from "lucide-react"
 import Link from "next/link"
 
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import {
   isSourceBlockingValidity,
@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/shared/ui/drawer"
 
 interface TestDrawerProps {
-  test: ResolvedMockTest | null
+  test: ResolvedTestListItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }

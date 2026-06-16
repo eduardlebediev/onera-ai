@@ -46,7 +46,6 @@ export default async function AssignTestRoute({ params }: AssignTestRouteProps) 
       test={data.test}
       employees={data.employees}
       initialAssignments={data.assignments}
-      source="supabase"
     />
   )
 }

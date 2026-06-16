@@ -9,7 +9,7 @@ import {
 } from "@/features/employee/tests/components/follow-up-answer-feedback"
 import { submitFollowUpAnswerForQuestion } from "@/features/employee/tests/lib/follow-up-question-api-client"
 import type { PersistedFollowUpAnswer } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/lib/utils"
 

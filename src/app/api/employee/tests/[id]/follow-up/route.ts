@@ -71,7 +71,7 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
 
     if (!isUuid(testId)) {
       if (isMockTestId(testId)) {
-        return jsonError("Mock tests use the local demo follow-up flow", 404)
+        return jsonError("Invalid test id", 400)
       }
 
       return jsonError("Invalid test id", 400)

@@ -1,4 +1,4 @@
-import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 

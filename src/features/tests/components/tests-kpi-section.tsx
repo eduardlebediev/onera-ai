@@ -1,9 +1,9 @@
 import { getTestKpiStats } from "@/features/tests/lib/test-kpi-stats"
-import type { MockTest } from "@/features/tests/mock/tests"
+import type { TestListItem } from "@/features/tests/types/test"
 import { KpiStatGrid } from "@/shared/ui/kpi-stat-grid"
 
 interface TestsKpiSectionProps {
-  tests: MockTest[]
+  tests: TestListItem[]
 }
 
 export function TestsKpiSection({ tests }: TestsKpiSectionProps) {

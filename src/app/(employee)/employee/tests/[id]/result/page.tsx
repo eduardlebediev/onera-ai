@@ -1,6 +1,5 @@
 import { getCurrentUser } from "@/features/auth/lib/current-user"
 import { isUuid } from "@/features/documents/lib/demo-document-ids"
-import { EmployeeTestResultLoader } from "@/features/employee/tests/components/employee-test-result-loader"
 import { TestResultNotFound } from "@/features/employee/tests/components/test-result-not-found"
 import { TestResultPage } from "@/features/employee/tests/components/test-result-page"
 import { getPersistedEmployeeTestResult } from "@/features/employee/tests/lib/supabase-employee-attempts"
@@ -40,7 +39,7 @@ export default async function EmployeeTestResultRoute({
   }
 
   if (!isUuid(id)) {
-    return <EmployeeTestResultLoader testId={id} />
+    return <TestResultNotFound />
   }
 
   if (!attemptId) {

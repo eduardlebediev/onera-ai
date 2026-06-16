@@ -20,21 +20,15 @@ import {
   type AssignmentSettings,
   type EmployeeFilter,
 } from "@/features/tests/lib/assign-employees-model"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
-import {
-  mockEmployees,
-  mockTestEmployeeAssignments,
-  type MockEmployee,
-  type TestEmployeeAssignment,
-} from "@/features/tests/mock/employees"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
+import type { AssignableEmployee, TestEmployeeAssignment } from "@/features/tests/types/assignment"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface AssignEmployeesPageProps {
-  test: ResolvedMockTest
-  employees?: MockEmployee[]
-  initialAssignments?: TestEmployeeAssignment[]
-  source?: "mock" | "supabase"
+  test: ResolvedTestListItem
+  employees: AssignableEmployee[]
+  initialAssignments: TestEmployeeAssignment[]
 }
 
 interface SuccessState {
@@ -44,9 +38,8 @@ interface SuccessState {
 
 export function AssignEmployeesPage({
   test,
-  employees = mockEmployees,
-  initialAssignments = mockTestEmployeeAssignments,
-  source = "mock",
+  employees,
+  initialAssignments,
 }: AssignEmployeesPageProps) {
   const [assignments, setAssignments] = useState<TestEmployeeAssignment[]>(initialAssignments)
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([])
@@ -100,78 +93,36 @@ export function AssignEmployeesPage({
     setIsAssigning(true)
     setErrorMessage(null)
 
-    if (source === "supabase") {
-      try {
-        const response = await fetch(`/api/admin/tests/${test.id}/assign`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userIds: selectedEmployeeIds,
-            deadline: new Date(`${settings.deadline}T00:00:00.000Z`).toISOString(),
-          }),
-        })
-
-        const payload = (await response.json().catch(() => null)) as {
-          error?: string
-          created?: Array<{ userId: string; status: TestEmployeeAssignment["status"] }>
-        } | null
-
-        if (!response.ok) {
-          throw new Error(payload?.error ?? "Failed to assign test")
-        }
-
-        const createdAssignments = payload?.created ?? []
-        const assignedCount = createdAssignments.length
-
-        setAssignments((current) => [
-          ...current,
-          ...createdAssignments.map((assignment) => ({
-            testId: test.id,
-            employeeId: assignment.userId,
-            status: assignment.status,
-          })),
-        ])
-        setSuccessState({
-          assignedCount,
-          deadline: settings.deadline,
-        })
-        toast.success(
-          `${assignedCount} employee${assignedCount === 1 ? "" : "s"} assigned successfully`
-        )
-        setSelectedEmployeeIds([])
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Failed to assign test")
-        toast.error("Assignment failed. Try again.")
-      } finally {
-        setIsAssigning(false)
-      }
-
-      return
-    }
-
-    window.setTimeout(() => {
-      const assignedCount = selectedEmployeeIds.length
-
-      setAssignments((current) => {
-        const next = [...current]
-
-        for (const employeeId of selectedEmployeeIds) {
-          const existingIndex = next.findIndex(
-            (item) => item.testId === test.id && item.employeeId === employeeId
-          )
-
-          if (existingIndex === -1) {
-            next.push({
-              testId: test.id,
-              employeeId,
-              status: "not_started",
-            })
-          }
-        }
-
-        return next
+    try {
+      const response = await fetch(`/api/admin/tests/${test.id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userIds: selectedEmployeeIds,
+          deadline: new Date(`${settings.deadline}T00:00:00.000Z`).toISOString(),
+        }),
       })
 
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string
+        created?: Array<{ userId: string; status: TestEmployeeAssignment["status"] }>
+      } | null
+
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Failed to assign test")
+      }
+
+      const createdAssignments = payload?.created ?? []
+      const assignedCount = createdAssignments.length
+
+      setAssignments((current) => [
+        ...current,
+        ...createdAssignments.map((assignment) => ({
+          testId: test.id,
+          employeeId: assignment.userId,
+          status: assignment.status,
+        })),
+      ])
       setSuccessState({
         assignedCount,
         deadline: settings.deadline,
@@ -179,8 +130,13 @@ export function AssignEmployeesPage({
       toast.success(
         `${assignedCount} employee${assignedCount === 1 ? "" : "s"} assigned successfully`
       )
+      setSelectedEmployeeIds([])
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to assign test")
+      toast.error("Assignment failed. Try again.")
+    } finally {
       setIsAssigning(false)
-    }, 700)
+    }
   }
 
   const handleAssignMore = () => {

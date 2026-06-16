@@ -2,7 +2,7 @@ import { CheckCircle2, Clock, ExternalLink, FileText, XCircle } from "lucide-rea
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import type { DocumentStatus } from "@/data/mock/documents"
+import type { DocumentStatus } from "@/features/documents/types/document"
 import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
 import type { SavedTestSourceDocument } from "@/features/tests/lib/supabase-test-detail"
 import { Badge } from "@/shared/ui/badge"

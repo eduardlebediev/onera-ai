@@ -1,4 +1,4 @@
-import type { TestResultsSummary } from "@/features/tests/mock/tests"
+import type { TestResultsSummary } from "@/features/tests/types/test"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"

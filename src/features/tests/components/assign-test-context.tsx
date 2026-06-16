@@ -1,13 +1,13 @@
 import { FileText } from "lucide-react"
 import Link from "next/link"
 
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface AssignTestContextProps {
-  test: ResolvedMockTest
+  test: ResolvedTestListItem
 }
 
 function ContextItem({ label, value }: { label: string; value: string | number }) {

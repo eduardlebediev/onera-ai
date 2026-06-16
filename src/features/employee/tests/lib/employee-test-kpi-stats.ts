@@ -5,7 +5,7 @@ import {
   isEmployeeTestFinished,
   isEmployeeTestOverdue,
 } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 
 type EmployeeTestKpiTone = "neutral" | "success" | "warning" | "danger"
 

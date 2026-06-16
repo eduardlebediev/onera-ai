@@ -1,10 +1,10 @@
 import type {
-  MockTestReviewData,
+  TestReviewData,
   ReviewDifficulty,
   ReviewLanguage,
   ReviewQuestion,
   ReviewStatus,
-} from "@/features/tests/mock/generated-test-review"
+} from "@/features/tests/types/review"
 import { buildSourceLabel } from "@/features/tests/lib/source-label"
 import type { GeneratedTestQuestion } from "@/features/tests/schemas/generated-test-schema"
 import type {
@@ -250,7 +250,7 @@ export function mapStoredDraftToReviewData(
   stored: StoredGeneratedTestDraft,
   selectedTopics?: string[],
   selectedChunksCount?: number
-): MockTestReviewData {
+): TestReviewData {
   const draft = stored.draft
   const topicsFromQuestions = [...new Set(draft.questions.map((question) => question.topic))]
 

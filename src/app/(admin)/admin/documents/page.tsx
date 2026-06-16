@@ -29,7 +29,7 @@ function DocumentsLoadErrorState() {
       <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
         <p className="typography-h3 font-semibold">Documents could not be loaded</p>
         <p className="max-w-md typography-p text-muted-foreground">
-          Refresh the page or try again later. No demo fallback data is shown.
+          Refresh the page or try again later. Only Supabase data is shown.
         </p>
       </CardContent>
     </Card>

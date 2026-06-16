@@ -1,11 +1,11 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
+import { CheckCircle2, FileText, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, useEffect } from "react"
 
-import type { DocumentStatus } from "@/data/mock/documents"
-import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
+import type { DocumentStatus } from "@/features/documents/types/document"
+import type { ReviewQuestion, ReviewStatus } from "@/features/tests/types/review"
 import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
 import {
   patchReviewQuestions,
@@ -22,7 +22,7 @@ import {
 } from "@/features/tests/components/review-filter-bar"
 import { ReviewQuestionDetail } from "@/features/tests/components/review-question-detail"
 import { ReviewQuestionList } from "@/features/tests/components/review-question-list"
-import type { MockTestReviewData } from "@/features/tests/mock/generated-test-review"
+import type { TestReviewData } from "@/features/tests/types/review"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
@@ -30,7 +30,7 @@ import { Button } from "@/shared/ui/button"
 interface TestReviewPageProps {
   sourceDocumentTitle: string
   sourceDocumentStatus: DocumentStatus
-  reviewData: MockTestReviewData
+  reviewData: TestReviewData
   documentId: string
   generationRunId?: string | null
   draftTestId?: string | null
@@ -48,7 +48,7 @@ export function TestReviewPage({
   documentId,
   generationRunId: routeGenerationRunId,
   draftTestId: routeDraftTestId,
-  reviewDataSource = "mock",
+  reviewDataSource = "supabase",
 }: TestReviewPageProps) {
   const {
     reviewData,
@@ -57,7 +57,6 @@ export function TestReviewPage({
     generationRunId,
     draftTestId: resolvedDraftTestId,
     isHydrated,
-    source,
   } = useResolvedReviewData(documentId, fallbackReviewData, routeGenerationRunId, reviewDataSource)
 
   const [questionsOverride, setQuestionsOverride] = useState<ReviewQuestion[] | null>(null)
@@ -106,7 +105,6 @@ export function TestReviewPage({
   const selectedQuestion = selectedQuestionIndex !== -1 ? questions[selectedQuestionIndex] : null
 
   const canPublish = approvedQuestions > 0
-  const showDemoFallbackBanner = isHydrated && source === "mock"
   const draftTestId = routeDraftTestId ?? resolvedDraftTestId ?? null
 
   function buildQuestionPayload(question: ReviewQuestion, orderIndex: number) {
@@ -379,12 +377,6 @@ export function TestReviewPage({
               )}
             </div>
 
-            {showDemoFallbackBanner ? (
-              <div className="flex items-start gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
-                <AlertCircle className="mt-0.5 size-4 shrink-0 text-primary" />
-                <span>Showing demo data. Generate a test to see real AI-generated questions.</span>
-              </div>
-            ) : null}
             {actionError ? (
               <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {actionError}

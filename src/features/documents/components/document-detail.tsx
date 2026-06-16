@@ -14,7 +14,11 @@ import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-import type { DocumentStatus, DocumentTopic, MockDocumentDetail } from "@/data/mock/documents"
+import type {
+  DocumentStatus,
+  DocumentTopic,
+  DocumentDetail,
+} from "@/features/documents/types/document"
 import { DocumentDownloadButton } from "@/features/documents/components/document-download-button"
 import {
   DocumentLifecycleActions,
@@ -33,7 +37,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 
 interface DocumentDetailProps {
-  document: MockDocumentDetail
+  document: DocumentDetail
   onLifecycleComplete?: DocumentLifecycleCompleteHandler
   showBreadcrumbs?: boolean
 }
@@ -130,7 +134,7 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function getDocumentTopics(document: MockDocumentDetail): DocumentTopic[] {
+function getDocumentTopics(document: DocumentDetail): DocumentTopic[] {
   if (document.documentTopics && document.documentTopics.length > 0) {
     return document.documentTopics
   }

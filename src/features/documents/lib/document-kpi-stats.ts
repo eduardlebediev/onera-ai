@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import { AlertTriangle, CheckCircle2, Clock, FileText } from "lucide-react"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 
 type DocumentKpiTone = "neutral" | "success" | "warning" | "danger"
 
@@ -12,10 +12,10 @@ export interface DocumentKpiStat {
   description: string
   icon: LucideIcon
   tone: DocumentKpiTone
-  status?: MockDocumentDetail["status"]
+  status?: DocumentDetail["status"]
 }
 
-export function getDocumentKpiStats(documents: MockDocumentDetail[]): DocumentKpiStat[] {
+export function getDocumentKpiStats(documents: DocumentDetail[]): DocumentKpiStat[] {
   const totalCount = documents.length
   const readyCount = documents.filter((d) => d.status === "ready").length
   const processingCount = documents.filter((d) => d.status === "processing").length

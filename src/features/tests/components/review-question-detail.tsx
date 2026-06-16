@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-import type { ReviewQuestion, ReviewStatus } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion, ReviewStatus } from "@/features/tests/types/review"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 

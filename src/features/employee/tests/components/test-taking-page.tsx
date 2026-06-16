@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 import { TestProgressPanel } from "@/features/employee/tests/components/test-progress-panel"
@@ -13,43 +13,33 @@ import {
 } from "@/features/employee/tests/lib/employee-attempt-api-client"
 import {
   getSupabaseTestTakingProgress,
-  getTestTakingProgress,
-  isQuestionAnswered,
   isSupabaseQuestionAnswered,
-  isSupabaseTakeableTest,
-  type EmployeeTakeableTest,
+  type SupabaseEmployeeTakeableTest,
   type SupabaseTestTakingAnswers,
-  type TestTakingAnswers,
 } from "@/features/employee/tests/lib/test-taking-state"
-import { saveTakeSession } from "@/features/employee/tests/lib/take-session"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface TestTakingPageProps {
-  test: EmployeeTakeableTest
+  test: SupabaseEmployeeTakeableTest
 }
 
 const MIN_START_ATTEMPT_LOADING_MS = 350
 
 export function TestTakingPage({ test }: TestTakingPageProps) {
   const router = useRouter()
-  const startedAtRef = useRef(Date.now())
-  const isSupabase = isSupabaseTakeableTest(test)
 
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [mockAnswers, setMockAnswers] = useState<TestTakingAnswers>({})
   const [supabaseAnswers, setSupabaseAnswers] = useState<SupabaseTestTakingAnswers>({})
   const [attemptId, setAttemptId] = useState<string | null>(null)
-  const [isStartingAttempt, setIsStartingAttempt] = useState(isSupabase)
+  const [isStartingAttempt, setIsStartingAttempt] = useState(true)
   const [startAttemptError, setStartAttemptError] = useState<string | null>(null)
   const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isSupabase) return
-
     let cancelled = false
 
     async function ensureAttemptStarted() {
@@ -87,7 +77,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     return () => {
       cancelled = true
     }
-  }, [isSupabase, test.id])
+  }, [test.id])
 
   const questions = test.questions
   const totalQuestions = questions.length
@@ -95,56 +85,28 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
   const isFirstQuestion = currentIndex === 0
   const isLastQuestion = currentIndex === totalQuestions - 1
 
-  const supabaseQuestion = isSupabaseTakeableTest(test) ? test.questions[currentIndex] : null
-
   const hasCurrentAnswer = currentQuestion
-    ? supabaseQuestion
-      ? isSupabaseQuestionAnswered(
-          supabaseAnswers,
-          supabaseQuestion.id,
-          supabaseQuestion.questionType
-        )
-      : isQuestionAnswered(mockAnswers, currentQuestion.id)
+    ? isSupabaseQuestionAnswered(supabaseAnswers, currentQuestion.id, currentQuestion.questionType)
     : false
 
   const progress = useMemo(() => {
-    if (isSupabase && isSupabaseTakeableTest(test)) {
-      return getSupabaseTestTakingProgress(test.questions, supabaseAnswers)
-    }
-
-    if (!isSupabaseTakeableTest(test)) {
-      return getTestTakingProgress(test.questions, mockAnswers)
-    }
-
-    return { answeredCount: 0, unansweredCount: totalQuestions, completionPercent: 0 }
-  }, [isSupabase, test, supabaseAnswers, mockAnswers, totalQuestions])
+    return getSupabaseTestTakingProgress(test.questions, supabaseAnswers)
+  }, [test.questions, supabaseAnswers])
 
   const questionStates = useMemo(
     () =>
       questions.map((question, index) => {
         if (index === currentIndex) return "current" as const
-        const answered = isSupabaseTakeableTest(test)
-          ? isSupabaseQuestionAnswered(
-              supabaseAnswers,
-              test.questions[index].id,
-              test.questions[index].questionType
-            )
-          : isQuestionAnswered(mockAnswers, question.id)
+        const answered = isSupabaseQuestionAnswered(
+          supabaseAnswers,
+          test.questions[index].id,
+          test.questions[index].questionType
+        )
         if (answered) return "answered" as const
         return "unanswered" as const
       }),
-    [questions, currentIndex, test, supabaseAnswers, mockAnswers]
+    [questions, currentIndex, test.questions, supabaseAnswers]
   )
-
-  function handleSelectMockAnswer(answer: string) {
-    if (!currentQuestion) return
-    setMockAnswers((previous) => ({
-      ...previous,
-      [currentQuestion.id]: answer,
-    }))
-    setShowIncompleteWarning(false)
-    setSubmitError(null)
-  }
 
   function handleSelectSupabaseOptionIds(optionIds: string[]) {
     if (!currentQuestion) return
@@ -199,61 +161,44 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     setIsSubmitting(true)
     setSubmitError(null)
 
-    if (isSupabase) {
-      if (!attemptId) {
-        setSubmitError("Test attempt is not ready yet. Please wait and try again.")
-        setIsSubmitting(false)
-        return
-      }
-
-      try {
-        const payload = {
-          attemptId,
-          answers: isSupabaseTakeableTest(test)
-            ? test.questions.map((question) => {
-                const answer = supabaseAnswers[question.id]
-                if (question.questionType === "open_question") {
-                  return {
-                    questionId: question.id,
-                    openText: typeof answer === "string" ? answer : "",
-                  }
-                }
-
-                return {
-                  questionId: question.id,
-                  selectedOptionIds: Array.isArray(answer) ? answer : [],
-                }
-              })
-            : [],
-        }
-
-        const result = await submitEmployeeTestAttempt(test.id, payload)
-        router.push(result.redirectTo)
-      } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : "Failed to submit test.")
-        setIsSubmitting(false)
-      }
-
+    if (!attemptId) {
+      setSubmitError("Test attempt is not ready yet. Please wait and try again.")
+      setIsSubmitting(false)
       return
     }
 
-    const elapsedMinutes = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 60000))
+    try {
+      const payload = {
+        attemptId,
+        answers: test.questions.map((question) => {
+          const answer = supabaseAnswers[question.id]
+          if (question.questionType === "open_question") {
+            return {
+              questionId: question.id,
+              openText: typeof answer === "string" ? answer : "",
+            }
+          }
 
-    window.setTimeout(() => {
-      saveTakeSession(test.id, {
-        answers: mockAnswers,
-        submittedAt: new Date().toISOString(),
-        timeSpentMinutes: elapsedMinutes,
-      })
-      router.push(`/employee/tests/${test.id}/result`)
-    }, 700)
+          return {
+            questionId: question.id,
+            selectedOptionIds: Array.isArray(answer) ? answer : [],
+          }
+        }),
+      }
+
+      const result = await submitEmployeeTestAttempt(test.id, payload)
+      router.push(result.redirectTo)
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Failed to submit test.")
+      setIsSubmitting(false)
+    }
   }
 
   if (!currentQuestion) {
     return null
   }
 
-  if (isSupabase && isStartingAttempt) {
+  if (isStartingAttempt) {
     return (
       <div className="page-shell">
         <Breadcrumbs
@@ -268,7 +213,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     )
   }
 
-  if (isSupabase && startAttemptError) {
+  if (startAttemptError) {
     return (
       <div className="page-shell">
         <div className="space-y-4">
@@ -312,33 +257,21 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
-          {isSupabaseTakeableTest(test) ? (
-            <TestQuestionCard
-              mode="supabase"
-              question={test.questions[currentIndex]}
-              questionNumber={currentIndex + 1}
-              totalQuestions={totalQuestions}
-              selectedOptionIds={(() => {
-                const answer = supabaseAnswers[test.questions[currentIndex].id]
-                return Array.isArray(answer) ? answer : []
-              })()}
-              openText={(() => {
-                const answer = supabaseAnswers[test.questions[currentIndex].id]
-                return typeof answer === "string" ? answer : ""
-              })()}
-              onSelectOptionIds={handleSelectSupabaseOptionIds}
-              onOpenTextChange={handleOpenTextChange}
-            />
-          ) : (
-            <TestQuestionCard
-              mode="mock"
-              question={test.questions[currentIndex]}
-              questionNumber={currentIndex + 1}
-              totalQuestions={totalQuestions}
-              selectedAnswer={mockAnswers[currentQuestion.id]}
-              onSelectAnswer={handleSelectMockAnswer}
-            />
-          )}
+          <TestQuestionCard
+            question={test.questions[currentIndex]}
+            questionNumber={currentIndex + 1}
+            totalQuestions={totalQuestions}
+            selectedOptionIds={(() => {
+              const answer = supabaseAnswers[test.questions[currentIndex].id]
+              return Array.isArray(answer) ? answer : []
+            })()}
+            openText={(() => {
+              const answer = supabaseAnswers[test.questions[currentIndex].id]
+              return typeof answer === "string" ? answer : ""
+            })()}
+            onSelectOptionIds={handleSelectSupabaseOptionIds}
+            onOpenTextChange={handleOpenTextChange}
+          />
 
           <div className="lg:hidden">
             <TestProgressPanel

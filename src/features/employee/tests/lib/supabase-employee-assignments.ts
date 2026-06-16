@@ -1,9 +1,9 @@
 import "server-only"
 
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
-import type { TestAssignmentStatus, MockEmployee } from "@/features/tests/mock/employees"
-import type { TestDifficulty } from "@/features/tests/mock/tests"
+import type { TestAssignmentStatus, AssignableEmployee } from "@/features/tests/types/assignment"
+import type { TestDifficulty } from "@/features/tests/types/test"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 import { getEmployeeCompletedAttemptStats } from "./supabase-employee-progress"
@@ -53,7 +53,7 @@ type MemberRow = {
 }
 
 export type SupabaseEmployeeAssignmentsResult = {
-  employee: MockEmployee | null
+  employee: AssignableEmployee | null
   tests: EmployeeAssignedTest[]
 }
 
@@ -105,7 +105,7 @@ function getProgressPercent(status: TestAssignmentStatus): number {
   return 0
 }
 
-async function getEmployeeProfile(userId: string): Promise<MockEmployee | null> {
+async function getEmployeeProfile(userId: string): Promise<AssignableEmployee | null> {
   const supabase = createAdminClient()
 
   const [{ data: profile, error: profileError }, { data: member, error: memberError }] =

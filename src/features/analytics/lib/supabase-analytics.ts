@@ -1,6 +1,10 @@
 import "server-only"
 
-import type { KpiStat, MockTest, TestStatus } from "@/data/mock/admin-dashboard"
+import type {
+  KpiStat,
+  DashboardTest,
+  DashboardTestStatus,
+} from "@/features/analytics/types/admin-dashboard"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 type TestRow = {
@@ -79,10 +83,10 @@ export type AdminAnalyticsData = {
   difficultQuestions: AnalyticsDifficultQuestion[]
   failedEmployees: AnalyticsEmployeePerformance[]
   bestPerformers: AnalyticsEmployeePerformance[]
-  testPerformance: MockTest[]
+  testPerformance: DashboardTest[]
 }
 
-function mapTestStatus(status: string): TestStatus {
+function mapDashboardTestStatus(status: string): DashboardTestStatus {
   if (status === "published") return "active"
   if (status === "archived") return "archived"
   return "draft"
@@ -276,7 +280,7 @@ function buildTestPerformance(input: {
   tests: TestRow[]
   assignments: AssignmentRow[]
   completedAttempts: AttemptRow[]
-}): MockTest[] {
+}): DashboardTest[] {
   const assignmentsByTestId = new Map<string, AssignmentRow[]>()
   const completedAttemptsByTestId = new Map<string, AttemptRow[]>()
 
@@ -305,7 +309,7 @@ function buildTestPerformance(input: {
         isFinishedAssignment(assignment.status)
       ).length,
       averageScore: roundAverage(testCompletedAttempts.map((attempt) => attempt.score ?? 0)),
-      status: mapTestStatus(test.status),
+      status: mapDashboardTestStatus(test.status),
     }
   })
 }

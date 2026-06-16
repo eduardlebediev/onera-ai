@@ -10,8 +10,8 @@ import { toast } from "sonner"
 import {
   type DocumentFileType,
   type DocumentStatus,
-  type MockDocumentDetail,
-} from "@/data/mock/documents"
+  type DocumentDetail,
+} from "@/features/documents/types/document"
 import {
   canGenerateTest,
   getGenerateBlockReason,
@@ -71,7 +71,7 @@ const FILE_ICON_STYLES: Record<DocumentFileType, string> = {
 }
 
 interface DocumentsTableProps {
-  documents: MockDocumentDetail[]
+  documents: DocumentDetail[]
 }
 
 type LifecycleStatusOverrides = Record<
@@ -108,7 +108,7 @@ function formatFileSize(sizeMb: number): string {
   return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
 }
 
-function canBulkArchiveDocument(document: MockDocumentDetail): boolean {
+function canBulkArchiveDocument(document: DocumentDetail): boolean {
   return (
     hasApiBackedDocument(document.id) &&
     document.supportsArchiveDelete !== false &&
@@ -117,7 +117,7 @@ function canBulkArchiveDocument(document: MockDocumentDetail): boolean {
   )
 }
 
-function canBulkDeleteDocument(document: MockDocumentDetail): boolean {
+function canBulkDeleteDocument(document: DocumentDetail): boolean {
   return (
     hasApiBackedDocument(document.id) &&
     document.supportsArchiveDelete !== false &&
@@ -139,7 +139,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
   const [bulkDocumentAction, setBulkDocumentAction] = useState<BulkDocumentAction | null>(null)
   const [documentActionError, setDocumentActionError] = useState<string | null>(null)
 
-  const handleOpenDrawer = useCallback((document: MockDocumentDetail) => {
+  const handleOpenDrawer = useCallback((document: DocumentDetail) => {
     setSelectedDocumentId(document.id)
     setIsDrawerOpen(true)
   }, [])
@@ -360,7 +360,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     selectedDocuments,
   ])
 
-  const columns = useMemo<ColumnDef<MockDocumentDetail>[]>(
+  const columns = useMemo<ColumnDef<DocumentDetail>[]>(
     () => [
       {
         id: "select",
@@ -562,8 +562,8 @@ const DocumentTitleCell = memo(function DocumentTitleCell({
   document,
   onOpenDrawer,
 }: {
-  document: MockDocumentDetail
-  onOpenDrawer: (document: MockDocumentDetail) => void
+  document: DocumentDetail
+  onOpenDrawer: (document: DocumentDetail) => void
 }) {
   return (
     <button
@@ -608,11 +608,11 @@ const DocumentActionsCell = memo(function DocumentActionsCell({
   onDelete,
   onOpenDrawer,
 }: {
-  document: MockDocumentDetail
+  document: DocumentDetail
   pendingDocumentAction: PendingDocumentAction | null
   onRetry: (documentId: string) => Promise<void>
   onDelete: (documentId: string) => Promise<void>
-  onOpenDrawer: (document: MockDocumentDetail) => void
+  onOpenDrawer: (document: DocumentDetail) => void
 }) {
   const isFailed = document.status === "failed"
   const isProcessing = document.status === "processing"

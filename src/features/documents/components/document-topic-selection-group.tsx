@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { getGenerateTestTopics, getTopicSummary } from "./generate-test-model"
 
 interface DocumentTopicSelectionGroupProps {
-  document: MockDocumentDetail
+  document: DocumentDetail
   selectedTopicIds: string[]
   selectedChunkIds: string[]
   onToggleTopic: (documentId: string, topicKey: string, chunkIds: string[]) => void
@@ -19,11 +19,11 @@ interface DocumentTopicSelectionGroupProps {
   onClearAllChunks: (documentId: string) => void
 }
 
-function getTopicKey(document: MockDocumentDetail, topic: { id?: string; topic: string }): string {
+function getTopicKey(document: DocumentDetail, topic: { id?: string; topic: string }): string {
   return topic.id ?? `${document.id}:${topic.topic}`
 }
 
-function getDocumentTopics(document: MockDocumentDetail): Array<{ id?: string; topic: string }> {
+function getDocumentTopics(document: DocumentDetail): Array<{ id?: string; topic: string }> {
   if (document.documentTopics && document.documentTopics.length > 0) {
     return document.documentTopics
   }

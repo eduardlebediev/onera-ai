@@ -1,7 +1,7 @@
 import "server-only"
 
 import type { FollowUpQuestionOutput } from "@/features/employee/tests/schemas/follow-up-question-schema"
-import type { FollowUpQuestion } from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import type { Json } from "@/lib/supabase/types"
 import { createAdminClient } from "@/lib/supabase/admin"
 

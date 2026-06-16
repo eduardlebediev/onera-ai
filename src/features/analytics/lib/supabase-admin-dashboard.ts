@@ -2,12 +2,12 @@ import "server-only"
 
 import type {
   KpiStat,
-  MockAiDraft,
-  MockDocument,
-  MockTest,
-  TestStatus,
+  DashboardAiDraft,
+  DashboardDocument,
+  DashboardTest,
+  DashboardTestStatus,
   WeeklyCompletion,
-} from "@/data/mock/admin-dashboard"
+} from "@/features/analytics/types/admin-dashboard"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
@@ -23,15 +23,15 @@ export type AdminDashboardRecentAttempt = {
 
 export type AdminDashboardMetrics = {
   kpiStats: KpiStat[]
-  testPerformance: MockTest[]
+  testPerformance: DashboardTest[]
   weeklyCompletions: WeeklyCompletion[]
   recentAttempts: AdminDashboardRecentAttempt[]
 }
 
 export type AdminDashboardSupabaseResult = {
   metrics: AdminDashboardMetrics | null
-  recentDocuments: MockDocument[]
-  recentDrafts: MockAiDraft[]
+  recentDocuments: DashboardDocument[]
+  recentDrafts: DashboardAiDraft[]
 }
 
 type TestRow = {
@@ -107,7 +107,9 @@ type DocumentTitleRow = {
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
 
-function mapDocumentStatusToMock(status: string): Pick<MockDocument, "status" | "displayStatus"> {
+function mapDashboardDocumentStatusToMock(
+  status: string
+): Pick<DashboardDocument, "status" | "displayStatus"> {
   if (status === "uploaded") {
     return { status: "ready", displayStatus: "uploaded" }
   }
@@ -132,8 +134,8 @@ function mapDocumentStatusToMock(status: string): Pick<MockDocument, "status" | 
 function mapRecentDocumentRow(
   row: RecentDocumentRow,
   testCountsByDocumentId: Map<string, number>
-): MockDocument {
-  const statusFields = mapDocumentStatusToMock(row.status)
+): DashboardDocument {
+  const statusFields = mapDashboardDocumentStatusToMock(row.status)
 
   return {
     id: row.id,
@@ -176,7 +178,7 @@ function hasRecoverableReviewDraft(summary: Json): boolean {
 function mapRecentGenerationRunRow(
   row: RecentGenerationRunRow,
   documentTitlesById: Map<string, string>
-): MockAiDraft {
+): DashboardAiDraft {
   const documentTitle = row.document_id ? documentTitlesById.get(row.document_id) : null
 
   return {
@@ -251,7 +253,7 @@ async function fetchLinkedTestCountsByDocumentId(
 async function fetchRecentDocuments(
   supabase: ReturnType<typeof createAdminClient>,
   organizationId: string
-): Promise<MockDocument[]> {
+): Promise<DashboardDocument[]> {
   const { data, error } = await supabase
     .from("documents")
     .select("id, title, status, created_at")
@@ -276,7 +278,7 @@ async function fetchRecentDocuments(
 async function fetchRecentDrafts(
   supabase: ReturnType<typeof createAdminClient>,
   organizationId: string
-): Promise<MockAiDraft[]> {
+): Promise<DashboardAiDraft[]> {
   const { data, error } = await supabase
     .from("ai_generation_runs")
     .select("id, document_id, status, model, created_at, output_summary")
@@ -317,7 +319,7 @@ async function fetchRecentDrafts(
   return draftRunRows.map((row) => mapRecentGenerationRunRow(row, documentTitlesById))
 }
 
-function mapTestStatus(status: string): TestStatus {
+function mapDashboardTestStatus(status: string): DashboardTestStatus {
   if (status === "published") return "active"
   if (status === "archived") return "archived"
   return "draft"
@@ -445,8 +447,8 @@ export async function getAdminDashboardFromSupabase(
 
   const supabase = createAdminClient()
 
-  let recentDocuments: MockDocument[] = []
-  let recentDrafts: MockAiDraft[] = []
+  let recentDocuments: DashboardDocument[] = []
+  let recentDrafts: DashboardAiDraft[] = []
 
   try {
     recentDocuments = await fetchRecentDocuments(supabase, organizationId)
@@ -641,7 +643,7 @@ async function fetchAdminDashboardMetrics(
     completedAttemptsByTestId.set(attempt.test_id, existing)
   }
 
-  const testPerformance: MockTest[] = testRows.slice(0, 10).map((test) => {
+  const testPerformance: DashboardTest[] = testRows.slice(0, 10).map((test) => {
     const testAssignments = assignmentsByTestId.get(test.id) ?? []
     const testCompletedAttempts = completedAttemptsByTestId.get(test.id) ?? []
     const testCompletedAssignments = testAssignments.filter(
@@ -664,7 +666,7 @@ async function fetchAdminDashboardMetrics(
       assignedCount: testAssignments.length,
       completedCount: testCompletedAssignments,
       averageScore: testAverageScore,
-      status: mapTestStatus(test.status),
+      status: mapDashboardTestStatus(test.status),
     }
   })
 

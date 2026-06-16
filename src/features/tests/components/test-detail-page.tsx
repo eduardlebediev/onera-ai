@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import { TestAssignmentsSection } from "@/features/tests/components/test-assignments-section"
 import { TestDetailHeader } from "@/features/tests/components/test-detail-header"
 import { TestQuestionsSection } from "@/features/tests/components/test-questions-section"
@@ -10,7 +10,7 @@ import { TestSourceDocumentsSection } from "@/features/tests/components/test-sou
 import { Button } from "@/shared/ui/button"
 
 interface TestDetailPageProps {
-  test: ResolvedMockTest
+  test: ResolvedTestListItem
 }
 
 export function TestDetailPage({ test }: TestDetailPageProps) {
@@ -24,7 +24,7 @@ export function TestDetailPage({ test }: TestDetailPageProps) {
               <Button asChild variant="outline">
                 <Link
                   href={`/admin/tests/review?documentId=${encodeURIComponent(test.sourceDocument.documentId)}`}
-                  title="Opens document review flow; mock phase has no per-test draft editor yet"
+                  title="Opens document review flow; no per-test draft editor is available"
                 >
                   Edit draft
                 </Link>

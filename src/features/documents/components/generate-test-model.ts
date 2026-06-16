@@ -1,4 +1,4 @@
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 
 export type TestDifficulty = "easy" | "medium" | "hard"
 export type TestLanguage = "en" | "de"
@@ -34,13 +34,13 @@ export const TARGET_ROLE_OPTIONS = [
 
 export const MAX_SELECTABLE_DOCUMENTS = 5
 
-export function canGenerateTest(document: MockDocumentDetail): boolean {
+export function canGenerateTest(document: DocumentDetail): boolean {
   const hasEmbeddedChunks = document.hasEmbeddedChunks ?? document.chunks.length > 0
 
   return document.status === "ready" && document.chunks.length > 0 && hasEmbeddedChunks
 }
 
-export function getGenerateBlockReason(document: MockDocumentDetail): string {
+export function getGenerateBlockReason(document: DocumentDetail): string {
   if (document.status === "archived") {
     return "Archived documents cannot be used for test generation."
   }
@@ -66,21 +66,21 @@ export function getGenerateBlockReason(document: MockDocumentDetail): string {
 }
 
 /** Derive the unique set of topics represented by the given chunk ids. */
-export function deriveTopicsFromChunks(document: MockDocumentDetail, chunkIds: string[]): string[] {
+export function deriveTopicsFromChunks(document: DocumentDetail, chunkIds: string[]): string[] {
   const topics = document.chunks
     .filter((chunk) => chunkIds.includes(chunk.id))
     .map((chunk) => chunk.topic)
   return Array.from(new Set(topics))
 }
 
-export function getGenerateTestTopics(document: MockDocumentDetail): string[] {
+export function getGenerateTestTopics(document: DocumentDetail): string[] {
   return deriveTopicsFromChunks(
     document,
     document.chunks.map((chunk) => chunk.id)
   )
 }
 
-export function getDefaultGenerateTestSettings(document: MockDocumentDetail): GenerateTestSettings {
+export function getDefaultGenerateTestSettings(document: DocumentDetail): GenerateTestSettings {
   return {
     title: `${document.title} Knowledge Test`,
     difficulty: "medium",
@@ -91,14 +91,14 @@ export function getDefaultGenerateTestSettings(document: MockDocumentDetail): Ge
   }
 }
 
-export function getDefaultSelectedTopics(document: MockDocumentDetail): string[] {
+export function getDefaultSelectedTopics(document: DocumentDetail): string[] {
   if (document.chunks.length === 0) return []
   const chunkTopics = getGenerateTestTopics(document)
   return chunkTopics.slice(0, Math.min(chunkTopics.length, 3))
 }
 
 export function getDefaultSelectedChunkIds(
-  document: MockDocumentDetail,
+  document: DocumentDetail,
   selectedTopics: string[]
 ): string[] {
   if (document.chunks.length === 0 || selectedTopics.length === 0) return []
@@ -106,7 +106,7 @@ export function getDefaultSelectedChunkIds(
   return matchingChunks.map((chunk) => chunk.id)
 }
 
-export function getTopicSummary(document: MockDocumentDetail, topic: string): string {
+export function getTopicSummary(document: DocumentDetail, topic: string): string {
   const topicChunk = document.chunks.find((chunk) => chunk.topic === topic)
 
   if (topicChunk) {

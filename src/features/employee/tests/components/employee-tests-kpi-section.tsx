@@ -1,5 +1,5 @@
 import { getEmployeeTestKpiStats } from "@/features/employee/tests/lib/employee-test-kpi-stats"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { KpiStatGrid } from "@/shared/ui/kpi-stat-grid"
 
 interface EmployeeTestsKpiSectionProps {

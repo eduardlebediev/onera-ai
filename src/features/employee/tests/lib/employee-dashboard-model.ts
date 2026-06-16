@@ -10,11 +10,7 @@ import {
   isEmployeeTestOverdue,
   isEmployeeTestTakeBlocked,
 } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
-import {
-  getEmployeeTestAttemptByTestId,
-  type ResultWeakTopicRecord,
-} from "@/features/employee/tests/mock/test-results"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 const DUE_SOON_DAYS = 7
@@ -104,83 +100,6 @@ export function getNextRequiredTest(tests: EmployeeAssignedTest[]): NextRequired
     actionLabel,
     actionHref: action.href ?? "/employee/tests",
     statusLabel: formatEmployeeTestStatus(getEmployeeTestDisplayStatus(test)),
-  }
-}
-
-function getRecentFeedbackFromMock(tests: EmployeeAssignedTest[]): RecentFeedbackItem | null {
-  const finishedTests = tests.filter(isEmployeeTestFinished)
-  if (finishedTests.length === 0) return null
-
-  const withAttempts = finishedTests
-    .map((test) => {
-      const attempt = getEmployeeTestAttemptByTestId(test.id)
-      if (!attempt || test.score === null || test.passed === null) return null
-
-      return {
-        test,
-        attempt,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
-    .sort(
-      (a, b) =>
-        new Date(b.attempt.completedDate).getTime() - new Date(a.attempt.completedDate).getTime()
-    )
-
-  const latest = withAttempts[0]
-  if (!latest) return null
-
-  const weakTopicSummary =
-    latest.attempt.weakTopics.length > 0
-      ? latest.attempt.weakTopics.map((topic) => topic.topic).join(", ")
-      : "No weak topics identified in this attempt."
-
-  return {
-    testId: latest.test.id,
-    title: latest.test.title,
-    score: latest.test.score ?? 0,
-    passed: latest.test.passed ?? false,
-    statusLabel: latest.test.passed ? "Passed" : "Failed",
-    weakTopicSummary,
-    resultHref: latest.test.latestAttemptId
-      ? `/employee/tests/${latest.test.id}/result?attemptId=${latest.test.latestAttemptId}`
-      : `/employee/tests/${latest.test.id}/result`,
-  }
-}
-
-function getDashboardWeakTopicsFromMock(tests: EmployeeAssignedTest[]): DashboardWeakTopic[] {
-  const topicsByName = new Map<string, ResultWeakTopicRecord>()
-
-  for (const test of tests.filter(isEmployeeTestFinished)) {
-    const attempt = getEmployeeTestAttemptByTestId(test.id)
-    if (!attempt) continue
-
-    for (const topic of attempt.weakTopics) {
-      if (!topicsByName.has(topic.topic)) {
-        topicsByName.set(topic.topic, topic)
-      }
-    }
-  }
-
-  return Array.from(topicsByName.values())
-    .slice(0, 2)
-    .map((topic) => ({
-      topic: topic.topic,
-      explanation: topic.explanation,
-      recommendedAction: topic.recommendedAction,
-    }))
-}
-
-function hasMockOnlyTests(tests: EmployeeAssignedTest[]): boolean {
-  return tests.some((test) => !isUuid(test.id))
-}
-
-function getFallbackAttemptInsights(
-  tests: EmployeeAssignedTest[]
-): EmployeeDashboardAttemptInsights {
-  return {
-    recentFeedback: getRecentFeedbackFromMock(tests),
-    weakTopics: getDashboardWeakTopicsFromMock(tests),
   }
 }
 
@@ -394,20 +313,10 @@ export async function getEmployeeDashboardAttemptInsights(input: {
   tests: EmployeeAssignedTest[]
 }): Promise<EmployeeDashboardAttemptInsights> {
   try {
-    const insights = await getSupabaseAttemptInsights(input)
-
-    if (
-      insights.recentFeedback ||
-      insights.weakTopics.length > 0 ||
-      !hasMockOnlyTests(input.tests)
-    ) {
-      return insights
-    }
+    return await getSupabaseAttemptInsights(input)
   } catch (error) {
     console.error("Failed to load employee dashboard attempt insights from Supabase:", error)
   }
 
-  return hasMockOnlyTests(input.tests)
-    ? getFallbackAttemptInsights(input.tests)
-    : { recentFeedback: null, weakTopics: [] }
+  return { recentFeedback: null, weakTopics: [] }
 }

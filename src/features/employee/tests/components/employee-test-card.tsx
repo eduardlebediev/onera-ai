@@ -14,7 +14,7 @@ import {
   getEmployeeTestStatusBadgeClass,
   isEmployeeTestTakeBlocked,
 } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"

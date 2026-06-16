@@ -23,7 +23,7 @@ export async function POST(request: Request, { params }: SubmitAttemptRouteConte
 
     if (!isUuid(id)) {
       if (isMockTestId(id)) {
-        return jsonError("Mock tests use the local demo submit flow", 404)
+        return jsonError("Invalid test id", 400)
       }
 
       return jsonError("Invalid test id", 400)

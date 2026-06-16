@@ -9,18 +9,15 @@ import {
   loadGeneratedTestDraft,
 } from "@/features/tests/lib/generated-test-session"
 import { mergeReviewSession } from "@/features/tests/lib/review-session"
-import type {
-  MockTestReviewData,
-  ReviewQuestion,
-} from "@/features/tests/mock/generated-test-review"
+import type { TestReviewData, ReviewQuestion } from "@/features/tests/types/review"
 
-export type ReviewDataSource = "session" | "supabase" | "mock"
+export type ReviewDataSource = "session" | "supabase"
 
 let cachedClientSnapshot: { key: string; state: ResolvedReviewState } | null = null
 let cachedServerSnapshot: { key: string; state: ResolvedReviewState } | null = null
 
 export interface ResolvedReviewState {
-  reviewData: MockTestReviewData
+  reviewData: TestReviewData
   questions: ReviewQuestion[]
   isAiDraft: boolean
   generationRunId: string | null
@@ -31,7 +28,7 @@ export interface ResolvedReviewState {
 
 function getServerState(
   documentId: string,
-  fallbackReviewData: MockTestReviewData,
+  fallbackReviewData: TestReviewData,
   fallbackSource: Exclude<ReviewDataSource, "session">,
   generationRunId?: string | null
 ): ResolvedReviewState {
@@ -64,7 +61,7 @@ function getServerState(
 
 function buildClientCacheKey(
   documentId: string,
-  fallbackReviewData: MockTestReviewData,
+  fallbackReviewData: TestReviewData,
   state: ResolvedReviewState
 ): string {
   return JSON.stringify({
@@ -89,9 +86,9 @@ function buildClientCacheKey(
 
 function buildResolvedState(
   documentId: string,
-  fallbackReviewData: MockTestReviewData,
+  fallbackReviewData: TestReviewData,
   generationRunId?: string | null,
-  fallbackSource: Exclude<ReviewDataSource, "session"> = "mock"
+  fallbackSource: Exclude<ReviewDataSource, "session"> = "supabase"
 ): ResolvedReviewState {
   const stored = loadGeneratedTestDraft()
   const apiDocumentId = resolveApiDocumentId(documentId) ?? documentId
@@ -148,9 +145,9 @@ function buildResolvedState(
 
 export function useResolvedReviewData(
   documentId: string,
-  fallbackReviewData: MockTestReviewData,
+  fallbackReviewData: TestReviewData,
   generationRunId?: string | null,
-  fallbackSource: Exclude<ReviewDataSource, "session"> = "mock"
+  fallbackSource: Exclude<ReviewDataSource, "session"> = "supabase"
 ): ResolvedReviewState {
   const snapshot = useMemo(
     () => buildResolvedState(documentId, fallbackReviewData, generationRunId, fallbackSource),

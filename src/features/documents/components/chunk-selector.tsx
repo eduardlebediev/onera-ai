@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react"
 
-import { type DocumentChunk } from "@/data/mock/documents"
+import { type DocumentChunk } from "@/features/documents/types/document"
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"

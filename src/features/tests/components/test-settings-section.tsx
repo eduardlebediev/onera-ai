@@ -1,11 +1,11 @@
 import type { ReactNode } from "react"
 
-import type { MockTest } from "@/features/tests/mock/tests"
+import type { TestListItem } from "@/features/tests/types/test"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
 interface TestSettingsSectionProps {
-  test: MockTest
+  test: TestListItem
 }
 
 function SettingsRow({ label, value }: { label: string; value: ReactNode }) {

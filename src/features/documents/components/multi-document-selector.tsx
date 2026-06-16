@@ -3,14 +3,14 @@
 import { useMemo } from "react"
 import { Check } from "lucide-react"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { MAX_SELECTABLE_DOCUMENTS } from "@/features/documents/components/generate-test-model"
 import { Badge } from "@/shared/ui/badge"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
 interface MultiDocumentSelectorProps {
-  selectableDocuments: MockDocumentDetail[]
+  selectableDocuments: DocumentDetail[]
   selectedDocumentIds: string[]
   lockedDocumentId?: string
   onToggleDocument: (documentId: string) => void

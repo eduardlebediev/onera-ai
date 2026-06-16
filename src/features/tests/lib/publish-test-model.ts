@@ -1,9 +1,5 @@
-import type { MockDocumentDetail } from "@/data/mock/documents"
-import type {
-  MockTestReviewData,
-  ReviewQuestion,
-  ReviewStatus,
-} from "@/features/tests/mock/generated-test-review"
+import type { DocumentDetail } from "@/features/documents/types/document"
+import type { TestReviewData, ReviewQuestion, ReviewStatus } from "@/features/tests/types/review"
 
 export type PublishReadinessStatus = "ready" | "needs_attention"
 
@@ -18,8 +14,8 @@ export interface PublishReadinessCheck {
 export interface PublishTestContext {
   documentId: string
   sourceDocumentTitle: string
-  sourceDocumentStatus: MockDocumentDetail["status"]
-  reviewData: MockTestReviewData
+  sourceDocumentStatus: DocumentDetail["status"]
+  reviewData: TestReviewData
   totalQuestions: number
   approvedCount: number
   rejectedCount: number
@@ -34,8 +30,8 @@ function countByStatus(questions: ReviewQuestion[], status: ReviewStatus): numbe
 }
 
 export function buildPublishContext(
-  document: MockDocumentDetail,
-  reviewData: MockTestReviewData
+  document: DocumentDetail,
+  reviewData: TestReviewData
 ): PublishTestContext {
   const questions = reviewData.questions
 
@@ -54,11 +50,11 @@ export function buildPublishContext(
   }
 }
 
-export function getApprovedQuestions(reviewData: MockTestReviewData): ReviewQuestion[] {
+export function getApprovedQuestions(reviewData: TestReviewData): ReviewQuestion[] {
   return reviewData.questions.filter((question) => question.status === "approved")
 }
 
-export function getPublishableQuestions(reviewData: MockTestReviewData): ReviewQuestion[] {
+export function getPublishableQuestions(reviewData: TestReviewData): ReviewQuestion[] {
   return reviewData.questions.filter(
     (question) => question.status === "approved" || question.status === "edited"
   )

@@ -24,7 +24,7 @@ import type { SupabaseAssignmentSummary } from "@/features/tests/lib/supabase-as
 import type { SavedTestDetail } from "@/features/tests/lib/supabase-test-detail"
 import type { SupabaseEmployeeProgress } from "@/features/tests/lib/supabase-test-progress"
 import type { TestLifecycleImpact } from "@/features/tests/lib/test-lifecycle-api-client"
-import type { TestResultsSummary } from "@/features/tests/mock/tests"
+import type { TestResultsSummary } from "@/features/tests/types/test"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"

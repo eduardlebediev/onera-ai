@@ -1,7 +1,7 @@
 import "server-only"
 
-import type { TestResultsSummary } from "@/features/tests/mock/tests"
-import type { TestAssignmentStatus } from "@/features/tests/mock/employees"
+import type { TestResultsSummary } from "@/features/tests/types/test"
+import type { TestAssignmentStatus } from "@/features/tests/types/assignment"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type SupabaseEmployeeProgress = {

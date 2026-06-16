@@ -1,18 +1,18 @@
 import "server-only"
 
-import type { DocumentStatus } from "@/data/mock/documents"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { DocumentStatus } from "@/features/documents/types/document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import type {
   TestAssignmentsSummary,
   TestDifficulty,
   TestLanguage,
   TestStatus,
-} from "@/features/tests/mock/tests"
+} from "@/features/tests/types/test"
 import type {
-  MockEmployee,
+  AssignableEmployee,
   TestAssignmentStatus,
   TestEmployeeAssignment,
-} from "@/features/tests/mock/employees"
+} from "@/features/tests/types/assignment"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 type TestRow = {
@@ -73,8 +73,8 @@ export type SupabaseAssignedEmployee = {
 }
 
 export type SupabaseAssignPageData = {
-  test: ResolvedMockTest
-  employees: MockEmployee[]
+  test: ResolvedTestListItem
+  employees: AssignableEmployee[]
   assignments: TestEmployeeAssignment[]
   assignmentSummary: SupabaseAssignmentSummary
 }
@@ -196,7 +196,7 @@ function mapTestRowToResolvedTest(
   test: TestRow,
   sourceDocument: DocumentRow | null,
   assignmentSummary: SupabaseAssignmentSummary
-): ResolvedMockTest {
+): ResolvedTestListItem {
   const sourceDocumentId = test.source_document_id ?? "unknown"
 
   return {
@@ -347,7 +347,7 @@ async function getActiveEmployeeMembers(
 function mapMemberToEmployee(
   member: OrganizationMemberRow,
   profile: ProfileRow | undefined
-): MockEmployee | null {
+): AssignableEmployee | null {
   if (!member.user_id) return null
 
   return {
@@ -388,7 +388,7 @@ export async function getSupabaseAssignPageData(
       .map((member) =>
         mapMemberToEmployee(member, member.user_id ? profilesById.get(member.user_id) : undefined)
       )
-      .filter((employee): employee is MockEmployee => employee !== null),
+      .filter((employee): employee is AssignableEmployee => employee !== null),
     assignments: assignments.map((assignment) => ({
       testId: test.id,
       employeeId: assignment.user_id,

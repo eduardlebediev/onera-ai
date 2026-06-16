@@ -2,13 +2,13 @@
 
 import { Check, Plus } from "lucide-react"
 
-import { type MockDocumentDetail } from "@/data/mock/documents"
+import { type DocumentDetail } from "@/features/documents/types/document"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { getGenerateTestTopics, getTopicSummary } from "./generate-test-model"
 
 interface TopicSelectorProps {
-  document: MockDocumentDetail
+  document: DocumentDetail
   selectedTopics: string[]
   onToggleTopic: (topic: string) => void
 }

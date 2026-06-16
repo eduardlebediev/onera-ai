@@ -3,7 +3,7 @@
 import { TrendingUp } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts"
 
-import type { WeeklyCompletion } from "@/data/mock/admin-dashboard"
+import type { WeeklyCompletion } from "@/features/analytics/types/admin-dashboard"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { ChartContainer, type ChartConfig } from "@/shared/ui/chart"
 

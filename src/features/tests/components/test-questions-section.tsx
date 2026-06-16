@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react"
 
-import type { TestQuestion } from "@/features/tests/mock/tests"
+import type { TestQuestion } from "@/features/tests/types/test"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 

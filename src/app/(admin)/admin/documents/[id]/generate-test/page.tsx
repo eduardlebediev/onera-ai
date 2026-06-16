@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { GenerateTestSetup } from "@/features/documents/components/generate-test-setup"
 import { canGenerateTest } from "@/features/documents/components/generate-test-model"
-import { resolveMockDocumentByRouteId } from "@/features/documents/lib/demo-document-ids"
 import {
   getDocumentDetailById,
   getDocumentsFromSupabase,
@@ -13,7 +12,7 @@ interface GenerateTestPageProps {
   params: Promise<{ id: string }>
 }
 
-function isSelectableDocument(document: MockDocumentDetail): boolean {
+function isSelectableDocument(document: DocumentDetail): boolean {
   return (
     document.status === "ready" && document.isLatestVersion !== false && canGenerateTest(document)
   )
@@ -22,8 +21,8 @@ function isSelectableDocument(document: MockDocumentDetail): boolean {
 export default async function GenerateTestPage({ params }: GenerateTestPageProps) {
   const { id } = await params
 
-  let document: MockDocumentDetail | undefined
-  let selectableDocuments: MockDocumentDetail[] = []
+  let document: DocumentDetail | undefined
+  let selectableDocuments: DocumentDetail[] = []
 
   try {
     document = (await getDocumentDetailById(id)) ?? undefined
@@ -32,10 +31,6 @@ export default async function GenerateTestPage({ params }: GenerateTestPageProps
     selectableDocuments = documentsResult.documents.filter(isSelectableDocument)
   } catch (error) {
     console.error(`Failed to load document ${id} for generate-test:`, error)
-  }
-
-  if (!document) {
-    document = resolveMockDocumentByRouteId(id)
   }
 
   if (!document) {

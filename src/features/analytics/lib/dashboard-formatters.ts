@@ -1,24 +1,30 @@
-import type { DocumentDisplayStatus, MockDocument, TestStatus } from "@/data/mock/admin-dashboard"
+import type {
+  DashboardDocumentDisplayStatus,
+  DashboardDocument,
+  DashboardTestStatus,
+} from "@/features/analytics/types/admin-dashboard"
 
-export type DocumentStatusIcon = "check" | "loader" | "x" | "none"
+export type DashboardDocumentStatusIcon = "check" | "loader" | "x" | "none"
 
 export interface StatusBadgeConfig {
   label: string
   className: string
 }
 
-export interface DocumentStatusBadgeConfig extends StatusBadgeConfig {
-  icon: DocumentStatusIcon
+export interface DashboardDocumentStatusBadgeConfig extends StatusBadgeConfig {
+  icon: DashboardDocumentStatusIcon
 }
 
-export function getDocumentDisplayStatus(document: MockDocument): DocumentDisplayStatus {
+export function getDashboardDocumentDisplayStatus(
+  document: DashboardDocument
+): DashboardDocumentDisplayStatus {
   return document.displayStatus ?? document.status
 }
 
-export function getDocumentStatusBadgeConfig(
-  status: DocumentDisplayStatus
-): DocumentStatusBadgeConfig {
-  const map: Record<DocumentDisplayStatus, DocumentStatusBadgeConfig> = {
+export function getDashboardDocumentStatusBadgeConfig(
+  status: DashboardDocumentDisplayStatus
+): DashboardDocumentStatusBadgeConfig {
+  const map: Record<DashboardDocumentDisplayStatus, DashboardDocumentStatusBadgeConfig> = {
     ready: {
       label: "Ready",
       className: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -54,16 +60,16 @@ export function getDocumentStatusBadgeConfig(
   return map[status]
 }
 
-export function getDocumentActionLabel(document: MockDocument) {
-  const status = getDocumentDisplayStatus(document)
+export function getDocumentActionLabel(document: DashboardDocument) {
+  const status = getDashboardDocumentDisplayStatus(document)
 
   if (status === "failed") return "Retry"
   if (document.testCount === 0 && status === "ready") return "Create Test"
   return "View"
 }
 
-export function getTestStatusBadgeConfig(status: TestStatus): StatusBadgeConfig {
-  const map: Record<TestStatus, StatusBadgeConfig> = {
+export function getDashboardTestStatusBadgeConfig(status: DashboardTestStatus): StatusBadgeConfig {
+  const map: Record<DashboardTestStatus, StatusBadgeConfig> = {
     active: {
       label: "Published",
       className: "bg-emerald-100 text-emerald-700 border-emerald-200",

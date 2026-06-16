@@ -8,7 +8,7 @@ import { TestResultActions } from "@/features/employee/tests/components/test-res
 import { TestResultSummary } from "@/features/employee/tests/components/test-result-summary"
 import { TestWeakTopics } from "@/features/employee/tests/components/test-weak-topics"
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
-import type { FollowUpTopicStatus } from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpTopicStatus } from "@/features/employee/tests/types/follow-up"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 
 interface TestResultPageProps {

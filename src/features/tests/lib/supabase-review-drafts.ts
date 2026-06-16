@@ -2,7 +2,7 @@ import "server-only"
 
 import { z } from "zod"
 
-import type { DocumentStatus } from "@/data/mock/documents"
+import type { DocumentStatus } from "@/features/documents/types/document"
 import { mapStoredDraftToReviewData } from "@/features/tests/lib/generated-test-mapper"
 import { getDraftTestForReview } from "@/features/tests/lib/draft-test"
 import {

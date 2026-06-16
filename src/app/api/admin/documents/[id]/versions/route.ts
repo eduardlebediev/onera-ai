@@ -50,7 +50,7 @@ export async function POST(request: Request, { params }: DocumentVersionsRouteCo
 
     if (!documentId) {
       if (isMockDocumentId(id)) {
-        return jsonError("Mock documents use the local demo document flow", 404)
+        return jsonError("Invalid document id", 400)
       }
 
       return jsonError("Invalid document id", 400)

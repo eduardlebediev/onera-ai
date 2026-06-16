@@ -11,7 +11,7 @@ import {
   mapReviewStatusToDb,
   type ReviewStatus,
 } from "@/features/tests/schemas/review-question-schema"
-import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
 import { parseCorrectAnswer, parseOptions } from "@/shared/db/parse-json-fields"

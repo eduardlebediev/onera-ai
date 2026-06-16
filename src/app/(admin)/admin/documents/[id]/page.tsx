@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail as DocumentDetailData } from "@/features/documents/types/document"
 import { DocumentDetail } from "@/features/documents/components/document-detail"
 import { DocumentProcessingRefresher } from "@/features/documents/components/document-processing-refresher"
 import { getDocumentDetailById } from "@/features/documents/lib/supabase-documents"
@@ -9,7 +9,7 @@ interface DocumentDetailPageProps {
   params: Promise<{ id: string }>
 }
 
-async function resolveDocument(id: string): Promise<MockDocumentDetail | null> {
+async function resolveDocument(id: string): Promise<DocumentDetailData | null> {
   try {
     const supabaseDocument = await getDocumentDetailById(id)
 

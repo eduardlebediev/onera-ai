@@ -1,7 +1,7 @@
 import { CheckCircle2, Clock, FileEdit } from "lucide-react"
 import type { ReactNode } from "react"
 
-import type { TestStatus } from "@/features/tests/mock/tests"
+import type { TestStatus } from "@/features/tests/types/test"
 
 export interface TestStatusStyle {
   label: string

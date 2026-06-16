@@ -10,11 +10,11 @@ import {
   getNextRequiredTest,
 } from "@/features/employee/tests/lib/employee-dashboard-model"
 import { getEmployeeReminders } from "@/features/employee/tests/lib/supabase-employee-reminders"
-import type { EmployeeAssignedTest } from "@/features/employee/tests/mock/employee-tests"
-import type { MockEmployee } from "@/features/tests/mock/employees"
+import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
+import type { AssignableEmployee } from "@/features/tests/types/assignment"
 
 interface EmployeeDashboardProps {
-  employee: MockEmployee
+  employee: AssignableEmployee
   organizationId: string
   tests: EmployeeAssignedTest[]
   userId: string

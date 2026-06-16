@@ -8,10 +8,7 @@ import { generateFollowUpQuestionForAnswer } from "@/features/employee/tests/lib
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
 import type { PersistedFollowUpState } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
-import {
-  getFollowUpQuestionByOriginalQuestionId,
-  type FollowUpQuestion,
-} from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -91,14 +88,10 @@ export function TestAnswerReview({
     }
 
     if (!attemptId) {
-      const mockFollowUp = getFollowUpQuestionByOriginalQuestionId(item.questionId)
-
       setExpandedQuestionId(item.questionId)
       setFollowUpStateByQuestionId((current) => ({
         ...current,
-        [item.questionId]: mockFollowUp
-          ? { status: "ready", followUp: mockFollowUp }
-          : { status: "error" },
+        [item.questionId]: { status: "error" },
       }))
       return
     }

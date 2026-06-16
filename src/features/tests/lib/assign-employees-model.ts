@@ -1,10 +1,9 @@
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import type {
-  MockEmployee,
+  AssignableEmployee,
   TestAssignmentStatus,
   TestEmployeeAssignment,
-} from "@/features/tests/mock/employees"
-import { getAssignmentForEmployee } from "@/features/tests/mock/employees"
+} from "@/features/tests/types/assignment"
 
 export type EmployeeFilter = "all" | "not_assigned" | "in_progress" | "completed" | "at_risk"
 
@@ -16,7 +15,7 @@ export const EMPLOYEE_FILTER_OPTIONS: Array<{ label: string; value: EmployeeFilt
   { label: "At risk", value: "at_risk" },
 ]
 
-export interface EmployeeWithAssignmentStatus extends MockEmployee {
+export interface EmployeeWithAssignmentStatus extends AssignableEmployee {
   assignmentStatus: TestAssignmentStatus | "not_assigned"
 }
 
@@ -30,6 +29,14 @@ export interface AssignmentSummary {
   selectedCount: number
   alreadyAssignedCount: number
   newAssignmentsCount: number
+}
+
+function getAssignmentForEmployee(
+  assignments: TestEmployeeAssignment[],
+  testId: string,
+  employeeId: string
+): TestEmployeeAssignment | undefined {
+  return assignments.find((item) => item.testId === testId && item.employeeId === employeeId)
 }
 
 export function getDefaultDeadline(): string {
@@ -47,7 +54,7 @@ export function getDefaultAssignmentSettings(): AssignmentSettings {
 }
 
 export function enrichEmployeesWithAssignmentStatus(
-  employees: MockEmployee[],
+  employees: AssignableEmployee[],
   assignments: TestEmployeeAssignment[],
   testId: string
 ): EmployeeWithAssignmentStatus[] {

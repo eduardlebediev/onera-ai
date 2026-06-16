@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import type { DocumentVersion } from "@/data/mock/documents"
+import type { DocumentVersion } from "@/features/documents/types/document"
 import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
 import { Button } from "@/shared/ui/button"
 

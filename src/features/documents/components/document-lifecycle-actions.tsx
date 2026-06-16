@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { hasApiBackedDocument } from "@/features/documents/lib/demo-document-ids"
 import {
   archiveDocument,
@@ -85,7 +85,7 @@ export function DocumentLifecycleActions({
   document,
   onLifecycleComplete,
 }: {
-  document: MockDocumentDetail
+  document: DocumentDetail
   onLifecycleComplete?: DocumentLifecycleCompleteHandler
 }) {
   const router = useRouter()

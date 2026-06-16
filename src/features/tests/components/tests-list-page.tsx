@@ -11,14 +11,14 @@ import { TestDrawer } from "@/features/tests/components/test-drawer"
 import { TestsKpiSection } from "@/features/tests/components/tests-kpi-section"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { archiveTest, deleteTest } from "@/features/tests/lib/test-lifecycle-api-client"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import {
   isSourceBlockingValidity,
   normalizeTestSourceValidity,
   TEST_SOURCE_VALIDITY_STYLE,
 } from "@/features/tests/lib/test-source-validity-style"
 import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
-import type { TestStatus } from "@/features/tests/mock/tests"
+import type { TestStatus } from "@/features/tests/types/test"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
@@ -40,7 +40,7 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
 ]
 
 interface TestsListPageProps {
-  tests: ResolvedMockTest[]
+  tests: ResolvedTestListItem[]
   loadError?: boolean
   newTestHref: string
 }
@@ -74,7 +74,7 @@ function TestsLoadErrorState() {
       <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
         <p className="typography-h3 font-semibold">Tests could not be loaded</p>
         <p className="max-w-md typography-p text-muted-foreground">
-          Refresh the page or try again later. No demo fallback data is shown.
+          Refresh the page or try again later. Only Supabase data is shown.
         </p>
       </CardContent>
     </Card>
@@ -98,7 +98,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
     ? (tests.find((test) => test.id === selectedTestId) ?? null)
     : null
 
-  const handleOpenDrawer = useCallback((test: ResolvedMockTest) => {
+  const handleOpenDrawer = useCallback((test: ResolvedTestListItem) => {
     setSelectedTestId(test.id)
     setIsDrawerOpen(true)
   }, [])
@@ -168,7 +168,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
     }
   }, [canDeleteSelectedTests, clearSelection, router, selectedTests])
 
-  const columns = useMemo<ColumnDef<ResolvedMockTest>[]>(
+  const columns = useMemo<ColumnDef<ResolvedTestListItem>[]>(
     () => [
       {
         id: "select",
@@ -393,8 +393,8 @@ const TestTitleCell = memo(function TestTitleCell({
   test,
   onOpenDrawer,
 }: {
-  test: ResolvedMockTest
-  onOpenDrawer: (test: ResolvedMockTest) => void
+  test: ResolvedTestListItem
+  onOpenDrawer: (test: ResolvedTestListItem) => void
 }) {
   return (
     <button
@@ -423,7 +423,7 @@ const TestActionsCell = memo(function TestActionsCell({ testId }: { testId: stri
   )
 })
 
-const TestStatusCell = memo(function TestStatusCell({ test }: { test: ResolvedMockTest }) {
+const TestStatusCell = memo(function TestStatusCell({ test }: { test: ResolvedTestListItem }) {
   const statusStyle = TEST_STATUS_STYLE[test.status]
   const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
   const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]

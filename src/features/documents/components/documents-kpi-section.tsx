@@ -1,9 +1,9 @@
 import { getDocumentKpiStats } from "@/features/documents/lib/document-kpi-stats"
-import type { MockDocumentDetail } from "@/data/mock/documents"
+import type { DocumentDetail } from "@/features/documents/types/document"
 import { KpiStatGrid } from "@/shared/ui/kpi-stat-grid"
 
 interface DocumentsKpiSectionProps {
-  documents: MockDocumentDetail[]
+  documents: DocumentDetail[]
 }
 
 export function DocumentsKpiSection({ documents }: DocumentsKpiSectionProps) {

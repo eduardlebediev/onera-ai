@@ -9,7 +9,7 @@ import {
   getEmployeeTestDisplayStatus,
   getEmployeeTestStatusBadgeClass,
 } from "@/features/employee/tests/lib/employee-test-model"
-import type { EmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
+import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils"
 export type QuestionNavigatorState = "current" | "answered" | "unanswered"
 
 interface TestProgressPanelProps {
-  test: EmployeeTakeableTest
+  test: SupabaseEmployeeTakeableTest
   answeredCount: number
   unansweredCount: number
   completionPercent: number

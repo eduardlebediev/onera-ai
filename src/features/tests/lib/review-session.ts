@@ -1,4 +1,4 @@
-import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 
 const REVIEW_SESSION_PREFIX = "ontera-review-"
 

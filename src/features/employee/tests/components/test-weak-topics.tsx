@@ -1,9 +1,6 @@
 import { BookOpen } from "lucide-react"
 
-import {
-  getFollowUpTopicStatusLabel,
-  type FollowUpTopicStatus,
-} from "@/features/employee/tests/mock/follow-up-questions"
+import type { FollowUpTopicStatus } from "@/features/employee/tests/types/follow-up"
 import type { ResultWeakTopic } from "@/features/employee/tests/lib/test-result-model"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -22,6 +19,17 @@ function getFollowUpStatusBadgeClass(status: FollowUpTopicStatus): string {
       return "border-amber-200/60 bg-amber-50/50 text-amber-800 dark:border-amber-900/20 dark:bg-amber-900/10 dark:text-amber-400"
     case "needs_review":
       return "border-border/60 bg-muted/30 text-muted-foreground"
+  }
+}
+
+function getFollowUpTopicStatusLabel(status: FollowUpTopicStatus): string {
+  switch (status) {
+    case "needs_review":
+      return "Needs review"
+    case "follow_up_completed":
+      return "Follow-up completed"
+    case "topic_understood":
+      return "Topic understood"
   }
 }
 

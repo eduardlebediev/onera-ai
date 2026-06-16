@@ -1,13 +1,13 @@
 import { ChevronRight, FileText } from "lucide-react"
 import Link from "next/link"
 
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
 import { Badge } from "@/shared/ui/badge"
 
 interface TestDetailHeaderProps {
-  test: ResolvedMockTest
+  test: ResolvedTestListItem
 }
 
 export function TestDetailHeader({ test }: TestDetailHeaderProps) {

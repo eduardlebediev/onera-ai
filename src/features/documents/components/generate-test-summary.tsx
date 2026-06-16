@@ -3,12 +3,12 @@
 import { BarChart3, Clock, FileText, Globe, Info, List, Tag } from "lucide-react"
 import React from "react"
 
-import { type MockDocumentDetail } from "@/data/mock/documents"
+import { type DocumentDetail } from "@/features/documents/types/document"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card"
 import { type GenerateTestSettings } from "./generate-test-model"
 
 interface GenerateTestSummaryProps {
-  selectedDocuments: MockDocumentDetail[]
+  selectedDocuments: DocumentDetail[]
   settings: GenerateTestSettings
   selectedTopicsCount: number
   selectedChunksCount: number

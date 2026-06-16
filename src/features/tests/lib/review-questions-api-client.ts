@@ -1,4 +1,4 @@
-import type { ReviewQuestion } from "@/features/tests/mock/generated-test-review"
+import type { ReviewQuestion } from "@/features/tests/types/review"
 import type { PatchReviewQuestionsRequest } from "@/features/tests/schemas/review-question-schema"
 
 function getErrorMessage(payload: unknown, fallback: string): string {

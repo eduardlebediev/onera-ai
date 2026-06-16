@@ -1,18 +1,21 @@
 import Link from "next/link"
 import { CheckCircle2, FileText, Loader2, XCircle } from "lucide-react"
 
-import type { DocumentDisplayStatus, MockDocument } from "@/data/mock/admin-dashboard"
+import type {
+  DashboardDocumentDisplayStatus,
+  DashboardDocument,
+} from "@/features/analytics/types/admin-dashboard"
 import {
   getDocumentActionLabel,
-  getDocumentDisplayStatus,
-  getDocumentStatusBadgeConfig,
+  getDashboardDocumentDisplayStatus,
+  getDashboardDocumentStatusBadgeConfig,
 } from "@/features/analytics/lib/dashboard-formatters"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 
-function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
-  const badgeConfig = getDocumentStatusBadgeConfig(status)
+function DashboardDocumentStatusBadge({ status }: { status: DashboardDocumentDisplayStatus }) {
+  const badgeConfig = getDashboardDocumentStatusBadgeConfig(status)
 
   if (status === "uploaded") {
     return <span className="typography-small font-medium">{badgeConfig.label}</span>
@@ -31,8 +34,8 @@ function DocumentStatusBadge({ status }: { status: DocumentDisplayStatus }) {
   )
 }
 
-function getDocumentActionHref(document: MockDocument): string {
-  const status = getDocumentDisplayStatus(document)
+function getDocumentActionHref(document: DashboardDocument): string {
+  const status = getDashboardDocumentDisplayStatus(document)
 
   if (status === "failed") return `/admin/documents/${document.id}`
   if (document.testCount === 0 && status === "ready") {
@@ -42,7 +45,7 @@ function getDocumentActionHref(document: MockDocument): string {
 }
 
 interface RecentDocumentsCardProps {
-  documents: MockDocument[]
+  documents: DashboardDocument[]
 }
 
 export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
@@ -110,7 +113,9 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <DocumentStatusBadge status={getDocumentDisplayStatus(document)} />
+                    <DashboardDocumentStatusBadge
+                      status={getDashboardDocumentDisplayStatus(document)}
+                    />
                   </TableCell>
                   <TableCell>
                     <p className="typography-small font-medium text-muted-foreground">

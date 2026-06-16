@@ -1,12 +1,12 @@
 import Link from "next/link"
 
 import { AssignBreadcrumb } from "@/features/tests/components/assign-breadcrumb"
-import type { ResolvedMockTest } from "@/features/tests/lib/test-source-document"
+import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface AssignNotPublishedProps {
-  test: ResolvedMockTest
+  test: ResolvedTestListItem
   inactive?: boolean
 }
 

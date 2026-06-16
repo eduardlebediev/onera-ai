@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
 
-import type { MockAiDraft } from "@/data/mock/admin-dashboard"
+import type { DashboardAiDraft } from "@/features/analytics/types/admin-dashboard"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 
-function getDraftReviewHref(draft: MockAiDraft): string {
+function getDraftReviewHref(draft: DashboardAiDraft): string {
   if (draft.actionHref) {
     return draft.actionHref
   }
@@ -22,11 +22,11 @@ function getDraftReviewHref(draft: MockAiDraft): string {
   return "/admin/tests"
 }
 
-function getDraftActionLabel(draft: MockAiDraft): string {
+function getDraftActionLabel(draft: DashboardAiDraft): string {
   return draft.actionLabel ?? "Review"
 }
 
-function getDraftSubtitle(draft: MockAiDraft): string {
+function getDraftSubtitle(draft: DashboardAiDraft): string {
   if (draft.status || draft.model || draft.createdAt) {
     const parts = [
       draft.status ? draft.status : null,
@@ -43,7 +43,7 @@ function getDraftSubtitle(draft: MockAiDraft): string {
 }
 
 interface AiDraftsListProps {
-  drafts: MockAiDraft[]
+  drafts: DashboardAiDraft[]
 }
 
 export function AiDraftsList({ drafts }: AiDraftsListProps) {

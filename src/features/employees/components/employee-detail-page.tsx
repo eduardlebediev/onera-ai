@@ -161,7 +161,7 @@ function resultBadge(attempt: EmployeeDetailAttempt, t: ReturnType<typeof useTra
 
 function EmployeeAvatar({ name }: { name: string }) {
   return (
-    <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+    <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
       {getInitials(name)}
     </div>
   )
@@ -431,7 +431,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
         {/* Top Grid: Profile + KPIs */}
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_2fr]">
           {/* Profile Card */}
-          <Card className="bg-white dark:bg-slate-950">
+          <Card className="bg-white dark:bg-card">
             <CardContent className="flex h-full items-center gap-4 p-6">
               <EmployeeAvatar name={employee.profile.name} />
               <div className="flex flex-col justify-center">

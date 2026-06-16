@@ -86,7 +86,7 @@ export function Logo() {
           />
         </g>
       </svg>
-      <span className="text-[19px] font-semibold tracking-tight text-background">
+      <span className="text-[19px] font-semibold tracking-tight text-navbar-foreground">
         Ontera <span className="text-primary text-sm font-medium">ai</span>
       </span>
     </div>

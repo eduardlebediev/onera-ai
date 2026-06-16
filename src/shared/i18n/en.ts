@@ -10,6 +10,12 @@ export const en = {
     openMenu: "Open navigation menu",
     signOut: "Sign out",
   },
+  theme: {
+    label: "Theme",
+    light: "Light",
+    dark: "Dark",
+    system: "System",
+  },
   auth: {
     signIn: "Sign in",
     signingIn: "Signing in…",

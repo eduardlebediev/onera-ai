@@ -17,6 +17,8 @@ Production Readiness Cleanup
 
 ## Completed
 
+- Feature Spec 62: Light and Dark Theme
+
 - Feature Spec 61 Follow-up: Move Language Switcher to User Dropdown Menu
 
 - Feature Spec 61 Follow-up: Restore Geist font token wiring

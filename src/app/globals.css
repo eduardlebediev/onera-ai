@@ -38,6 +38,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-navbar: var(--navbar);
+  --color-navbar-foreground: var(--navbar-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -69,6 +71,8 @@
   --card-foreground: #171717;
   --popover: oklch(1 0 0);
   --popover-foreground: #171717;
+  --navbar: #171717;
+  --navbar-foreground: oklch(0.927 0.003 247.858);
   --primary: oklch(0.659 0.189 40);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(1 0 0);
@@ -98,12 +102,14 @@
 }
 
 .dark {
-  --background: #0a0a0a;
+  --background: #1d1d1d;
   --foreground: #ededed;
-  --card: #171717;
+  --card: #282828;
   --card-foreground: #ededed;
-  --popover: #171717;
+  --popover: #282828;
   --popover-foreground: #ededed;
+  --navbar: #000000;
+  --navbar-foreground: oklch(0.927 0.003 247.858);
   --primary: oklch(0.7 0.166 42);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.269 0 0);

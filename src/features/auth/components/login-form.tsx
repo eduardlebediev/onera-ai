@@ -4,6 +4,7 @@ import { useActionState } from "react"
 
 import { demoLoginAction, loginAction, type LoginState } from "@/features/auth/actions/login"
 import { AuthLanguageSwitcher } from "@/features/auth/components/auth-language-switcher"
+import { AuthThemeToggle } from "@/features/auth/components/auth-theme-toggle"
 import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Input } from "@/shared/ui/input"
@@ -36,7 +37,10 @@ export function LoginForm() {
     <div className="w-full max-w-sm space-y-6">
       <div className="flex flex-col items-center gap-3 text-center [&_span]:text-foreground">
         <Logo />
-        <AuthLanguageSwitcher />
+        <div className="flex items-center gap-2">
+          <AuthLanguageSwitcher />
+          <AuthThemeToggle />
+        </div>
         <div className="space-y-1">
           <h1 className="typography-h2 text-foreground">{t("auth.signInTitle")}</h1>
           <p className="typography-small text-muted-foreground">{t("auth.signInSubtitle")}</p>

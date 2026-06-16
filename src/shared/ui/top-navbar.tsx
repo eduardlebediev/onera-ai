@@ -9,6 +9,7 @@ import type { AppRole } from "@/features/auth/lib/current-user"
 import { cn } from "@/lib/utils"
 import { LanguageSwitcher } from "@/shared/i18n/language-switcher"
 import { useTranslation } from "@/shared/i18n/use-translation"
+import { ThemeModeSelector } from "@/shared/theme/theme-mode-selector"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,7 +59,7 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
 
   return (
-    <nav className="flex h-16 shrink-0 items-center gap-3 bg-foreground px-4 md:gap-6 md:px-8">
+    <nav className="flex h-16 shrink-0 items-center gap-3 bg-navbar px-4 md:gap-6 md:px-8">
       <Link href={dashboardHref} className="shrink-0">
         <Logo />
       </Link>
@@ -71,8 +72,8 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
             className={cn(
               "relative flex h-16 items-center px-3.5 text-sm font-medium transition-colors",
               isActive(link.href)
-                ? "text-background"
-                : "text-background/55 hover:text-background/85"
+                ? "text-navbar-foreground"
+                : "text-navbar-foreground/55 hover:text-navbar-foreground/85"
             )}
           >
             {link.label}
@@ -88,7 +89,7 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
       <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-background/55 outline-none transition-colors hover:bg-background/5 hover:text-background md:hidden"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-navbar-foreground/55 outline-none transition-colors hover:bg-navbar-foreground/5 hover:text-navbar-foreground md:hidden"
             aria-label={t("nav.openMenu")}
           >
             <Menu className="h-4.5 w-4.5" />
@@ -107,22 +108,26 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="ml-1 flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent py-1 pr-1 pl-2 text-background/90 outline-none transition-colors hover:bg-background/5 hover:text-background">
+          <DropdownMenuTrigger className="ml-1 flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent py-1 pr-1 pl-2 text-navbar-foreground/90 outline-none transition-colors hover:bg-navbar-foreground/5 hover:text-navbar-foreground">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/20">
               <span className="text-[11px] font-semibold text-primary">{initials}</span>
             </div>
             <div className="hidden text-left sm:block">
               <p className="text-xs leading-tight font-medium">{userName}</p>
-              <p className="text-[10px] leading-tight text-background/45">{userTitle}</p>
+              <p className="text-[10px] leading-tight text-navbar-foreground/45">{userTitle}</p>
             </div>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-background/40" />
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-navbar-foreground/40" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-44">
             <div className="flex items-center justify-between px-2 py-1.5 text-sm">
               <span className="text-muted-foreground text-xs font-medium">
                 {t("dataTable.language")}
               </span>
               <LanguageSwitcher variant="minimal" className="gap-2" />
+            </div>
+            <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+              <span className="text-muted-foreground text-xs font-medium">{t("theme.label")}</span>
+              <ThemeModeSelector variant="minimal" className="gap-2" />
             </div>
             <DropdownMenuItem asChild>
               <form action="/auth/logout" method="post" className="w-full">

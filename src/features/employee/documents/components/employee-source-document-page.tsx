@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm"
 import type { EmployeeSourceDocumentView } from "@/features/employee/documents/lib/get-employee-source-document"
 import { requestEmployeeDocumentDownloadUrl } from "@/features/employee/documents/lib/employee-document-api-client"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -25,6 +26,7 @@ export function EmployeeSourceDocumentPage({
   backHref,
   backLabel,
 }: EmployeeSourceDocumentPageProps) {
+  const { t } = useTranslation()
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
 
@@ -36,7 +38,9 @@ export function EmployeeSourceDocumentPage({
       const signedUrl = await requestEmployeeDocumentDownloadUrl(document.id, testId)
       window.open(signedUrl, "_blank", "noopener,noreferrer")
     } catch (error) {
-      setDownloadError(error instanceof Error ? error.message : "Download failed")
+      setDownloadError(
+        error instanceof Error ? error.message : t("employee.sourceDocument.downloadFailed")
+      )
     } finally {
       setIsDownloading(false)
     }
@@ -47,9 +51,9 @@ export function EmployeeSourceDocumentPage({
       <Breadcrumbs
         className="mb-6"
         items={[
-          { label: "My Tests", href: "/employee/tests" },
+          { label: t("breadcrumbs.myTests"), href: "/employee/tests" },
           { label: backLabel, href: backHref },
-          { label: "Source material" },
+          { label: t("breadcrumbs.sourceMaterial") },
         ]}
       />
 
@@ -76,7 +80,9 @@ export function EmployeeSourceDocumentPage({
                   onClick={() => void handleDownload()}
                 >
                   <Download />
-                  {isDownloading ? "Preparing..." : "Download original"}
+                  {isDownloading
+                    ? t("employee.sourceDocument.preparing")
+                    : t("employee.sourceDocument.downloadOriginal")}
                 </Button>
                 {downloadError ? (
                   <span className="text-xs text-destructive">{downloadError}</span>
@@ -91,8 +97,8 @@ export function EmployeeSourceDocumentPage({
             </div>
           ) : (
             <p className="typography-p text-muted-foreground">
-              Source material text is not available for this document yet.
-              {document.canDownloadOriginal ? " Download the original file instead." : null}
+              {t("employee.sourceDocument.textUnavailable")}
+              {document.canDownloadOriginal ? t("employee.sourceDocument.downloadInstead") : null}
             </p>
           )}
 

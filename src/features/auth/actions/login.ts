@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation"
 
+import { getLocale } from "@/shared/i18n/get-locale"
+import { createTranslator } from "@/shared/i18n/translate"
 import { createClient } from "@/lib/supabase/server"
 
 export type LoginState = {
@@ -28,11 +30,13 @@ export async function loginAction(
   _previousState: LoginState,
   formData: FormData
 ): Promise<LoginState> {
+  const locale = await getLocale()
+  const { t } = createTranslator(locale)
   const email = String(formData.get("email") ?? "").trim()
   const password = String(formData.get("password") ?? "")
 
   if (!email || !password) {
-    return { error: "Email and password are required." }
+    return { error: t("auth.errors.emailPasswordRequired") }
   }
 
   const supabase = await createClient()
@@ -43,7 +47,7 @@ export async function loginAction(
   })
 
   if (error) {
-    return { error: "Invalid email or password." }
+    return { error: t("auth.errors.invalidCredentials") }
   }
 
   redirect("/")
@@ -61,14 +65,17 @@ export async function demoLoginAction(
   _previousState: LoginState,
   formData: FormData
 ): Promise<LoginState> {
+  const locale = await getLocale()
+  const { t } = createTranslator(locale)
+
   if (!DEMO_LOGIN_ENABLED) {
-    return { error: "Demo login is not enabled." }
+    return { error: t("auth.errors.demoNotEnabled") }
   }
 
   const role = parseDemoRole(formData.get("role"))
 
   if (!role) {
-    return { error: "Select a valid demo account." }
+    return { error: t("auth.errors.invalidDemoAccount") }
   }
 
   const account = DEMO_ACCOUNTS[role]
@@ -80,7 +87,7 @@ export async function demoLoginAction(
   })
 
   if (error) {
-    return { error: "Demo login is unavailable. Check that demo users are seeded." }
+    return { error: t("auth.errors.demoUnavailable") }
   }
 
   redirect(account.redirectTo)

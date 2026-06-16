@@ -37,6 +37,7 @@ import type { DocumentDetail } from "@/features/documents/types/document"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
+import { useTranslation } from "@/shared/i18n/use-translation"
 
 interface PublishTestPageProps {
   document: DocumentDetail
@@ -56,6 +57,7 @@ export function PublishTestPage({
   recoveredDraft = null,
 }: PublishTestPageProps) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [published, setPublished] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
@@ -82,11 +84,11 @@ export function PublishTestPage({
     [document, reviewData]
   )
 
-  const readinessChecks = useMemo(() => getPublishReadinessChecks(context), [context])
+  const readinessChecks = useMemo(() => getPublishReadinessChecks(context, t), [context, t])
   const canPublish = useMemo(() => isPublishReady(readinessChecks), [readinessChecks])
   const blockReason = useMemo(
-    () => (canPublish ? undefined : getPublishBlockReason(readinessChecks)),
-    [canPublish, readinessChecks]
+    () => (canPublish ? undefined : getPublishBlockReason(readinessChecks, t)),
+    [canPublish, readinessChecks, t]
   )
   const approvedQuestions = useMemo(() => getApprovedQuestions(reviewData), [reviewData])
   const questionsToPublish = useMemo(
@@ -100,7 +102,7 @@ export function PublishTestPage({
 
   const handleSaveDraft = () => {
     setDraftSaved(true)
-    toast.success("Draft saved.")
+    toast.success(t("tests.publish.draftSavedToast"))
   }
 
   const handlePublish = async () => {
@@ -114,7 +116,7 @@ export function PublishTestPage({
 
       if (!storedDraft) {
         setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
-        toast.error(`Publish failed. ${PUBLISH_GENERATED_TEST_ERROR_MESSAGE}`)
+        toast.error(`${t("tests.publish.publishFailed")} ${PUBLISH_GENERATED_TEST_ERROR_MESSAGE}`)
         setIsPublishing(false)
         return
       }
@@ -124,14 +126,14 @@ export function PublishTestPage({
         const result = await publishGeneratedTest(publishInput)
         clearGeneratedTestDraft()
         setSavedTestId(result.testId)
-        toast.success("Test published successfully.")
+        toast.success(t("tests.publish.publishSuccess"))
         router.push(result.redirectTo)
         return
       } catch (error) {
         const message =
           error instanceof Error ? error.message : PUBLISH_GENERATED_TEST_ERROR_MESSAGE
         setPublishError(PUBLISH_GENERATED_TEST_ERROR_MESSAGE)
-        toast.error(`Publish failed. ${message}`)
+        toast.error(`${t("tests.publish.publishFailed")} ${message}`)
         setIsPublishing(false)
         return
       }
@@ -139,7 +141,7 @@ export function PublishTestPage({
 
     window.setTimeout(() => {
       setPublished(true)
-      toast.success("Test published successfully.")
+      toast.success(t("tests.publish.publishSuccess"))
       setIsPublishing(false)
     }, 700)
   }
@@ -155,24 +157,20 @@ export function PublishTestPage({
   return (
     <div className="page-shell-narrow">
       <div className="mb-6 space-y-1">
-        <h1 className="typography-h1">Publish Test</h1>
-        <p className="typography-p text-muted-foreground">
-          Review the final test summary, confirm readiness, and publish when you are ready.
-        </p>
-        <p className="typography-small text-muted-foreground">
-          This test was generated from selected document topics and source chunks.
-        </p>
+        <h1 className="typography-h1">{t("tests.publish.title")}</h1>
+        <p className="typography-p text-muted-foreground">{t("tests.publish.subtitle")}</p>
+        <p className="typography-small text-muted-foreground">{t("tests.publish.sourceHint")}</p>
       </div>
 
       <Breadcrumbs
         className="mb-6"
         items={[
-          { label: "Tests", href: "/admin/tests" },
+          { label: t("nav.tests"), href: "/admin/tests" },
           {
-            label: "Review",
+            label: t("tests.review.breadcrumbReview"),
             href: `/admin/tests/review?documentId=${encodeURIComponent(documentId)}`,
           },
-          { label: "Publish" },
+          { label: t("tests.publish.title") },
         ]}
       />
 
@@ -180,7 +178,7 @@ export function PublishTestPage({
         <Card className="mb-2 border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/20">
           <CardContent className="py-3">
             <p className="typography-small text-emerald-800 dark:text-emerald-300">
-              Draft saved locally. You can return to review or publish when ready.
+              {t("tests.publish.draftSaved")}
             </p>
           </CardContent>
         </Card>
@@ -221,24 +219,24 @@ export function PublishTestPage({
                 )}
                 {isPublishing
                   ? isAiDraft
-                    ? "Saving generated test..."
-                    : "Publishing..."
-                  : "Publish Test"}
+                    ? t("tests.publish.savingGeneratedTest")
+                    : t("tests.publish.publishing")
+                  : t("tests.publish.publishTest")}
               </Button>
 
               <Button asChild variant="outline" className="w-full">
                 <Link href={`/admin/tests/review?documentId=${encodeURIComponent(documentId)}`}>
-                  Back to Review
+                  {t("tests.publish.backToReview")}
                 </Link>
               </Button>
 
               <Button type="button" variant="outline" className="w-full" onClick={handleSaveDraft}>
                 <Save className="mr-2 size-4" />
-                Save as Draft
+                {t("tests.publish.saveAsDraft")}
               </Button>
 
               <Button asChild variant="ghost" className="w-full">
-                <Link href="/admin/tests">Cancel</Link>
+                <Link href="/admin/tests">{t("common.cancel")}</Link>
               </Button>
             </CardContent>
           </Card>

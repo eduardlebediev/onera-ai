@@ -5,27 +5,22 @@ import type {
   EmployeeProgressTopic,
 } from "@/features/employee/tests/lib/supabase-employee-progress"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
+import { formatDate } from "@/shared/i18n/format"
+import { getTranslator } from "@/shared/i18n/get-locale"
+import type { createTranslator } from "@/shared/i18n/translate"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 interface EmployeeProgressPageProps {
   progress: EmployeeProgress
   loadError?: boolean
 }
 
-function formatScore(score: number | null): string {
-  return score === null ? "—" : `${score}%`
-}
-
-function formatCompletedDate(completedAt: string | null): string {
-  if (!completedAt) return "—"
-
-  return new Date(completedAt).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
+function formatScore(score: number | null, t: Translate): string {
+  return score === null ? t("common.dash") : `${score}%`
 }
 
 function TopicListCard({
@@ -33,11 +28,13 @@ function TopicListCard({
   topics,
   emptyText,
   tone,
+  t,
 }: {
   title: string
   topics: EmployeeProgressTopic[]
   emptyText: string
   tone: "strength" | "weak"
+  t: Translate
 }) {
   return (
     <Card>
@@ -56,7 +53,10 @@ function TopicListCard({
                   <div>
                     <p className="text-sm font-medium text-foreground">{topic.topic}</p>
                     <p className="typography-small mt-1 text-muted-foreground">
-                      {topic.correctCount} of {topic.totalCount} answers correct
+                      {t("common.correctOf", {
+                        correct: topic.correctCount,
+                        total: topic.totalCount,
+                      })}
                     </p>
                   </div>
                   <Badge
@@ -67,7 +67,7 @@ function TopicListCard({
                         : "border-orange-200 bg-orange-50 text-orange-700"
                     )}
                   >
-                    {topic.correctPercent}% correct
+                    {t("common.correctPercent", { percent: topic.correctPercent })}
                   </Badge>
                 </div>
                 <div className="mt-3 h-2 rounded-full bg-muted">
@@ -90,23 +90,31 @@ function TopicListCard({
   )
 }
 
-function AttemptStatusBadge({ passed }: { passed: boolean | null }) {
+function AttemptStatusBadge({ passed, t }: { passed: boolean | null; t: Translate }) {
   if (passed === null) {
-    return <Badge variant="outline">Unknown</Badge>
+    return <Badge variant="outline">{t("status.employeeTest.unknown")}</Badge>
   }
 
   return (
     <Badge variant="outline" className={getPassFailBadgeClass(passed)}>
-      {passed ? "Passed" : "Failed"}
+      {passed ? t("status.employeeTest.passed") : t("status.employeeTest.failed")}
     </Badge>
   )
 }
 
-function AttemptHistoryTable({ attempts }: { attempts: EmployeeProgressAttempt[] }) {
+function AttemptHistoryTable({
+  attempts,
+  locale,
+  t,
+}: {
+  attempts: EmployeeProgressAttempt[]
+  locale: Awaited<ReturnType<typeof getTranslator>>["locale"]
+  t: Translate
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Attempt History</CardTitle>
+        <CardTitle>{t("employee.progress.attemptHistory")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -114,16 +122,16 @@ function AttemptHistoryTable({ attempts }: { attempts: EmployeeProgressAttempt[]
             <thead className="border-b border-border/70 text-muted-foreground">
               <tr>
                 <th scope="col" className="py-3 pr-4 font-medium">
-                  Test
+                  {t("dataTable.test")}
                 </th>
                 <th scope="col" className="px-4 py-3 font-medium">
-                  Score
+                  {t("dataTable.score")}
                 </th>
                 <th scope="col" className="px-4 py-3 font-medium">
-                  Result
+                  {t("dataTable.result")}
                 </th>
                 <th scope="col" className="px-4 py-3 font-medium">
-                  Completed
+                  {t("dataTable.completed")}
                 </th>
               </tr>
             </thead>
@@ -131,12 +139,16 @@ function AttemptHistoryTable({ attempts }: { attempts: EmployeeProgressAttempt[]
               {attempts.map((attempt) => (
                 <tr key={attempt.attemptId}>
                   <td className="py-4 pr-4 font-medium text-foreground">{attempt.testTitle}</td>
-                  <td className="px-4 py-4 text-muted-foreground">{formatScore(attempt.score)}</td>
+                  <td className="px-4 py-4 text-muted-foreground">
+                    {formatScore(attempt.score, t)}
+                  </td>
                   <td className="px-4 py-4">
-                    <AttemptStatusBadge passed={attempt.passed} />
+                    <AttemptStatusBadge passed={attempt.passed} t={t} />
                   </td>
                   <td className="px-4 py-4 text-muted-foreground">
-                    {formatCompletedDate(attempt.completedAt)}
+                    {attempt.completedAt
+                      ? formatDate(locale, attempt.completedAt)
+                      : t("common.dash")}
                   </td>
                 </tr>
               ))}
@@ -148,59 +160,62 @@ function AttemptHistoryTable({ attempts }: { attempts: EmployeeProgressAttempt[]
   )
 }
 
-export function EmployeeProgressPage({ progress, loadError = false }: EmployeeProgressPageProps) {
+export async function EmployeeProgressPage({
+  progress,
+  loadError = false,
+}: EmployeeProgressPageProps) {
+  const { t, locale } = await getTranslator()
   const hasAttempts = progress.attempts.length > 0
 
   return (
     <div className="page-shell">
       <div>
-        <h2 className="typography-h2">Progress</h2>
-        <p className="mt-1 typography-p text-muted-foreground">
-          Track completed tests, topic strengths, weak topics, and your full attempt history.
-        </p>
+        <h2 className="typography-h2">{t("employee.progress.title")}</h2>
+        <p className="mt-1 typography-p text-muted-foreground">{t("employee.progress.subtitle")}</p>
       </div>
 
       {loadError ? (
         <Card className="mt-8">
           <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="typography-h3 font-semibold">Progress could not be loaded</p>
-            <p className="max-w-md typography-p text-muted-foreground">
-              Refresh the page or try again later.
-            </p>
+            <p className="typography-h3 font-semibold">{t("common.loadError.progress")}</p>
+            <p className="max-w-md typography-p text-muted-foreground">{t("common.refreshHint")}</p>
           </CardContent>
         </Card>
       ) : !hasAttempts ? (
         <Card className="mt-8">
           <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="typography-h3 font-semibold">
-              Complete your first test to see progress here.
-            </p>
+            <p className="typography-h3 font-semibold">{t("employee.progress.emptyTitle")}</p>
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="mt-8">
-            <EmployeeProgressKpiSection progress={progress} />
+            <EmployeeProgressKpiSection progress={progress} t={t} />
           </div>
 
           <div className="mt-2 flex flex-col gap-2">
-            <section className="grid grid-cols-1 gap-2 lg:grid-cols-2" aria-label="Topic progress">
+            <section
+              className="grid grid-cols-1 gap-2 lg:grid-cols-2"
+              aria-label={t("employee.progress.topicProgress")}
+            >
               <TopicListCard
-                title="Strengths"
+                title={t("employee.progress.strengths")}
                 topics={progress.strengths}
-                emptyText="No strengths above 80% yet."
+                emptyText={t("employee.progress.strengthsEmpty")}
                 tone="strength"
+                t={t}
               />
               <TopicListCard
-                title="Weak Topics"
+                title={t("employee.progress.weakTopics")}
                 topics={progress.weakTopics}
-                emptyText="All topics understood"
+                emptyText={t("employee.progress.weakTopicsEmpty")}
                 tone="weak"
+                t={t}
               />
             </section>
 
-            <section aria-label="Attempt history">
-              <AttemptHistoryTable attempts={progress.attempts} />
+            <section aria-label={t("employee.progress.attemptHistory")}>
+              <AttemptHistoryTable attempts={progress.attempts} locale={locale} t={t} />
             </section>
           </div>
         </>

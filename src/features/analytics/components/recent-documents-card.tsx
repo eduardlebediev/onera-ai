@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { CheckCircle2, FileText, Loader2, XCircle } from "lucide-react"
 
@@ -10,12 +12,14 @@ import {
   getDashboardDocumentDisplayStatus,
   getDashboardDocumentStatusBadgeConfig,
 } from "@/features/analytics/lib/dashboard-formatters"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 
 function DashboardDocumentStatusBadge({ status }: { status: DashboardDocumentDisplayStatus }) {
-  const badgeConfig = getDashboardDocumentStatusBadgeConfig(status)
+  const { t } = useTranslation()
+  const badgeConfig = getDashboardDocumentStatusBadgeConfig(status, t)
 
   if (status === "uploaded") {
     return <span className="typography-small font-medium">{badgeConfig.label}</span>
@@ -49,15 +53,17 @@ interface RecentDocumentsCardProps {
 }
 
 export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
+  const { t } = useTranslation()
+
   return (
     <Card className="col-span-12 h-full lg:col-span-8">
       <CardHeader className="px-6 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <FileText className="size-5 text-muted-foreground" />
-          <h3 className="typography-h3">Recent Documents</h3>
+          <h3 className="typography-h3">{t("admin.dashboard.recentDocuments")}</h3>
           <div className="ml-auto">
             <Button variant="link" size="sm" asChild>
-              <Link href="/admin/documents">View all &gt;</Link>
+              <Link href="/admin/documents">{t("common.viewAll")}</Link>
             </Button>
           </div>
         </div>
@@ -65,12 +71,14 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
       <CardContent className="p-0">
         {documents.length === 0 ? (
           <div className="flex flex-col items-start gap-3 px-6 py-8">
-            <p className="typography-small font-medium text-foreground">No documents yet</p>
+            <p className="typography-small font-medium text-foreground">
+              {t("admin.dashboard.noDocumentsYet")}
+            </p>
             <p className="typography-small text-muted-foreground">
-              Upload your first document to start generating tests.
+              {t("admin.dashboard.noDocumentsHint")}
             </p>
             <Button asChild variant="outline" size="sm">
-              <Link href="/admin/documents">Upload Document</Link>
+              <Link href="/admin/documents">{t("admin.dashboard.uploadDocument")}</Link>
             </Button>
           </div>
         ) : (
@@ -79,25 +87,33 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
               <TableRow className="text-muted-foreground">
                 <TableHead className="py-3">
                   <span className="typography-small font-medium text-muted-foreground">
-                    Document
+                    {t("dataTable.document")}
                   </span>
-                </TableHead>
-                <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Status</span>
-                </TableHead>
-                <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Topics</span>
-                </TableHead>
-                <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Tests</span>
                 </TableHead>
                 <TableHead className="py-3">
                   <span className="typography-small font-medium text-muted-foreground">
-                    Updated
+                    {t("dataTable.status")}
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.topics")}
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("nav.tests")}
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("dataTable.updated")}
                   </span>
                 </TableHead>
                 <TableHead className="py-3 text-right">
-                  <span className="typography-small font-medium text-muted-foreground">Action</span>
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("common.action")}
+                  </span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -119,12 +135,12 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
                   </TableCell>
                   <TableCell>
                     <p className="typography-small font-medium text-muted-foreground">
-                      {document.topics.length > 0 ? document.topics.length : "—"}
+                      {document.topics.length > 0 ? document.topics.length : t("common.dash")}
                     </p>
                   </TableCell>
                   <TableCell>
                     <p className="typography-small font-medium text-muted-foreground">
-                      {document.testCount > 0 ? document.testCount : "—"}
+                      {document.testCount > 0 ? document.testCount : t("common.dash")}
                     </p>
                   </TableCell>
                   <TableCell>
@@ -135,7 +151,7 @@ export function RecentDocumentsCard({ documents }: RecentDocumentsCardProps) {
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={getDocumentActionHref(document)}>
-                        {getDocumentActionLabel(document)}
+                        {getDocumentActionLabel(document, t)}
                       </Link>
                     </Button>
                   </TableCell>

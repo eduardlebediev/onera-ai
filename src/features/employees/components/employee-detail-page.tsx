@@ -14,6 +14,8 @@ import type {
 } from "@/features/employees/lib/supabase-employee-detail"
 import { cn } from "@/lib/utils"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
+import { formatDate as formatLocaleDate } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
@@ -25,17 +27,10 @@ type EmployeeDetailPageProps = {
   showBreadcrumbs?: boolean
 }
 
-const progressTrendChartConfig = {
-  score: {
-    label: "Score",
-    color: "var(--color-primary)",
-  },
-} satisfies ChartConfig
-
 const TREND_RANGE_OPTIONS = [
-  { value: "30", label: "Last 30 days", days: 30 },
-  { value: "90", label: "Last 90 days", days: 90 },
-  { value: "all", label: "All time", days: null },
+  { value: "30", labelKey: "employees.detail.last30Days", days: 30 },
+  { value: "90", labelKey: "employees.detail.last90Days", days: 90 },
+  { value: "all", labelKey: "employees.detail.allTime", days: null },
 ] as const
 
 type TrendRange = (typeof TREND_RANGE_OPTIONS)[number]["value"]
@@ -62,14 +57,13 @@ function formatScore(score: number | null): string {
   return typeof score === "number" ? `${score}%` : "--"
 }
 
-function formatDate(value: string | null): string {
+function formatEmployeeDate(
+  locale: ReturnType<typeof useTranslation>["locale"],
+  value: string | null
+): string {
   if (!value) return "--"
 
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value))
+  return formatLocaleDate(locale, value)
 }
 
 function formatRole(role: string): string {
@@ -94,7 +88,8 @@ function normalizePercentScore(score: number): number {
 
 function buildProgressTrendPoints(
   attempts: EmployeeDetailAttempt[],
-  range: TrendRange
+  range: TrendRange,
+  locale: ReturnType<typeof useTranslation>["locale"]
 ): ProgressTrendPoint[] {
   const rangeOption = TREND_RANGE_OPTIONS.find((option) => option.value === range)
   const cutoff =
@@ -126,16 +121,16 @@ function buildProgressTrendPoints(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, value]) => ({
       date,
-      label: new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(value.date),
+      label: formatLocaleDate(locale, value.date.toISOString(), { month: "short", day: "numeric" }),
       score: Math.round(value.totalScore / value.attempts),
       attempts: value.attempts,
     }))
 }
 
-function resultBadge(attempt: EmployeeDetailAttempt) {
+function resultBadge(attempt: EmployeeDetailAttempt, t: ReturnType<typeof useTranslation>["t"]) {
   if (attempt.passed === true) {
     return {
-      label: "Passed",
+      label: t("employees.detail.passed"),
       className: "border-green-200 bg-green-50 text-green-700",
       dotClassName: "bg-green-500",
     }
@@ -143,7 +138,7 @@ function resultBadge(attempt: EmployeeDetailAttempt) {
 
   if (attempt.passed === false) {
     return {
-      label: "Failed",
+      label: t("employees.detail.failed"),
       className: "border-red-200 bg-red-50 text-red-700",
       dotClassName: "bg-red-500",
     }
@@ -151,14 +146,14 @@ function resultBadge(attempt: EmployeeDetailAttempt) {
 
   if (attempt.status === "in_progress") {
     return {
-      label: "In progress",
+      label: t("employees.detail.inProgress"),
       className: "border-amber-200 bg-amber-50 text-amber-700",
       dotClassName: "bg-amber-500",
     }
   }
 
   return {
-    label: "No result",
+    label: t("employees.detail.noResult"),
     className: "border-slate-200 bg-slate-50 text-slate-600",
     dotClassName: "bg-slate-400",
   }
@@ -173,22 +168,37 @@ function EmployeeAvatar({ name }: { name: string }) {
 }
 
 function ProgressTrendCard({ attempts }: { attempts: EmployeeDetailAttempt[] }) {
+  const { locale, t } = useTranslation()
+  const progressTrendChartConfig = useMemo(
+    () => ({
+      score: {
+        label: t("employees.detail.score"),
+        color: "var(--color-primary)",
+      },
+    }),
+    [t]
+  ) satisfies ChartConfig
   const [range, setRange] = useState<TrendRange>("90")
-  const chartData = useMemo(() => buildProgressTrendPoints(attempts, range), [attempts, range])
+  const chartData = useMemo(
+    () => buildProgressTrendPoints(attempts, range, locale),
+    [attempts, locale, range]
+  )
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-medium">Progress Trend</CardTitle>
+        <CardTitle className="text-base font-medium">
+          {t("employees.detail.progressTrend")}
+        </CardTitle>
         <select
-          aria-label="Progress trend range"
+          aria-label={t("employees.detail.progressTrendRange")}
           value={range}
           onChange={(event) => setRange(event.target.value as TrendRange)}
           className="h-8 rounded-md border border-input bg-transparent px-2 text-xs outline-none"
         >
           {TREND_RANGE_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey)}
             </option>
           ))}
         </select>
@@ -197,9 +207,11 @@ function ProgressTrendCard({ attempts }: { attempts: EmployeeDetailAttempt[] }) 
         {chartData.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center rounded-xl border border-dashed text-center">
             <div>
-              <p className="text-sm font-medium text-foreground">No score trend yet</p>
+              <p className="text-sm font-medium text-foreground">
+                {t("employees.detail.noScoreTrend")}
+              </p>
               <p className="mt-1 typography-small text-muted-foreground">
-                Completed attempts with scores will appear here.
+                {t("employees.detail.completedAttemptsWithScores")}
               </p>
             </div>
           </div>
@@ -254,9 +266,11 @@ function ProgressTrendCard({ attempts }: { attempts: EmployeeDetailAttempt[] }) 
                 formatter={(value, _name, item) => {
                   const payload = item.payload as ProgressTrendPoint | undefined
                   const suffix =
-                    payload?.attempts === 1 ? "1 attempt" : `${payload?.attempts ?? 0} attempts`
+                    payload?.attempts === 1
+                      ? `1 ${t("employees.detail.attempt")}`
+                      : `${payload?.attempts ?? 0} ${t("employees.detail.attempts")}`
 
-                  return [`${Math.round(Number(value))}% (${suffix})`, "Score"]
+                  return [`${Math.round(Number(value))}% (${suffix})`, t("employees.detail.score")]
                 }}
               />
               <Line
@@ -311,15 +325,19 @@ function TopicProgressBar({
 }
 
 function AssignedNotStartedCard({ tests }: { tests: EmployeeDetailAssignedTest[] }) {
+  const { locale, t } = useTranslation()
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium">Assigned but not started</CardTitle>
-        <p className="text-xs text-muted-foreground">Tests waiting for this employee</p>
+        <CardTitle className="text-base font-medium">
+          {t("employees.detail.assignedNotStarted")}
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">{t("employees.detail.testsWaiting")}</p>
       </CardHeader>
       <CardContent>
         {tests.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No assigned tests waiting to start</p>
+          <p className="text-sm text-muted-foreground">{t("employees.detail.noPendingTests")}</p>
         ) : (
           <div className="flex flex-col gap-3">
             {tests.map((test) => (
@@ -337,7 +355,8 @@ function AssignedNotStartedCard({ tests }: { tests: EmployeeDetailAssignedTest[]
                     </p>
                     {test.deadline ? (
                       <p className="text-xs text-muted-foreground">
-                        Deadline: {formatDate(test.deadline)}
+                        {t("employees.detail.deadline")}:{" "}
+                        {formatEmployeeDate(locale, test.deadline)}
                       </p>
                     ) : null}
                   </div>
@@ -348,9 +367,9 @@ function AssignedNotStartedCard({ tests }: { tests: EmployeeDetailAssignedTest[]
                       variant="outline"
                       size="sm"
                       className="h-7 rounded-full px-3 text-xs"
-                      onClick={() => toast.success("Reminder sent to employee")}
+                      onClick={() => toast.success(t("employees.detail.reminderSent"))}
                     >
-                      Remind
+                      {t("employees.detail.remind")}
                     </Button>
                   </div>
                 </div>
@@ -364,6 +383,7 @@ function AssignedNotStartedCard({ tests }: { tests: EmployeeDetailAssignedTest[]
 }
 
 export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: EmployeeDetailPageProps) {
+  const { locale, t } = useTranslation()
   const completedAttempts = employee.attempts.filter((a) => a.status === "completed")
 
   return (
@@ -373,31 +393,31 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
         {showBreadcrumbs ? (
           <Breadcrumbs
             items={[
-              { label: "Employees", href: "/admin/employees" },
+              { label: t("breadcrumbs.employees"), href: "/admin/employees" },
               { label: employee.profile.name },
             ]}
             className="mb-4"
           />
         ) : null}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h1 className="typography-h1">Employee Progress</h1>
+          <h1 className="typography-h1">{t("employees.detail.employeeProgress")}</h1>
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Employee ID</p>
+              <p className="text-xs text-muted-foreground">{t("employees.detail.employeeId")}</p>
               <p className="text-sm font-medium text-foreground">
                 {employee.profile.id.slice(0, 8).toUpperCase()}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Join Date</p>
+              <p className="text-xs text-muted-foreground">{t("employees.detail.joinDate")}</p>
               <p className="text-sm font-medium text-foreground">
-                {formatDate(employee.membership.createdAt)}
+                {formatEmployeeDate(locale, employee.membership.createdAt)}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline">
                 <Download className="mr-2 size-4" />
-                Export Report
+                {t("employees.detail.exportReport")}
               </Button>
               <Button variant="outline" size="icon">
                 <MoreVertical className="size-4" />
@@ -423,10 +443,12 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                 <div className="mt-2 flex items-center gap-1.5">
                   <Circle className="size-2.5 fill-green-500 text-green-500" />
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    Actively Learning
+                    {t("employees.detail.activelyLearning")}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Level 4 · Intermediate</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("employees.detail.levelIntermediate")}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -434,14 +456,16 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
           {/* KPI Cards Row */}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <Card className="flex flex-col justify-center p-4">
-              <p className="text-xs text-muted-foreground">Completed Tests</p>
+              <p className="text-xs text-muted-foreground">
+                {t("employees.detail.completedTests")}
+              </p>
               <p className="mt-1 text-2xl font-semibold">{employee.stats.totalTests}</p>
               <p className="mt-2 text-xs text-muted-foreground">
-                of {employee.stats.totalAssignedTests} assigned
+                {t("common.assigned", { count: employee.stats.totalAssignedTests })}
               </p>
             </Card>
             <Card className="flex flex-col justify-center p-4">
-              <p className="text-xs text-muted-foreground">Average Score</p>
+              <p className="text-xs text-muted-foreground">{t("employees.detail.score")}</p>
               <p className="mt-1 text-2xl font-semibold">{employee.stats.averageScore}%</p>
               <p className="mt-2 flex items-center text-xs font-medium text-green-600">
                 <ArrowUpRight className="mr-0.5 size-3" />
@@ -449,7 +473,9 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
               </p>
             </Card>
             <Card className="flex flex-col justify-center p-4">
-              <p className="text-xs text-muted-foreground">Overall Progress</p>
+              <p className="text-xs text-muted-foreground">
+                {t("employees.detail.overallProgress")}
+              </p>
               <p className="mt-1 text-2xl font-semibold">
                 {employee.stats.totalAssignedTests > 0
                   ? Math.round(
@@ -470,7 +496,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                   }}
                 />
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">On track</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("employees.detail.onTrack")}</p>
             </Card>
           </div>
         </div>
@@ -481,9 +507,11 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-medium">Completed Tests</CardTitle>
+              <CardTitle className="text-base font-medium">
+                {t("employees.detail.completedTests")}
+              </CardTitle>
               <Link href="#" className="text-xs font-medium text-primary hover:underline">
-                View all
+                {t("employees.detail.viewAll")}
               </Link>
             </CardHeader>
             <CardContent>
@@ -491,10 +519,12 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b-0 hover:bg-transparent">
-                      <TableHead className="h-8 text-xs font-normal">Test Title</TableHead>
+                      <TableHead className="h-8 text-xs font-normal">
+                        {t("employees.detail.testTitle")}
+                      </TableHead>
                       <TableHead className="h-8 w-[80px] text-xs font-normal">Score</TableHead>
                       <TableHead className="h-8 w-[120px] text-xs font-normal">
-                        Completed On
+                        {t("employees.detail.completedOn")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -505,7 +535,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                           colSpan={3}
                           className="text-center text-sm text-muted-foreground"
                         >
-                          No completed tests yet
+                          {t("employees.detail.noCompletedTests")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -527,7 +557,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                             </span>
                           </TableCell>
                           <TableCell className="py-2 text-sm text-muted-foreground">
-                            {formatDate(attempt.completedAt)}
+                            {formatEmployeeDate(locale, attempt.completedAt)}
                           </TableCell>
                         </TableRow>
                       ))
@@ -543,13 +573,17 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Strong Topics</CardTitle>
-              <p className="text-xs text-muted-foreground">Based on mastery</p>
+              <CardTitle className="text-base font-medium">
+                {t("employees.detail.strongTopics")}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {t("employees.detail.basedOnMastery")}
+              </p>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
                 {employee.strongTopics.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No data available</p>
+                  <p className="text-sm text-muted-foreground">{t("employees.detail.noData")}</p>
                 ) : (
                   employee.strongTopics
                     .slice(0, 5)
@@ -563,13 +597,17 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Weak Topics</CardTitle>
-              <p className="text-xs text-muted-foreground">Needs improvement</p>
+              <CardTitle className="text-base font-medium">
+                {t("employees.detail.weakTopics")}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {t("employees.detail.needsImprovement")}
+              </p>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-4">
                 {employee.weakTopics.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No data available</p>
+                  <p className="text-sm text-muted-foreground">{t("employees.detail.noData")}</p>
                 ) : (
                   employee.weakTopics
                     .slice(0, 5)
@@ -584,23 +622,29 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
           <AssignedNotStartedCard tests={employee.assignedNotStartedTests} />
         </div>
 
-        {/* Bottom-most Grid: Attempt History + Topic Mastery */}
+        {/* Bottom-most Grid: {t("employees.detail.attemptHistory")} + {t("employees.detail.topicMastery")} */}
         <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Attempt History</CardTitle>
+              <CardTitle className="text-base font-medium">
+                {t("employees.detail.attemptHistory")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b-0 hover:bg-transparent">
-                      <TableHead className="h-8 text-xs font-normal">Test Title</TableHead>
+                      <TableHead className="h-8 text-xs font-normal">
+                        {t("employees.detail.testTitle")}
+                      </TableHead>
                       <TableHead className="h-8 w-[120px] text-xs font-normal">
-                        Attempted On
+                        {t("employees.detail.attemptedOn")}
                       </TableHead>
                       <TableHead className="h-8 w-[80px] text-xs font-normal">Score</TableHead>
-                      <TableHead className="h-8 w-[100px] text-xs font-normal">Result</TableHead>
+                      <TableHead className="h-8 w-[100px] text-xs font-normal">
+                        {t("employees.detail.result")}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -610,12 +654,12 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                           colSpan={4}
                           className="text-center text-sm text-muted-foreground"
                         >
-                          No attempts found
+                          {t("employees.detail.noAttempts")}
                         </TableCell>
                       </TableRow>
                     ) : (
                       employee.attempts.map((attempt) => {
-                        const badge = resultBadge(attempt)
+                        const badge = resultBadge(attempt, t)
                         return (
                           <TableRow
                             key={attempt.id}
@@ -630,7 +674,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
                               </Link>
                             </TableCell>
                             <TableCell className="py-3 text-sm text-muted-foreground">
-                              {formatDate(attempt.completedAt ?? attempt.startedAt)}
+                              {formatEmployeeDate(locale, attempt.completedAt ?? attempt.startedAt)}
                             </TableCell>
                             <TableCell className="py-3 text-sm">
                               {formatScore(attempt.score)}
@@ -655,7 +699,7 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
               </div>
               <div className="mt-4 text-center">
                 <Link href="#" className="text-xs font-medium text-primary hover:underline">
-                  View all attempts
+                  {t("employees.detail.viewAll")} attempts
                 </Link>
               </div>
             </CardContent>
@@ -664,17 +708,23 @@ export function EmployeeDetailPage({ employee, showBreadcrumbs = true }: Employe
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div className="space-y-1">
-                <CardTitle className="text-base font-medium">Topic Mastery</CardTitle>
-                <p className="text-xs text-muted-foreground">Mastery by topic area</p>
+                <CardTitle className="text-base font-medium">
+                  {t("employees.detail.topicMastery")}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {t("employees.detail.masteryByTopic")}
+                </p>
               </div>
               <Link href="#" className="text-xs font-medium text-primary hover:underline">
-                View all topics
+                {t("employees.detail.viewAll")} topics
               </Link>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-3">
                 {employee.allTopics.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No topic data available</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("employees.detail.noTopicData")}
+                  </p>
                 ) : (
                   employee.allTopics.map((topic) => (
                     <TopicProgressBar key={topic.topic} topic={topic} colorClass="bg-primary" />

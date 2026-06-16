@@ -19,6 +19,7 @@ import {
   GenerateFollowUpQuestionRequestSchema,
 } from "@/features/employee/tests/schemas/follow-up-question-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getLocale } from "@/shared/i18n/get-locale"
 
 interface GenerateFollowUpRouteContext {
   params: Promise<{ id: string }>
@@ -172,7 +173,8 @@ export async function POST(request: Request, { params }: GenerateFollowUpRouteCo
     const generated = await generateFollowUpQuestion(
       questionRow.question_text,
       questionRow.topic ?? "General",
-      questionRow.explanation ?? ""
+      questionRow.explanation ?? "",
+      await getLocale()
     )
 
     const validatedGenerated = FollowUpQuestionOutputSchema.safeParse({

@@ -2,9 +2,10 @@ import { CheckCircle2, Clock, FileEdit } from "lucide-react"
 import type { ReactNode } from "react"
 
 import type { TestStatus } from "@/features/tests/types/test"
+import type { createTranslator } from "@/shared/i18n/translate"
 
 export interface TestStatusStyle {
-  label: string
+  labelKey: `status.test.${TestStatus}`
   dotClass: string
   listBadgeClass: string
   detailBadgeClass: string
@@ -13,7 +14,7 @@ export interface TestStatusStyle {
 
 export const TEST_STATUS_STYLE: Record<TestStatus, TestStatusStyle> = {
   published: {
-    label: "Published",
+    labelKey: "status.test.published",
     dotClass: "bg-emerald-500",
     listBadgeClass:
       "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30",
@@ -22,7 +23,7 @@ export const TEST_STATUS_STYLE: Record<TestStatus, TestStatusStyle> = {
     icon: <CheckCircle2 className="mr-1 size-3" />,
   },
   draft: {
-    label: "Draft",
+    labelKey: "status.test.draft",
     dotClass: "bg-orange-500",
     listBadgeClass:
       "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-900/30",
@@ -31,10 +32,17 @@ export const TEST_STATUS_STYLE: Record<TestStatus, TestStatusStyle> = {
     icon: <FileEdit className="mr-1 size-3" />,
   },
   archived: {
-    label: "Archived",
+    labelKey: "status.test.archived",
     dotClass: "bg-muted-foreground",
     listBadgeClass: "bg-muted text-muted-foreground border-border",
     detailBadgeClass: "bg-muted text-muted-foreground hover:bg-muted",
     icon: <Clock className="mr-1 size-3" />,
   },
+}
+
+export function getTestStatusLabel(
+  status: TestStatus,
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
+  return t(TEST_STATUS_STYLE[status].labelKey)
 }

@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table"
 
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { DataTablePagination } from "@/shared/ui/data-table/data-table-pagination"
 import { DataTableToolbar } from "@/shared/ui/data-table/data-table-toolbar"
 import { useDataTableState } from "@/shared/ui/data-table/use-data-table-state"
@@ -142,9 +143,11 @@ export function DataTable<TData, TValue>({
   total,
   loading = false,
   toolbar,
-  emptyMessage = "No results found.",
+  emptyMessage,
   getRowProps,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useTranslation()
+  const resolvedEmptyMessage = emptyMessage ?? t("dataTable.emptyResults")
   const columnPinning = useMemo(() => getPinningState(columns), [columns])
   const columnSizing = useMemo(() => getColumnSizing(columns), [columns])
   const { search, setSearch, sorting, onSortingChange, pagination, onPaginationChange } =
@@ -231,7 +234,7 @@ export function DataTable<TData, TValue>({
             {loading ? (
               <TableRow>
                 <TableCell colSpan={visibleColumnsCount} className="h-32 text-center">
-                  <p className="typography-p text-muted-foreground">Loading table data...</p>
+                  <p className="typography-p text-muted-foreground">{t("dataTable.loading")}</p>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length > 0 ? (
@@ -259,7 +262,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={visibleColumnsCount} className="h-32 text-center">
-                  <p className="typography-p text-muted-foreground">{emptyMessage}</p>
+                  <p className="typography-p text-muted-foreground">{resolvedEmptyMessage}</p>
                 </TableCell>
               </TableRow>
             )}

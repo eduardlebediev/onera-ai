@@ -10,6 +10,8 @@ import type {
 } from "@/features/analytics/types/admin-dashboard"
 import { formatTestDate } from "@/features/tests/lib/test-format"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getLocale } from "@/shared/i18n/get-locale"
+import type { AppLocale } from "@/shared/i18n/locale-config"
 import type { Json } from "@/lib/supabase/types"
 
 export type AdminDashboardRecentAttempt = {
@@ -133,7 +135,8 @@ function mapDashboardDocumentStatusToMock(
 
 function mapRecentDocumentRow(
   row: RecentDocumentRow,
-  testCountsByDocumentId: Map<string, number>
+  testCountsByDocumentId: Map<string, number>,
+  locale: AppLocale
 ): DashboardDocument {
   const statusFields = mapDashboardDocumentStatusToMock(row.status)
 
@@ -143,7 +146,7 @@ function mapRecentDocumentRow(
     ...statusFields,
     topics: [],
     testCount: testCountsByDocumentId.get(row.id) ?? 0,
-    updatedAt: formatTestDate(row.created_at),
+    updatedAt: formatTestDate(locale, row.created_at),
   }
 }
 
@@ -252,7 +255,8 @@ async function fetchLinkedTestCountsByDocumentId(
 
 async function fetchRecentDocuments(
   supabase: ReturnType<typeof createAdminClient>,
-  organizationId: string
+  organizationId: string,
+  locale: AppLocale
 ): Promise<DashboardDocument[]> {
   const { data, error } = await supabase
     .from("documents")
@@ -272,7 +276,7 @@ async function fetchRecentDocuments(
     documentRows.map((row) => row.id)
   )
 
-  return documentRows.map((row) => mapRecentDocumentRow(row, testCountsByDocumentId))
+  return documentRows.map((row) => mapRecentDocumentRow(row, testCountsByDocumentId, locale))
 }
 
 async function fetchRecentDrafts(
@@ -386,36 +390,34 @@ function buildKpiStats(input: {
 
   return [
     {
-      label: "Documents",
+      id: "documents",
       value: String(input.documentsCount),
-      description: "Uploaded source documents",
     },
     {
-      label: "Active Tests",
+      id: "activeTests",
       value: String(input.publishedTestsCount),
-      description: "Currently published",
     },
     {
-      label: "Assigned Tests",
+      id: "assignedTests",
       value: String(input.totalAssignments),
-      description: `${input.inProgressAssignments} in progress · ${completionRate}% completed`,
+      descriptionParams: {
+        inProgress: input.inProgressAssignments,
+        rate: completionRate,
+      },
     },
     {
-      label: "Active Employees",
+      id: "activeEmployees",
       value: String(input.activeEmployeesCount),
-      description: "Completed a test in the last 7 days",
     },
     {
-      label: "Average Score",
+      id: "averageScore",
       value: input.averageScore !== null ? `${Math.round(input.averageScore)}%` : "—",
-      description:
-        input.averageScore !== null ? "Across completed attempts" : "No completed attempts yet",
+      useEmptyDescription: input.averageScore === null,
     },
     {
-      label: "Weak Topics",
+      id: "weakTopics",
       value: String(input.weakTopicsCount),
-      description:
-        input.weakTopicsCount > 0 ? "Topics with incorrect answers" : "No weak topics yet",
+      useEmptyDescription: input.weakTopicsCount === 0,
     },
   ]
 }
@@ -446,12 +448,13 @@ export async function getAdminDashboardFromSupabase(
   }
 
   const supabase = createAdminClient()
+  const locale = await getLocale()
 
   let recentDocuments: DashboardDocument[] = []
   let recentDrafts: DashboardAiDraft[] = []
 
   try {
-    recentDocuments = await fetchRecentDocuments(supabase, organizationId)
+    recentDocuments = await fetchRecentDocuments(supabase, organizationId, locale)
   } catch (error) {
     console.error("Failed to load recent documents for admin dashboard:", error)
   }

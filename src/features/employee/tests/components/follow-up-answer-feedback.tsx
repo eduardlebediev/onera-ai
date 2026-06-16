@@ -1,9 +1,15 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowLeft, BookOpen, CheckCircle2, RotateCcw, XCircle } from "lucide-react"
 
 import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
 import { getEmployeeSourceDocumentHref } from "@/features/employee/documents/lib/employee-source-document-route"
-import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
+import {
+  formatDifficultyLabel,
+  getPassFailBadgeClass,
+} from "@/features/employee/tests/lib/employee-test-model"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/lib/utils"
@@ -18,10 +24,6 @@ interface FollowUpAnswerFeedbackProps {
   showTryAgain?: boolean
 }
 
-function formatDifficulty(difficulty: FollowUpQuestion["difficulty"]): string {
-  return difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
-}
-
 export function FollowUpAnswerFeedback({
   followUp,
   isCorrect,
@@ -31,12 +33,15 @@ export function FollowUpAnswerFeedback({
   onBackToResults,
   showTryAgain = true,
 }: FollowUpAnswerFeedbackProps) {
+  const { t } = useTranslation()
   const correctOption = followUp.options.find((option) => option.id === followUp.correctOptionId)
   const StatusIcon = isCorrect ? CheckCircle2 : XCircle
-  const statusLabel = isCorrect ? "Topic understood" : "Review recommended"
+  const statusLabel = isCorrect
+    ? t("employee.result.topicUnderstood")
+    : t("employee.result.reviewRecommended")
   const suggestedAction = isCorrect
-    ? "Great work - you can move on or review the source material to reinforce this topic."
-    : "Take a moment to review the source material and try the follow-up again when ready."
+    ? t("employee.followUp.understoodAction")
+    : t("employee.followUp.reviewAction")
 
   return (
     <div
@@ -55,17 +60,21 @@ export function FollowUpAnswerFeedback({
       </div>
 
       <div className="space-y-1">
-        <p className="typography-label text-muted-foreground">Correct answer</p>
-        <p className="typography-small font-medium">{correctOption?.label ?? "-"}</p>
+        <p className="typography-label text-muted-foreground">
+          {t("employee.result.correctAnswer")}
+        </p>
+        <p className="typography-small font-medium">{correctOption?.label ?? t("common.dash")}</p>
       </div>
 
       <div className="space-y-1">
-        <p className="typography-label text-muted-foreground">Explanation</p>
+        <p className="typography-label text-muted-foreground">{t("employee.result.explanation")}</p>
         <p className="typography-small">{followUp.explanationAfterAnswer}</p>
       </div>
 
       <div className="space-y-1">
-        <p className="typography-label text-muted-foreground">Suggested next action</p>
+        <p className="typography-label text-muted-foreground">
+          {t("employee.followUp.suggestedNextAction")}
+        </p>
         <p className="typography-small text-muted-foreground">{suggestedAction}</p>
       </div>
 
@@ -73,17 +82,17 @@ export function FollowUpAnswerFeedback({
         <Button asChild variant="outline" size="sm">
           <Link href={getEmployeeSourceDocumentHref(sourceDocumentId, { testId })}>
             <BookOpen className="size-4" />
-            Review source material
+            {t("employee.followUp.reviewSourceMaterial")}
           </Link>
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onBackToResults}>
           <ArrowLeft className="size-4" />
-          Back to results
+          {t("employee.followUp.backToResults")}
         </Button>
         {showTryAgain ? (
           <Button type="button" variant="outline" size="sm" onClick={onTryAnother}>
             <RotateCcw className="size-4" />
-            Try again
+            {t("common.tryAgain")}
           </Button>
         ) : null}
       </div>
@@ -92,6 +101,8 @@ export function FollowUpAnswerFeedback({
 }
 
 export function FollowUpQuestionMeta({ followUp }: { followUp: FollowUpQuestion }) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-wrap gap-2">
       <Badge variant="outline" className="text-[11px] font-medium">
@@ -99,7 +110,7 @@ export function FollowUpQuestionMeta({ followUp }: { followUp: FollowUpQuestion 
         {followUp.topic}
       </Badge>
       <Badge variant="outline" className="text-[11px] font-medium">
-        {formatDifficulty(followUp.difficulty)}
+        {formatDifficultyLabel(followUp.difficulty, t)}
       </Badge>
       <Badge variant="outline" className="text-[11px] font-medium">
         {followUp.learningGoal}

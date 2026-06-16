@@ -1,7 +1,11 @@
+"use client"
+
 import { BookOpen } from "lucide-react"
 
 import type { FollowUpTopicStatus } from "@/features/employee/tests/types/follow-up"
 import type { ResultWeakTopic } from "@/features/employee/tests/lib/test-result-model"
+import { useTranslation } from "@/shared/i18n/use-translation"
+import type { TranslationKey } from "@/shared/i18n/translate"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
@@ -9,6 +13,12 @@ import { cn } from "@/lib/utils"
 interface TestWeakTopicsProps {
   weakTopics: ResultWeakTopic[]
   followUpStatusByTopic?: Record<string, FollowUpTopicStatus>
+}
+
+const FOLLOW_UP_STATUS_LABEL_KEYS: Record<FollowUpTopicStatus, TranslationKey> = {
+  needs_review: "employee.result.needsReview",
+  follow_up_completed: "employee.result.followUpCompleted",
+  topic_understood: "employee.result.topicUnderstood",
 }
 
 function getFollowUpStatusBadgeClass(status: FollowUpTopicStatus): string {
@@ -22,29 +32,20 @@ function getFollowUpStatusBadgeClass(status: FollowUpTopicStatus): string {
   }
 }
 
-function getFollowUpTopicStatusLabel(status: FollowUpTopicStatus): string {
-  switch (status) {
-    case "needs_review":
-      return "Needs review"
-    case "follow_up_completed":
-      return "Follow-up completed"
-    case "topic_understood":
-      return "Topic understood"
-  }
-}
-
 export function TestWeakTopics({ weakTopics, followUpStatusByTopic = {} }: TestWeakTopicsProps) {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center gap-2">
           <BookOpen className="size-4 text-muted-foreground" />
-          <h2 className="typography-h3 font-semibold">Weak Topics</h2>
+          <h2 className="typography-h3 font-semibold">{t("employee.result.weakTopicsCard")}</h2>
         </div>
 
         {weakTopics.length === 0 ? (
           <p className="typography-small text-muted-foreground">
-            No weak topics identified. Great work on this attempt.
+            {t("employee.result.weakTopicsGreatWork")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -59,7 +60,7 @@ export function TestWeakTopics({ weakTopics, followUpStatusByTopic = {} }: TestW
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium">{topic.topic}</p>
                     <span className="shrink-0 typography-small text-muted-foreground">
-                      {topic.missedQuestionsCount} missed
+                      {t("employee.result.missedCount", { count: topic.missedQuestionsCount })}
                     </span>
                   </div>
 
@@ -70,12 +71,14 @@ export function TestWeakTopics({ weakTopics, followUpStatusByTopic = {} }: TestW
                       getFollowUpStatusBadgeClass(followUpStatus)
                     )}
                   >
-                    {getFollowUpTopicStatusLabel(followUpStatus)}
+                    {t(FOLLOW_UP_STATUS_LABEL_KEYS[followUpStatus])}
                   </Badge>
 
                   <p className="typography-small text-muted-foreground">{topic.explanation}</p>
                   <p className="typography-small">
-                    <span className="font-medium text-foreground">Review: </span>
+                    <span className="font-medium text-foreground">
+                      {t("employee.result.reviewLabel")}:{" "}
+                    </span>
                     {topic.recommendedAction}
                   </p>
                 </li>

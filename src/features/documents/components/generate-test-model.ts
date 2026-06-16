@@ -1,14 +1,13 @@
 import type { DocumentDetail } from "@/features/documents/types/document"
+import type { createTranslator } from "@/shared/i18n/translate"
 
 export type TestDifficulty = "easy" | "medium" | "hard"
-export type TestLanguage = "en" | "de"
 
 export interface GenerateTestSettings {
   title: string
   difficulty: TestDifficulty
   targetRole: string
   questionCount: number
-  language: TestLanguage
   passingScore: number
 }
 
@@ -16,11 +15,6 @@ export const DIFFICULTY_OPTIONS: Array<{ value: TestDifficulty; label: string }>
   { value: "easy", label: "Easy" },
   { value: "medium", label: "Medium" },
   { value: "hard", label: "Hard" },
-]
-
-export const LANGUAGE_OPTIONS: Array<{ value: TestLanguage; label: string }> = [
-  { value: "en", label: "English" },
-  { value: "de", label: "German" },
 ]
 
 export const TARGET_ROLE_OPTIONS = [
@@ -40,29 +34,32 @@ export function canGenerateTest(document: DocumentDetail): boolean {
   return document.status === "ready" && document.chunks.length > 0 && hasEmbeddedChunks
 }
 
-export function getGenerateBlockReason(document: DocumentDetail): string {
+export function getGenerateBlockReason(
+  document: DocumentDetail,
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
   if (document.status === "archived") {
-    return "Archived documents cannot be used for test generation."
+    return t("documents.generateTest.blockReasons.archived")
   }
   if (document.status === "deleted") {
-    return "Deleted documents cannot be used for test generation."
+    return t("documents.generateTest.blockReasons.deleted")
   }
   if (document.status === "processing") {
-    return "This document is still being processed. Generation will be available once processing is complete."
+    return t("documents.generateTest.blockReasons.processing")
   }
   if (document.status === "failed") {
-    return "Processing failed for this document. Please re-upload or contact support before generating a test."
+    return t("documents.generateTest.blockReasons.failed")
   }
   if (document.status === "uploaded") {
-    return "This document has not been processed yet."
+    return t("documents.generateTest.blockReasons.notProcessed")
   }
   if (document.chunks.length === 0) {
-    return "No content chunks are available for this document."
+    return t("documents.generateTest.blockReasons.noChunks")
   }
   if (document.hasEmbeddedChunks === false) {
-    return "Document chunks are still missing embeddings."
+    return t("documents.generateTest.blockReasons.noEmbeddings")
   }
-  return "Test generation is not available for this document."
+  return t("documents.generateTest.blockReasons.unavailable")
 }
 
 /** Derive the unique set of topics represented by the given chunk ids. */
@@ -80,13 +77,15 @@ export function getGenerateTestTopics(document: DocumentDetail): string[] {
   )
 }
 
-export function getDefaultGenerateTestSettings(document: DocumentDetail): GenerateTestSettings {
+export function getDefaultGenerateTestSettings(
+  document: DocumentDetail,
+  t: ReturnType<typeof createTranslator>["t"]
+): GenerateTestSettings {
   return {
-    title: `${document.title} Knowledge Test`,
+    title: t("documents.generateTest.defaultTestTitle", { title: document.title }),
     difficulty: "medium",
     targetRole: TARGET_ROLE_OPTIONS[0],
     questionCount: Math.min(Math.max(document.chunks.length * 2, 5), 10),
-    language: "en",
     passingScore: 80,
   }
 }

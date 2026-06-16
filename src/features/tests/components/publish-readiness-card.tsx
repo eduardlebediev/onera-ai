@@ -1,6 +1,9 @@
+"use client"
+
 import { AlertCircle, CheckCircle2 } from "lucide-react"
 
 import type { PublishReadinessCheck } from "@/features/tests/lib/publish-test-model"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +13,7 @@ interface PublishReadinessCardProps {
 }
 
 function ReadinessCheckItem({ check }: { check: PublishReadinessCheck }) {
+  const { t } = useTranslation()
   const isReady = check.status === "ready"
   const Icon = isReady ? CheckCircle2 : AlertCircle
 
@@ -32,7 +36,9 @@ function ReadinessCheckItem({ check }: { check: PublishReadinessCheck }) {
                 : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
             )}
           >
-            {isReady ? "Ready" : "Needs attention"}
+            {isReady
+              ? t("tests.publish.readiness.readyBadge")
+              : t("tests.publish.readiness.needsAttention")}
           </span>
         </div>
         <p className="typography-small text-muted-foreground">{check.helperText}</p>
@@ -42,10 +48,12 @@ function ReadinessCheckItem({ check }: { check: PublishReadinessCheck }) {
 }
 
 export function PublishReadinessCard({ checks, blockReason }: PublishReadinessCardProps) {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Publish Readiness</CardTitle>
+        <CardTitle>{t("tests.publish.readiness.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <ul className="space-y-2">

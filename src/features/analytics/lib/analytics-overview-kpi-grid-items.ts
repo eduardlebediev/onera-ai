@@ -10,22 +10,22 @@ type AnalyticsKpiMeta = {
   getTone: (stat: KpiStat) => KpiTone
 }
 
-const ANALYTICS_KPI_META_BY_LABEL: Record<string, AnalyticsKpiMeta> = {
-  "Team Average Score": {
+const ANALYTICS_KPI_META_BY_ID: Record<string, AnalyticsKpiMeta> = {
+  teamAverageScore: {
     icon: CheckCircle2,
     getTone: (stat) => (stat.value === "—" ? "neutral" : "success"),
   },
-  "Completion Rate": { icon: BarChart3, getTone: () => "neutral" },
-  "Completed Attempts": { icon: Award, getTone: () => "success" },
-  "Weak Topics": {
+  completionRate: { icon: BarChart3, getTone: () => "neutral" },
+  completedAttempts: { icon: Award, getTone: () => "success" },
+  weakTopics: {
     icon: TrendingDown,
     getTone: (stat) => (Number(stat.value) > 0 ? "warning" : "neutral"),
   },
-  "Difficult Questions": {
+  difficultQuestions: {
     icon: HelpCircle,
     getTone: (stat) => (Number(stat.value) > 0 ? "warning" : "neutral"),
   },
-  "Failed Attempts": {
+  failedAttempts: {
     icon: Users,
     getTone: (stat) => (Number(stat.value) > 0 ? "danger" : "neutral"),
   },
@@ -33,14 +33,14 @@ const ANALYTICS_KPI_META_BY_LABEL: Record<string, AnalyticsKpiMeta> = {
 
 export function mapAnalyticsOverviewStatsToGridItems(stats: KpiStat[]): KpiStatGridItem[] {
   return stats.map((stat) => {
-    const meta = ANALYTICS_KPI_META_BY_LABEL[stat.label] ?? {
+    const meta = ANALYTICS_KPI_META_BY_ID[stat.id] ?? {
       icon: BarChart3,
       getTone: () => "neutral" as const,
     }
 
     return {
-      id: stat.label,
-      label: stat.label,
+      id: stat.id,
+      label: stat.id,
       value: stat.value,
       icon: meta.icon,
       tone: meta.getTone(stat),

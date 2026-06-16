@@ -10,6 +10,8 @@ import {
   serializeAttemptFeedbackEnvelope,
 } from "@/features/employee/tests/schemas/attempt-feedback-schema"
 import { createAdminClient } from "@/lib/supabase/admin"
+import type { AppLocale } from "@/shared/i18n/locale-config"
+import { createTranslator } from "@/shared/i18n/translate"
 
 import type { QuestionScoringRow } from "./supabase-employee-attempts"
 
@@ -36,7 +38,8 @@ export function resolveAttemptAiFeedback(
   testTitle: string,
   score: number,
   passed: boolean,
-  answerReview: EmployeeTestResult["answerReview"]
+  answerReview: EmployeeTestResult["answerReview"],
+  locale: AppLocale
 ): EmployeeTestResult["aiFeedback"] {
   const parsed = parseAttemptFeedbackEnvelope(storedFeedback)
 
@@ -44,7 +47,7 @@ export function resolveAttemptAiFeedback(
     return parsed
   }
 
-  return buildDynamicAiFeedback(testTitle, score, passed, answerReview)
+  return buildDynamicAiFeedback(testTitle, score, passed, answerReview, locale)
 }
 
 export async function persistAttemptFeedbackBestEffort(
@@ -72,8 +75,10 @@ function buildDynamicAiFeedback(
   testTitle: string,
   score: number,
   passed: boolean,
-  answerReview: EmployeeTestResult["answerReview"]
+  answerReview: EmployeeTestResult["answerReview"],
+  locale: AppLocale
 ): EmployeeTestResult["aiFeedback"] {
+  const { t } = createTranslator(locale)
   const correctItems = answerReview.filter((item) => item.isCorrect)
   const incorrectItems = answerReview.filter((item) => !item.isCorrect)
   const understoodTopics = [...new Set(correctItems.map((item) => item.topic))].slice(0, 2)
@@ -81,20 +86,34 @@ function buildDynamicAiFeedback(
 
   return {
     performanceSummary: passed
-      ? `You scored ${score}% and passed the ${testTitle}.`
-      : `You scored ${score}% and did not meet the passing threshold on the ${testTitle}.`,
+      ? t("employee.result.dynamicFeedback.passedSummary", { score, testTitle })
+      : t("employee.result.dynamicFeedback.failedSummary", { score, testTitle }),
     understoodWell:
       correctItems.length > 0
-        ? `You answered ${correctItems.length} question${correctItems.length === 1 ? "" : "s"} correctly${understoodTopics.length > 0 ? `, including topics like ${understoodTopics.join(" and ")}` : ""}.`
-        : "Focus on reviewing the source document sections linked to each question.",
+        ? understoodTopics.length > 0
+          ? t("employee.result.dynamicFeedback.understoodWellWithTopics", {
+              count: correctItems.length,
+              topics: understoodTopics.join(locale === "de" ? " und " : " and "),
+            })
+          : t("employee.result.dynamicFeedback.understoodWellCount", {
+              count: correctItems.length,
+            })
+        : t("employee.result.dynamicFeedback.understoodWellEmpty"),
     needsImprovement:
       incorrectItems.length > 0
-        ? `You missed ${incorrectItems.length} question${incorrectItems.length === 1 ? "" : "s"}${weakTopicNames.length > 0 ? `, especially in ${weakTopicNames.join(" and ")}` : ""}.`
-        : "No incorrect answers in this attempt.",
+        ? weakTopicNames.length > 0
+          ? t("employee.result.dynamicFeedback.needsImprovementWithTopics", {
+              count: incorrectItems.length,
+              topics: weakTopicNames.join(locale === "de" ? " und " : " and "),
+            })
+          : t("employee.result.dynamicFeedback.needsImprovementCount", {
+              count: incorrectItems.length,
+            })
+        : t("employee.result.dynamicFeedback.needsImprovementNone"),
     recommendedNextStep:
       incorrectItems.length > 0
-        ? "Review your incorrect answers below and use Check Understanding on any weak topics."
-        : "Great work — revisit the source document periodically to keep knowledge fresh.",
+        ? t("employee.result.dynamicFeedback.recommendedNextStepWithIncorrect")
+        : t("employee.result.dynamicFeedback.recommendedNextStepAllCorrect"),
   }
 }
 

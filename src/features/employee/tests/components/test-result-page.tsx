@@ -10,6 +10,7 @@ import { TestWeakTopics } from "@/features/employee/tests/components/test-weak-t
 import type { EmployeeTestResult } from "@/features/employee/tests/lib/test-result-model"
 import type { FollowUpTopicStatus } from "@/features/employee/tests/types/follow-up"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
+import { useTranslation } from "@/shared/i18n/use-translation"
 
 interface TestResultPageProps {
   result: EmployeeTestResult
@@ -39,6 +40,7 @@ function buildInitialFollowUpStatus(
 }
 
 export function TestResultPage({ result }: TestResultPageProps) {
+  const { t } = useTranslation()
   const [followUpStatusByTopic, setFollowUpStatusByTopic] = useState<
     Record<string, FollowUpTopicStatus>
   >(() => buildInitialFollowUpStatus(result.weakTopics, result.followUpsByOriginalQuestionId))
@@ -62,9 +64,9 @@ export function TestResultPage({ result }: TestResultPageProps) {
     <div className="page-shell">
       <Breadcrumbs
         items={[
-          { label: "My Tests", href: "/employee/tests" },
+          { label: t("breadcrumbs.myTests"), href: "/employee/tests" },
           { label: result.title, href: `/employee/tests/${result.id}/take` },
-          { label: "Result" },
+          { label: t("breadcrumbs.result") },
         ]}
       />
 

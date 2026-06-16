@@ -16,8 +16,10 @@ import {
   isSourceBlockingValidity,
   normalizeTestSourceValidity,
   TEST_SOURCE_VALIDITY_STYLE,
+  getTestSourceValidityLabel,
 } from "@/features/tests/lib/test-source-validity-style"
-import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { getTestStatusLabel, TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import type { TestStatus } from "@/features/tests/types/test"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/shared/ui/badge"
@@ -32,13 +34,6 @@ import { useSelection } from "@/shared/ui/use-selection"
 
 type StatusFilter = "all" | TestStatus
 
-const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
-  { label: "All", value: "all" },
-  { label: "Draft", value: "draft" },
-  { label: "Published", value: "published" },
-  { label: "Archived", value: "archived" },
-]
-
 interface TestsListPageProps {
   tests: ResolvedTestListItem[]
   loadError?: boolean
@@ -48,19 +43,21 @@ interface TestsListPageProps {
 type BulkTestAction = "archive" | "delete"
 
 function TestsEmptyState({ newTestHref }: { newTestHref: string }) {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
         <div>
-          <p className="typography-h3 font-semibold">No tests yet</p>
+          <p className="typography-h3 font-semibold">{t("tests.list.emptyTitle")}</p>
           <p className="mt-2 max-w-md typography-p text-muted-foreground">
-            Generate your first test from a ready document.
+            {t("tests.list.emptySubtitle")}
           </p>
         </div>
         <Button asChild size="lg">
           <Link href={newTestHref}>
             <Sparkles className="size-4" />
-            Generate Test
+            {t("admin.dashboard.generateTest")}
           </Link>
         </Button>
       </CardContent>
@@ -69,13 +66,13 @@ function TestsEmptyState({ newTestHref }: { newTestHref: string }) {
 }
 
 function TestsLoadErrorState() {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-        <p className="typography-h3 font-semibold">Tests could not be loaded</p>
-        <p className="max-w-md typography-p text-muted-foreground">
-          Refresh the page or try again later. Only Supabase data is shown.
-        </p>
+        <p className="typography-h3 font-semibold">{t("common.loadError.tests")}</p>
+        <p className="max-w-md typography-p text-muted-foreground">{t("common.refreshHint")}</p>
       </CardContent>
     </Card>
   )
@@ -83,6 +80,7 @@ function TestsLoadErrorState() {
 
 export function TestsListPage({ tests, loadError = false, newTestHref }: TestsListPageProps) {
   const router = useRouter()
+  const { t, locale } = useTranslation()
   const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null)
@@ -112,6 +110,17 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
   const canDeleteSelectedTests =
     selectedTests.length > 0 &&
     selectedTests.every((test) => test.status === "draft" || test.status === "archived")
+
+  const statusFilterOptions = useMemo(
+    () =>
+      [
+        { label: t("common.all"), value: "all" as const },
+        { label: t("dataTable.filters.draft"), value: "draft" as const },
+        { label: t("dataTable.filters.published"), value: "published" as const },
+        { label: t("dataTable.filters.archived"), value: "archived" as const },
+      ] satisfies Array<{ label: string; value: StatusFilter }>,
+    [t]
+  )
 
   const handleBulkArchiveTests = useCallback(async () => {
     if (!canArchiveSelectedTests) return
@@ -180,7 +189,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
 
           return (
             <DataTableSelectionCheckbox
-              aria-label="Select all visible tests"
+              aria-label={t("dataTable.selectAllTests")}
               checked={allVisibleSelected}
               indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
               disabled={visibleIds.length === 0}
@@ -192,7 +201,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
         meta: { width: 56, headerClassName: "text-center", cellClassName: "text-center" },
         cell: ({ row }) => (
           <DataTableSelectionCheckbox
-            aria-label={`Select ${row.original.title}`}
+            aria-label={t("dataTable.selectTest", { title: row.original.title })}
             checked={selectedIds.has(row.original.id)}
             onCheckedChange={() => toggle(row.original.id)}
           />
@@ -201,7 +210,9 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
       {
         id: "title",
         accessorKey: "title",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.title")} />
+        ),
         enableSorting: true,
         meta: { width: 240 },
         cell: ({ row }) => <TestTitleCell test={row.original} onOpenDrawer={handleOpenDrawer} />,
@@ -209,7 +220,9 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
       {
         id: "status",
         accessorKey: "status",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.status")} />
+        ),
         enableSorting: true,
         meta: { width: 220 },
         cell: ({ row }) => <TestStatusCell test={row.original} />,
@@ -217,36 +230,48 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
       {
         id: "difficulty",
         accessorKey: "difficulty",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Difficulty" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.difficulty")} />
+        ),
         enableSorting: true,
         meta: { width: 140 },
-        cell: ({ row }) => <span className="capitalize">{row.original.difficulty}</span>,
+        cell: ({ row }) => (
+          <span className="capitalize">{t(`common.difficulty.${row.original.difficulty}`)}</span>
+        ),
       },
       {
         id: "targetRole",
         accessorKey: "targetRole",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Target Role" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.targetRole")} />
+        ),
         enableSorting: true,
         meta: { width: 180 },
       },
       {
         id: "language",
         accessorKey: "language",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Language" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.language")} />
+        ),
         enableSorting: true,
         meta: { width: 120 },
       },
       {
         id: "questionCount",
         accessorKey: "questionCount",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Questions" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("common.questions")} />
+        ),
         enableSorting: true,
         meta: { width: 130 },
       },
       {
         id: "passingScore",
         accessorKey: "passingScore",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Passing Score" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.passingScore")} />
+        ),
         enableSorting: true,
         meta: { width: 160 },
         cell: ({ row }) => `${row.original.passingScore}%`,
@@ -254,7 +279,9 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
       {
         id: "sourceDocument",
         accessorFn: (test) => test.sourceDocument.title,
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Source Document" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.sourceDocument")} />
+        ),
         enableSorting: true,
         meta: { width: 220 },
         cell: ({ row }) => (
@@ -266,53 +293,57 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
       {
         id: "createdAt",
         accessorKey: "createdAt",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.created")} />
+        ),
         enableSorting: true,
         meta: { width: 140 },
         cell: ({ row }) => (
           <p className="typography-small whitespace-nowrap text-muted-foreground">
-            {formatTestDate(row.original.createdAt)}
+            {formatTestDate(locale, row.original.createdAt)}
           </p>
         ),
       },
       {
         id: "assignedEmployeesCount",
         accessorKey: "assignedEmployeesCount",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Assigned" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.assigned")} />
+        ),
         enableSorting: true,
         meta: { width: 130 },
       },
       {
         id: "attemptsCount",
         accessorKey: "attemptsCount",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Attempts" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.attempts")} />
+        ),
         enableSorting: true,
         meta: { width: 130 },
       },
       {
         id: "actions",
-        header: "Action",
+        header: t("common.action"),
         enableSorting: false,
         meta: { width: 150, headerClassName: "text-right", cellClassName: "text-right" },
         cell: ({ row }) => <TestActionsCell testId={row.original.id} />,
       },
     ],
-    [handleOpenDrawer, selectAll, selectedIds, toggle]
+    [handleOpenDrawer, locale, selectAll, selectedIds, t, toggle]
   )
 
   return (
     <div className="page-shell">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="typography-h2">Tests</h2>
-          <p className="mt-1 typography-p text-muted-foreground">
-            Manage AI-generated knowledge tests for your team.
-          </p>
+          <h2 className="typography-h2">{t("tests.list.title")}</h2>
+          <p className="mt-1 typography-p text-muted-foreground">{t("tests.list.subtitle")}</p>
         </div>
         <Button asChild className="shrink-0" size="lg">
           <Link href={newTestHref}>
             <Sparkles className="size-4" />
-            New Test
+            {t("tests.list.newTest")}
           </Link>
         </Button>
       </div>
@@ -329,8 +360,8 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
         ) : (
           <DataTableShell
             icon={ClipboardList}
-            title="All Tests"
-            countLabel={`${visibleTests.length} shown`}
+            title={t("dataTable.allTests")}
+            countLabel={t("common.shown", { count: visibleTests.length })}
           >
             <DataTableBulkActions selectedCount={selectedIds.size}>
               <Button
@@ -341,7 +372,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
                 onClick={() => void handleBulkArchiveTests()}
               >
                 <Archive />
-                {bulkTestAction === "archive" ? "Archiving..." : "Archive"}
+                {bulkTestAction === "archive" ? t("common.archiving") : t("common.archive")}
               </Button>
               <Button
                 type="button"
@@ -351,15 +382,15 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
                 onClick={() => void handleBulkDeleteTests()}
               >
                 <Trash2 />
-                {bulkTestAction === "delete" ? "Deleting..." : "Delete"}
+                {bulkTestAction === "delete" ? t("common.deleting") : t("common.delete")}
               </Button>
             </DataTableBulkActions>
             <DataTable
               columns={columns}
               data={visibleTests}
               searchKey="title"
-              searchPlaceholder="Search tests..."
-              emptyMessage="No tests match the current filter."
+              searchPlaceholder={t("dataTable.searchTests")}
+              emptyMessage={t("dataTable.emptyTests")}
               toolbar={
                 <div className="relative shrink-0">
                   <select
@@ -367,7 +398,7 @@ export function TestsListPage({ tests, loadError = false, newTestHref }: TestsLi
                     onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
                     className="h-8 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    {STATUS_FILTER_OPTIONS.map((option) => (
+                    {statusFilterOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -411,19 +442,22 @@ const TestTitleCell = memo(function TestTitleCell({
 })
 
 const TestActionsCell = memo(function TestActionsCell({ testId }: { testId: string }) {
+  const { t } = useTranslation()
+
   return (
     <div
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
       <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-        <Link href={`/admin/tests/${testId}`}>View details</Link>
+        <Link href={`/admin/tests/${testId}`}>{t("tests.list.viewDetails")}</Link>
       </Button>
     </div>
   )
 })
 
 const TestStatusCell = memo(function TestStatusCell({ test }: { test: ResolvedTestListItem }) {
+  const { t } = useTranslation()
   const statusStyle = TEST_STATUS_STYLE[test.status]
   const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
   const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
@@ -432,16 +466,16 @@ const TestStatusCell = memo(function TestStatusCell({ test }: { test: ResolvedTe
     <div className="flex flex-wrap items-center gap-2">
       <Badge variant="outline" className={cn("status-badge", statusStyle.listBadgeClass)}>
         <span className={`mr-1 size-1.5 rounded-full ${statusStyle.dotClass}`} />
-        {statusStyle.label}
+        {getTestStatusLabel(test.status, t)}
       </Badge>
       {test.isActive === false ? (
         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-          Inactive
+          {t("status.test.inactive")}
         </Badge>
       ) : null}
       {isSourceBlockingValidity(sourceValidity) ? (
         <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
-          {sourceValidityStyle.label}
+          {getTestSourceValidityLabel(sourceValidity, t)}
         </Badge>
       ) : null}
     </div>

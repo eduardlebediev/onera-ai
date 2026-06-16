@@ -7,6 +7,9 @@ import {
   isEmployeeTestOverdue,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
+import type { createTranslator } from "@/shared/i18n/translate"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 export type EmployeeTestPriorityIndicatorId = "overdue" | "due_soon" | "low_score" | "required"
 
@@ -24,14 +27,15 @@ function isDueSoon(test: EmployeeAssignedTest): boolean {
 }
 
 export function getEmployeeTestPriorityIndicators(
-  test: EmployeeAssignedTest
+  test: EmployeeAssignedTest,
+  t: Translate
 ): EmployeeTestPriorityIndicator[] {
   const indicators: EmployeeTestPriorityIndicator[] = []
 
   if (isEmployeeTestOverdue(test)) {
     indicators.push({
       id: "overdue",
-      label: "Overdue",
+      label: t("employee.indicators.overdue"),
       icon: AlertTriangle,
       className:
         "border-red-200 bg-red-50 text-red-700 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-400",
@@ -39,7 +43,7 @@ export function getEmployeeTestPriorityIndicators(
   } else if (isDueSoon(test)) {
     indicators.push({
       id: "due_soon",
-      label: "Due soon",
+      label: t("employee.indicators.dueSoon"),
       icon: Clock,
       className:
         "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-400",
@@ -49,7 +53,7 @@ export function getEmployeeTestPriorityIndicators(
   if (test.required) {
     indicators.push({
       id: "required",
-      label: "Required",
+      label: t("employee.indicators.required"),
       icon: ClipboardList,
       className:
         "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-400",
@@ -59,7 +63,7 @@ export function getEmployeeTestPriorityIndicators(
   if (test.score !== null && test.passed === false && test.score < test.passingScore) {
     indicators.push({
       id: "low_score",
-      label: "Low score",
+      label: t("employee.indicators.lowScore"),
       icon: Target,
       className:
         "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/30 dark:bg-orange-900/20 dark:text-orange-400",

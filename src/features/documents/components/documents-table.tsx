@@ -23,7 +23,10 @@ import {
   permanentlyDeleteDocument,
   retryDocumentIngestion,
 } from "@/features/documents/lib/document-upload-api-client"
+import { getDocumentStatusLabel } from "@/features/documents/lib/document-status-style"
 import { cn } from "@/lib/utils"
+import { formatRelativeUploadDate } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
@@ -36,21 +39,7 @@ import { DocumentDrawer } from "./document-drawer"
 
 type StatusFilter = "active" | "archived" | "deleted" | "all"
 
-const STATUS_LABELS: Record<DocumentStatus, string> = {
-  ready: "Ready",
-  processing: "Processing",
-  failed: "Failed",
-  uploaded: "Uploaded",
-  archived: "Archived",
-  deleted: "Deleted",
-}
-
-const STATUS_FILTER_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
-  { label: "Active", value: "active" },
-  { label: "Archived", value: "archived" },
-  { label: "Deleted", value: "deleted" },
-  { label: "All", value: "all" },
-]
+const STATUS_FILTER_VALUES: StatusFilter[] = ["active", "archived", "deleted", "all"]
 
 const STATUS_VARIANTS: Record<DocumentStatus, "default" | "secondary" | "destructive" | "outline"> =
   {
@@ -89,21 +78,6 @@ type PendingDocumentAction = {
 
 type BulkDocumentAction = "archive" | "delete"
 
-function formatRelativeDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date("2024-06-20")
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return `Today, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
-  }
-  if (diffDays === 1) {
-    return `Yesterday, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`
-  }
-  return `${diffDays} days ago`
-}
-
 function formatFileSize(sizeMb: number): string {
   return sizeMb >= 1 ? `${sizeMb.toFixed(1)} MB` : `${Math.round(sizeMb * 1024)} KB`
 }
@@ -127,6 +101,7 @@ function canBulkDeleteDocument(document: DocumentDetail): boolean {
 
 export function DocumentsTable({ documents }: DocumentsTableProps) {
   const router = useRouter()
+  const { locale, t } = useTranslation()
   const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active")
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
@@ -167,18 +142,18 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         router.refresh()
       } catch (error) {
         setDocumentActionError(
-          error instanceof Error ? error.message : "Could not retry document processing."
+          error instanceof Error ? error.message : t("documents.lifecycle.retryFailed")
         )
       } finally {
         setPendingDocumentAction(null)
       }
     },
-    [router]
+    [router, t]
   )
 
   const handleDeleteFailedDocument = useCallback(
     async (documentId: string) => {
-      const confirmed = window.confirm("Delete this failed document upload?")
+      const confirmed = window.confirm(t("documents.lifecycle.deleteFailedUploadConfirm"))
 
       if (!confirmed) {
         return
@@ -193,18 +168,18 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
           deletionReason: "Deleted failed upload from the documents table.",
         })
         handleLifecycleComplete(documentId, "deleted")
-        toast.success("Document permanently deleted.")
+        toast.success(t("documents.lifecycle.deletedTitle"))
         router.refresh()
       } catch (error) {
         setDocumentActionError(
-          error instanceof Error ? error.message : "Could not delete this failed document."
+          error instanceof Error ? error.message : t("documents.lifecycle.deleteFailedDocument")
         )
-        toast.error("Delete failed. Try again.")
+        toast.error(t("documents.lifecycle.deleteFailed"))
       } finally {
         setPendingDocumentAction(null)
       }
     },
-    [handleLifecycleComplete, router]
+    [handleLifecycleComplete, router, t]
   )
 
   const effectiveDocuments = useMemo(
@@ -272,8 +247,10 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
 
     const skippedCount = selectedDocuments.length - archiveableSelectedDocuments.length
     const confirmed = window.confirm(
-      `Archive ${archiveableSelectedDocuments.length} selected document(s)?${
-        skippedCount > 0 ? ` ${skippedCount} ineligible selected document(s) will be skipped.` : ""
+      `${t("documents.lifecycle.bulkArchiveConfirm", { count: archiveableSelectedDocuments.length })}${
+        skippedCount > 0
+          ? ` ${t("documents.lifecycle.skippedDocuments", { count: skippedCount })}`
+          : ""
       }`
     )
 
@@ -290,16 +267,22 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         handleLifecycleComplete(result.documentId, result.status)
       }
 
-      toast.success(`${archiveableSelectedDocuments.length} document(s) archived.`, {
-        description: skippedCount > 0 ? `${skippedCount} selected document(s) skipped.` : undefined,
-      })
+      toast.success(
+        t("documents.lifecycle.bulkArchiveSuccess", { count: archiveableSelectedDocuments.length }),
+        {
+          description:
+            skippedCount > 0
+              ? t("documents.lifecycle.skipped", { count: skippedCount })
+              : undefined,
+        }
+      )
       clearSelection()
       router.refresh()
     } catch (error) {
       setDocumentActionError(
-        error instanceof Error ? error.message : "Could not archive selected documents."
+        error instanceof Error ? error.message : t("documents.lifecycle.bulkArchiveFailed")
       )
-      toast.error("Bulk archive failed. Try again.")
+      toast.error(t("documents.lifecycle.bulkArchiveFailed"))
     } finally {
       setBulkDocumentAction(null)
     }
@@ -310,6 +293,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     handleLifecycleComplete,
     router,
     selectedDocuments,
+    t,
   ])
 
   const handleBulkDeleteDocuments = useCallback(async () => {
@@ -317,8 +301,10 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
 
     const skippedCount = selectedDocuments.length - deletableSelectedDocuments.length
     const confirmed = window.confirm(
-      `Delete ${deletableSelectedDocuments.length} selected document(s)?${
-        skippedCount > 0 ? ` ${skippedCount} ineligible selected document(s) will be skipped.` : ""
+      `${t("documents.lifecycle.bulkDeleteConfirm", { count: deletableSelectedDocuments.length })}${
+        skippedCount > 0
+          ? ` ${t("documents.lifecycle.skippedDocuments", { count: skippedCount })}`
+          : ""
       }`
     )
 
@@ -338,16 +324,22 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         handleLifecycleComplete(result.documentId, result.status)
       }
 
-      toast.success(`${deletableSelectedDocuments.length} document(s) deleted.`, {
-        description: skippedCount > 0 ? `${skippedCount} selected document(s) skipped.` : undefined,
-      })
+      toast.success(
+        t("documents.lifecycle.bulkDeleteSuccess", { count: deletableSelectedDocuments.length }),
+        {
+          description:
+            skippedCount > 0
+              ? t("documents.lifecycle.skipped", { count: skippedCount })
+              : undefined,
+        }
+      )
       clearSelection()
       router.refresh()
     } catch (error) {
       setDocumentActionError(
-        error instanceof Error ? error.message : "Could not delete selected documents."
+        error instanceof Error ? error.message : t("documents.lifecycle.bulkDeleteFailed")
       )
-      toast.error("Bulk delete failed. Try again.")
+      toast.error(t("documents.lifecycle.bulkDeleteFailed"))
     } finally {
       setBulkDocumentAction(null)
     }
@@ -358,7 +350,24 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     handleLifecycleComplete,
     router,
     selectedDocuments,
+    t,
   ])
+
+  const statusFilterOptions = useMemo(
+    () =>
+      STATUS_FILTER_VALUES.map((value) => ({
+        value,
+        label:
+          value === "active"
+            ? t("dataTable.filters.active")
+            : value === "archived"
+              ? t("dataTable.filters.archived")
+              : value === "deleted"
+                ? t("dataTable.filters.deleted")
+                : t("common.all"),
+      })),
+    [t]
+  )
 
   const columns = useMemo<ColumnDef<DocumentDetail>[]>(
     () => [
@@ -372,7 +381,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
 
           return (
             <DataTableSelectionCheckbox
-              aria-label="Select all visible documents"
+              aria-label={t("dataTable.selectAllDocuments")}
               checked={allVisibleSelected}
               indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
               disabled={visibleIds.length === 0}
@@ -384,7 +393,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
         meta: { width: 56, headerClassName: "text-center", cellClassName: "text-center" },
         cell: ({ row }) => (
           <DataTableSelectionCheckbox
-            aria-label={`Select ${row.original.title}`}
+            aria-label={t("dataTable.selectDocument", { title: row.original.title })}
             checked={selectedIds.has(row.original.id)}
             onCheckedChange={() => toggle(row.original.id)}
           />
@@ -393,7 +402,9 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       {
         id: "title",
         accessorKey: "title",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Document" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.document")} />
+        ),
         enableSorting: true,
         meta: { width: 280 },
         cell: ({ row }) => (
@@ -402,34 +413,39 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       },
       {
         id: "status",
-        accessorFn: (document) => STATUS_LABELS[document.status],
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        accessorFn: (document) => getDocumentStatusLabel(document.status, t),
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.status")} />
+        ),
         enableSorting: true,
         meta: { width: 160 },
         cell: ({ row }) => <DocumentStatusBadge status={row.original.status} />,
       },
       {
         id: "topics",
-        header: "AI Topics",
+        header: t("dataTable.aiTopics"),
         enableSorting: false,
         meta: { width: 140 },
         cell: ({ row }) =>
           row.original.status === "failed" ? (
-            <span className="text-sm text-muted-foreground">—</span>
+            <span className="text-sm text-muted-foreground">{t("common.dash")}</span>
           ) : (
             <p className="typography-small font-medium text-foreground">
-              {row.original.topics.length} topics
+              {t("common.topics", {
+                count: row.original.topics.length,
+                plural: row.original.topics.length === 1 ? "" : "s",
+              })}
             </p>
           ),
       },
       {
         id: "description",
-        header: "Extracted Text",
+        header: t("dataTable.extractedText"),
         enableSorting: false,
         meta: { width: 300 },
         cell: ({ row }) =>
           row.original.status === "failed" ? (
-            <span className="text-sm text-muted-foreground">—</span>
+            <span className="text-sm text-muted-foreground">{t("common.dash")}</span>
           ) : (
             <p className="typography-small block truncate text-muted-foreground">
               {row.original.description}
@@ -438,7 +454,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       },
       {
         id: "tests",
-        header: "Tests",
+        header: t("nav.tests"),
         enableSorting: false,
         meta: { width: 120 },
         cell: ({ row }) => (
@@ -450,18 +466,23 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       {
         id: "uploadedAt",
         accessorKey: "uploadedAt",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.updated")} />
+        ),
         enableSorting: true,
         meta: { width: 160 },
         cell: ({ row }) => (
           <p className="typography-small whitespace-nowrap text-muted-foreground">
-            {formatRelativeDate(row.original.uploadedAt)}
+            {formatRelativeUploadDate(locale, row.original.uploadedAt, {
+              today: t("common.today"),
+              yesterday: t("common.yesterday"),
+            })}
           </p>
         ),
       },
       {
         id: "actions",
-        header: "Action",
+        header: t("common.action"),
         enableSorting: false,
         meta: { width: 180, headerClassName: "text-right", cellClassName: "text-right" },
         cell: ({ row }) => (
@@ -479,9 +500,11 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
       handleDeleteFailedDocument,
       handleOpenDrawer,
       handleRetryFailedDocument,
+      locale,
       pendingDocumentAction,
       selectAll,
       selectedIds,
+      t,
       toggle,
     ]
   )
@@ -490,8 +513,8 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
     <>
       <DataTableShell
         icon={FileText}
-        title="All Documents"
-        countLabel={`${effectiveDocuments.length} total`}
+        title={t("dataTable.allDocuments")}
+        countLabel={t("common.total", { count: effectiveDocuments.length })}
       >
         <DataTableBulkActions selectedCount={selectedIds.size}>
           <Button
@@ -502,7 +525,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
             onClick={() => void handleBulkArchiveDocuments()}
           >
             <Archive />
-            {bulkDocumentAction === "archive" ? "Archiving..." : "Archive"}
+            {bulkDocumentAction === "archive" ? t("common.archiving") : t("common.archive")}
           </Button>
           <Button
             type="button"
@@ -512,7 +535,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
             onClick={() => void handleBulkDeleteDocuments()}
           >
             <Trash2 />
-            {bulkDocumentAction === "delete" ? "Deleting..." : "Delete"}
+            {bulkDocumentAction === "delete" ? t("common.deleting") : t("common.delete")}
           </Button>
         </DataTableBulkActions>
         {documentActionError ? (
@@ -524,8 +547,8 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
           columns={columns}
           data={filteredDocuments}
           searchKey="title"
-          searchPlaceholder="Search documents..."
-          emptyMessage="No documents match the current filters."
+          searchPlaceholder={t("dataTable.searchDocuments")}
+          emptyMessage={t("dataTable.emptyDocuments")}
           toolbar={
             <div className="relative shrink-0">
               <select
@@ -533,7 +556,7 @@ export function DocumentsTable({ documents }: DocumentsTableProps) {
                 onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
                 className="h-8 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                {STATUS_FILTER_OPTIONS.map((option) => (
+                {statusFilterOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -565,6 +588,8 @@ const DocumentTitleCell = memo(function DocumentTitleCell({
   document: DocumentDetail
   onOpenDrawer: (document: DocumentDetail) => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <button
       type="button"
@@ -588,11 +613,11 @@ const DocumentTitleCell = memo(function DocumentTitleCell({
           </Badge>
           {document.isLatestVersion === false ? (
             <Badge variant="secondary" className="w-fit text-[10px]">
-              Old
+              {t("dataTable.versionBadge.old")}
             </Badge>
           ) : (
             <Badge className="w-fit bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">
-              Latest
+              {t("dataTable.versionBadge.latest")}
             </Badge>
           )}
         </span>
@@ -614,6 +639,7 @@ const DocumentActionsCell = memo(function DocumentActionsCell({
   onDelete: (documentId: string) => Promise<void>
   onOpenDrawer: (document: DocumentDetail) => void
 }) {
+  const { t } = useTranslation()
   const isFailed = document.status === "failed"
   const isProcessing = document.status === "processing"
   const isGeneratable = canGenerateTest(document)
@@ -638,14 +664,14 @@ const DocumentActionsCell = memo(function DocumentActionsCell({
             disabled={hasPendingAction}
             onClick={() => void onRetry(document.id)}
           >
-            {isRetryPending ? "Retrying..." : "Retry"}
+            {isRetryPending ? t("common.retrying") : t("common.retry")}
           </Button>
           <Button
             variant="outline"
             size="icon"
             className="h-8 w-8 border-destructive/20 text-destructive hover:bg-destructive/10"
             disabled={hasPendingAction}
-            aria-label="Delete failed document"
+            aria-label={t("documents.lifecycle.deleteFailedDocumentAria")}
             onClick={() => void onDelete(document.id)}
           >
             {isDeletePending ? (
@@ -662,11 +688,13 @@ const DocumentActionsCell = memo(function DocumentActionsCell({
           className="h-8 border border-orange-200 bg-orange-50 text-xs text-orange-600 hover:bg-orange-100 dark:border-orange-900/30 dark:bg-orange-900/20 dark:text-orange-400"
           disabled
         >
-          Processing...
+          {t("common.processing")}
         </Button>
       ) : isGeneratable ? (
         <Button asChild variant="outline" size="sm" className="h-8 text-xs font-medium">
-          <Link href={`/admin/documents/${document.id}/generate-test`}>Generate Test</Link>
+          <Link href={`/admin/documents/${document.id}/generate-test`}>
+            {t("documents.detail.generateTest")}
+          </Link>
         </Button>
       ) : (
         <Button
@@ -674,9 +702,9 @@ const DocumentActionsCell = memo(function DocumentActionsCell({
           size="sm"
           className="h-8 text-xs font-medium"
           disabled
-          title={getGenerateBlockReason(document)}
+          title={getGenerateBlockReason(document, t)}
         >
-          Generate Test
+          {t("documents.detail.generateTest")}
         </Button>
       )}
       <Button
@@ -713,6 +741,8 @@ const DocumentStatusBadge = memo(function DocumentStatusBadge({
 }: {
   status: DocumentStatus
 }) {
+  const { t } = useTranslation()
+
   return (
     <Badge
       variant={STATUS_VARIANTS[status]}
@@ -730,7 +760,7 @@ const DocumentStatusBadge = memo(function DocumentStatusBadge({
       {status === "ready" && <span className="mr-1 size-1.5 rounded-full bg-emerald-500" />}
       {status === "processing" && <span className="mr-1 size-1.5 rounded-full bg-orange-500" />}
       {status === "failed" && <span className="mr-1 size-1.5 rounded-full bg-red-500" />}
-      {STATUS_LABELS[status]}
+      {getDocumentStatusLabel(status, t)}
     </Badge>
   )
 })

@@ -12,12 +12,15 @@ import {
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { createAdminClient } from "@/lib/supabase/admin"
+import type { createTranslator } from "@/shared/i18n/translate"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 const DUE_SOON_DAYS = 7
 
 export interface NextRequiredTest {
   test: EmployeeAssignedTest
-  actionLabel: "Start Test" | "Continue Test"
+  actionLabel: string
   actionHref: string
   statusLabel: string
 }
@@ -77,7 +80,10 @@ function getNextTestPriority(test: EmployeeAssignedTest): number {
   return 5
 }
 
-export function getNextRequiredTest(tests: EmployeeAssignedTest[]): NextRequiredTest | null {
+export function getNextRequiredTest(
+  tests: EmployeeAssignedTest[],
+  t: Translate
+): NextRequiredTest | null {
   const actionable = tests.filter(
     (test) => !isEmployeeTestFinished(test) && !isEmployeeTestTakeBlocked(test)
   )
@@ -92,14 +98,17 @@ export function getNextRequiredTest(tests: EmployeeAssignedTest[]): NextRequired
   })
 
   const test = sorted[0]
-  const action = getEmployeeTestAction(test)
-  const actionLabel = test.status === "in_progress" ? "Continue Test" : "Start Test"
+  const action = getEmployeeTestAction(test, t)
+  const actionLabel =
+    test.status === "in_progress"
+      ? t("employee.dashboard.continueTest")
+      : t("employee.myTests.actions.startTest")
 
   return {
     test,
     actionLabel,
     actionHref: action.href ?? "/employee/tests",
-    statusLabel: formatEmployeeTestStatus(getEmployeeTestDisplayStatus(test)),
+    statusLabel: formatEmployeeTestStatus(getEmployeeTestDisplayStatus(test), t),
   }
 }
 
@@ -153,7 +162,8 @@ async function getAnswerRowsForAttempts(
 
 async function getQuestionTopicsById(
   questionIds: string[],
-  organizationId: string
+  organizationId: string,
+  t: Translate
 ): Promise<Map<string, { topic: string; explanation: string | null }>> {
   if (questionIds.length === 0) return new Map()
 
@@ -172,7 +182,7 @@ async function getQuestionTopicsById(
     ((data ?? []) as QuestionTopicRow[]).map((question) => [
       question.id,
       {
-        topic: question.topic?.trim() || "General",
+        topic: question.topic?.trim() || t("common.general"),
         explanation: question.explanation,
       },
     ])
@@ -182,6 +192,7 @@ async function getQuestionTopicsById(
 function buildDashboardWeakTopics(input: {
   answers: AnswerTopicRow[]
   questionTopicsById: Map<string, { topic: string; explanation: string | null }>
+  t: Translate
 }): DashboardWeakTopic[] {
   const statsByTopic = new Map<
     string,
@@ -221,10 +232,12 @@ function buildDashboardWeakTopics(input: {
       topic,
       explanation:
         stats.firstExplanation ??
-        `You missed ${stats.wrongCount} of ${stats.totalCount} answered question${
-          stats.totalCount === 1 ? "" : "s"
-        } in this topic.`,
-      recommendedAction: `Review the ${topic} source material before your next attempt.`,
+        input.t("employee.dashboard.missedTopicExplanation", {
+          wrong: stats.wrongCount,
+          total: stats.totalCount,
+          plural: stats.totalCount === 1 ? "" : "s",
+        }),
+      recommendedAction: input.t("employee.dashboard.recommendedReview", { topic }),
     }))
 }
 
@@ -233,6 +246,7 @@ function buildRecentFeedback(input: {
   testsById: Map<string, EmployeeAssignedTest>
   answers: AnswerTopicRow[]
   questionTopicsById: Map<string, { topic: string; explanation: string | null }>
+  t: Translate
 }): RecentFeedbackItem | null {
   const test = input.testsById.get(input.latestAttempt.test_id)
   if (!test || input.latestAttempt.score === null || input.latestAttempt.passed === null) {
@@ -255,11 +269,13 @@ function buildRecentFeedback(input: {
     title: test.title,
     score: input.latestAttempt.score,
     passed: input.latestAttempt.passed,
-    statusLabel: input.latestAttempt.passed ? "Passed" : "Failed",
+    statusLabel: input.latestAttempt.passed
+      ? input.t("status.employeeTest.passed")
+      : input.t("status.employeeTest.failed"),
     weakTopicSummary:
       missedTopics.length > 0
         ? missedTopics.join(", ")
-        : "No weak topics identified in this attempt.",
+        : input.t("employee.dashboard.weakTopicsNoneIdentified"),
     resultHref: `/employee/tests/${test.id}/result?attemptId=${input.latestAttempt.id}`,
   }
 }
@@ -268,6 +284,7 @@ async function getSupabaseAttemptInsights(input: {
   userId: string
   organizationId: string
   tests: EmployeeAssignedTest[]
+  t: Translate
 }): Promise<EmployeeDashboardAttemptInsights> {
   const testIds = input.tests.map((test) => test.id).filter(isUuid)
   const attempts = await getCompletedAttemptRows({
@@ -289,7 +306,8 @@ async function getSupabaseAttemptInsights(input: {
   )
   const questionTopicsById = await getQuestionTopicsById(
     Array.from(new Set(answerRows.map((answer) => answer.question_id))),
-    input.organizationId
+    input.organizationId,
+    input.t
   )
   const testsById = new Map(input.tests.map((test) => [test.id, test]))
 
@@ -299,10 +317,12 @@ async function getSupabaseAttemptInsights(input: {
       testsById,
       answers: answerRows,
       questionTopicsById,
+      t: input.t,
     }),
     weakTopics: buildDashboardWeakTopics({
       answers: answerRows,
       questionTopicsById,
+      t: input.t,
     }),
   }
 }
@@ -311,6 +331,7 @@ export async function getEmployeeDashboardAttemptInsights(input: {
   userId: string
   organizationId: string
   tests: EmployeeAssignedTest[]
+  t: Translate
 }): Promise<EmployeeDashboardAttemptInsights> {
   try {
     return await getSupabaseAttemptInsights(input)

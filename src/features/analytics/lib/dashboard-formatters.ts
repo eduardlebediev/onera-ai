@@ -3,6 +3,7 @@ import type {
   DashboardDocument,
   DashboardTestStatus,
 } from "@/features/analytics/types/admin-dashboard"
+import type { createTranslator } from "@/shared/i18n/translate"
 
 export type DashboardDocumentStatusIcon = "check" | "loader" | "x" | "none"
 
@@ -15,6 +16,29 @@ export interface DashboardDocumentStatusBadgeConfig extends StatusBadgeConfig {
   icon: DashboardDocumentStatusIcon
 }
 
+type Translator = ReturnType<typeof createTranslator>["t"]
+
+const DOCUMENT_STATUS_LABEL_KEYS: Record<
+  DashboardDocumentDisplayStatus,
+  `status.document.${DashboardDocumentDisplayStatus}`
+> = {
+  ready: "status.document.ready",
+  processing: "status.document.processing",
+  failed: "status.document.failed",
+  uploaded: "status.document.uploaded",
+  archived: "status.document.archived",
+  deleted: "status.document.deleted",
+}
+
+const DASHBOARD_TEST_STATUS_LABEL_KEYS: Record<
+  DashboardTestStatus,
+  "status.test.published" | "status.test.draft" | "status.test.archived"
+> = {
+  active: "status.test.published",
+  draft: "status.test.draft",
+  archived: "status.test.archived",
+}
+
 export function getDashboardDocumentDisplayStatus(
   document: DashboardDocument
 ): DashboardDocumentDisplayStatus {
@@ -22,69 +46,75 @@ export function getDashboardDocumentDisplayStatus(
 }
 
 export function getDashboardDocumentStatusBadgeConfig(
-  status: DashboardDocumentDisplayStatus
+  status: DashboardDocumentDisplayStatus,
+  t: Translator
 ): DashboardDocumentStatusBadgeConfig {
-  const map: Record<DashboardDocumentDisplayStatus, DashboardDocumentStatusBadgeConfig> = {
+  const map: Record<
+    DashboardDocumentDisplayStatus,
+    Omit<DashboardDocumentStatusBadgeConfig, "label">
+  > = {
     ready: {
-      label: "Ready",
       className: "bg-emerald-100 text-emerald-700 border-emerald-200",
       icon: "check",
     },
     processing: {
-      label: "Processing",
       className: "bg-amber-100 text-amber-700 border-amber-200",
       icon: "loader",
     },
     failed: {
-      label: "Failed",
       className: "bg-red-100 text-red-700 border-red-200",
       icon: "x",
     },
     uploaded: {
-      label: "Uploaded",
       className: "",
       icon: "none",
     },
     archived: {
-      label: "Archived",
       className: "bg-slate-100 text-slate-600 border-slate-200",
       icon: "none",
     },
     deleted: {
-      label: "Deleted",
       className: "bg-slate-100 text-slate-500 border-slate-200",
       icon: "none",
     },
   }
 
-  return map[status]
+  return {
+    label: t(DOCUMENT_STATUS_LABEL_KEYS[status]),
+    ...map[status],
+  }
 }
 
-export function getDocumentActionLabel(document: DashboardDocument) {
+export function getDocumentActionLabel(document: DashboardDocument, t: Translator) {
   const status = getDashboardDocumentDisplayStatus(document)
 
-  if (status === "failed") return "Retry"
-  if (document.testCount === 0 && status === "ready") return "Create Test"
-  return "View"
+  if (status === "failed") return t("admin.dashboard.documentActions.retry")
+  if (document.testCount === 0 && status === "ready") {
+    return t("admin.dashboard.documentActions.createTest")
+  }
+  return t("admin.dashboard.documentActions.view")
 }
 
-export function getDashboardTestStatusBadgeConfig(status: DashboardTestStatus): StatusBadgeConfig {
-  const map: Record<DashboardTestStatus, StatusBadgeConfig> = {
+export function getDashboardTestStatusBadgeConfig(
+  status: DashboardTestStatus,
+  t: Translator
+): StatusBadgeConfig {
+  const map: Record<DashboardTestStatus, Omit<StatusBadgeConfig, "label">> = {
     active: {
-      label: "Published",
       className: "bg-emerald-100 text-emerald-700 border-emerald-200",
     },
     draft: {
-      label: "Draft",
       className: "bg-slate-100 text-slate-600 border-slate-200",
     },
     archived: {
-      label: "Archived",
       className: "bg-slate-100 text-slate-500 border-slate-200",
     },
   }
 
-  return map[status]
+  return {
+    label: t(DASHBOARD_TEST_STATUS_LABEL_KEYS[status]),
+    ...map[status],
+  }
 }
 
 export function getScoreColorClass(score: number) {

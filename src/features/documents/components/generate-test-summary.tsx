@@ -5,6 +5,7 @@ import React from "react"
 
 import { type DocumentDetail } from "@/features/documents/types/document"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/shared/ui/card"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { type GenerateTestSettings } from "./generate-test-model"
 
 interface GenerateTestSummaryProps {
@@ -14,20 +15,13 @@ interface GenerateTestSummaryProps {
   selectedChunksCount: number
 }
 
-function toCapitalizedLabel(value: string): string {
-  if (value.length === 0) {
-    return value
-  }
-
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`
-}
-
 export function GenerateTestSummary({
   selectedDocuments,
   settings,
   selectedTopicsCount,
   selectedChunksCount,
 }: GenerateTestSummaryProps) {
+  const { locale, t } = useTranslation()
   const totalChunks = selectedDocuments.reduce(
     (count, document) => count + document.chunks.length,
     0
@@ -36,72 +30,77 @@ export function GenerateTestSummary({
   return (
     <Card className="shadow-sm">
       <CardHeader className="border-b border-border/50 px-6 py-5">
-        <CardTitle className="text-base font-semibold">Generation Summary</CardTitle>
+        <CardTitle className="text-base font-semibold">
+          {t("documents.generateTest.summary.title")}
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-border/50">
           <SummaryRow
             icon={<List className="size-4" />}
-            label="Question Count"
+            label={t("documents.generateTest.summary.questionCount")}
             value={settings.questionCount.toString()}
           />
           <SummaryRow
             icon={<BarChart3 className="size-4" />}
-            label="Estimated Distribution"
-            value="Multiple Choice 70% • True/False 20% • Short Answer 10%"
+            label={t("documents.generateTest.summary.estimatedDistribution")}
+            value={t("common.estimatedDistribution")}
             valueClassName="text-[11px] md:text-xs"
             stacked
           />
           <SummaryRow
             icon={<BarChart3 className="size-4" />}
-            label="Difficulty"
-            value={toCapitalizedLabel(settings.difficulty)}
+            label={t("documents.generateTest.summary.difficulty")}
+            value={t(`common.difficulty.${settings.difficulty}`)}
           />
           <SummaryRow
             icon={<Tag className="size-4" />}
-            label="Target Role"
+            label={t("documents.generateTest.summary.targetRole")}
             value={settings.targetRole}
           />
           <SummaryRow
             icon={<FileText className="size-4" />}
-            label="Selected Documents"
-            value={`${selectedDocuments.length} document${selectedDocuments.length === 1 ? "" : "s"}`}
+            label={t("documents.generateTest.summary.selectedDocuments")}
+            value={t("common.documentCount", {
+              count: selectedDocuments.length,
+              plural: selectedDocuments.length === 1 ? "" : "s",
+            })}
           />
           <SummaryRow
             icon={<Tag className="size-4" />}
-            label="Selected Topics"
-            value={`${selectedTopicsCount} topics`}
+            label={t("documents.generateTest.summary.selectedTopics")}
+            value={t("common.topics", { count: selectedTopicsCount, plural: "s" })}
           />
           <SummaryRow
             icon={<FileText className="size-4" />}
-            label="Selected Chunks"
-            value={`${selectedChunksCount} of ${totalChunks} chunks`}
+            label={t("documents.generateTest.summary.selectedChunks")}
+            value={t("documents.generateTest.summary.selectedChunksOf", {
+              selected: selectedChunksCount,
+              total: totalChunks,
+            })}
           />
           <SummaryRow
             icon={<Globe className="size-4" />}
-            label="Language"
-            value={settings.language === "en" ? "English" : "German"}
+            label={t("documents.generateTest.summary.contentLanguage")}
+            value={t(`common.language.${locale}`)}
           />
           <SummaryRow
             icon={<Clock className="size-4" />}
-            label="Estimated Time"
-            value="12–15 min"
+            label={t("documents.generateTest.summary.estimatedTime")}
+            value={t("common.estimatedTime")}
           />
         </div>
 
         <div className="p-6 pt-4">
           <div className="flex gap-3 rounded-xl bg-blue-50/50 p-4 text-sm text-muted-foreground dark:bg-blue-900/10">
             <Info className="mt-0.5 size-4 shrink-0 text-blue-500" />
-            <p>
-              A preview will be generated based on your current settings. You can review and adjust
-              before finalizing the test.
-            </p>
+            <p>{t("documents.generateTest.summary.previewHint")}</p>
           </div>
         </div>
       </CardContent>
       <CardFooter className="px-6 pb-6 pt-0">
         <p className="w-full text-center typography-small text-muted-foreground">
-          Use Generate Test Preview above when your topics and chunks are selected.
+          {t("documents.generateTest.summary.footerHint")}
         </p>
       </CardFooter>
     </Card>

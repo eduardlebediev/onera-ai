@@ -1,15 +1,28 @@
-export function formatEstimatedTime(minutes: number): string {
-  return minutes === 1 ? "~1 min" : `~${minutes} min`
+import type { AppLocale } from "@/shared/i18n/locale-config"
+import { formatDate } from "@/shared/i18n/format"
+import {
+  createTranslator,
+  type createTranslator as CreateTranslatorType,
+} from "@/shared/i18n/translate"
+
+type Translate = ReturnType<typeof CreateTranslatorType>["t"]
+
+export function formatEstimatedTime(locale: AppLocale, minutes: number): string {
+  const { t } = createTranslator(locale)
+
+  return minutes === 1
+    ? t("employee.format.estimatedMinute")
+    : t("employee.format.estimatedMinutes", { minutes })
 }
 
-export function formatEmployeeTestDeadline(deadline: string | null): string {
-  if (!deadline) return "No deadline"
+export function formatEmployeeTestDeadline(
+  locale: AppLocale,
+  deadline: string | null,
+  t: Translate
+): string {
+  if (!deadline) return t("common.noDeadline")
 
-  return new Date(deadline).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
+  return formatDate(locale, deadline)
 }
 
 export function getDaysUntilDeadline(deadline: string | null): number | null {

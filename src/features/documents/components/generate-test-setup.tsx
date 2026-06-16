@@ -25,6 +25,7 @@ import { generateTestFromDocument } from "@/features/tests/lib/generated-test-ap
 import { saveGeneratedTestDraft } from "@/features/tests/lib/generated-test-session"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Button } from "@/shared/ui/button"
+import { useTranslation } from "@/shared/i18n/use-translation"
 
 interface GenerateTestSetupProps {
   document: DocumentDetail
@@ -44,6 +45,7 @@ export function GenerateTestSetup({
   selectableDocuments,
 }: GenerateTestSetupProps) {
   const router = useRouter()
+  const { locale, t } = useTranslation()
   const documentsById = useMemo(() => {
     const map = new Map<string, DocumentDetail>()
 
@@ -62,7 +64,7 @@ export function GenerateTestSetup({
     () => getDefaultSelectedChunkIds(document, defaultTopics),
     [defaultTopics, document]
   )
-  const defaultSettings = useMemo(() => getDefaultGenerateTestSettings(document), [document])
+  const defaultSettings = useMemo(() => getDefaultGenerateTestSettings(document, t), [document, t])
 
   const [settings, setSettings] = useState<GenerateTestSettings>(defaultSettings)
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([initialDocumentId])
@@ -238,7 +240,7 @@ export function GenerateTestSetup({
     })
 
     if (apiDocumentIds.length === 0) {
-      setGenerationError("Select at least one saved Supabase document before generating a test.")
+      setGenerationError(t("documents.generateTest.selectSupabaseDocument"))
       return
     }
 
@@ -254,7 +256,7 @@ export function GenerateTestSetup({
         selectedChunkIds: apiChunkIds.length > 0 ? apiChunkIds : undefined,
         questionCount: settings.questionCount,
         difficulty: settings.difficulty,
-        language: settings.language,
+        language: locale,
         targetRole: settings.targetRole,
       })
 
@@ -273,9 +275,7 @@ export function GenerateTestSetup({
       router.push(`/admin/tests/review?${reviewQuery.toString()}`)
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Could not generate the test draft. Please check that selected documents have embedded chunks and try again."
+        error instanceof Error ? error.message : t("documents.generateTest.generationFailed")
       setGenerationError(message)
       setIsGenerating(false)
     }
@@ -287,28 +287,29 @@ export function GenerateTestSetup({
     selectedDocumentIds,
     selectedTopicIds,
     settings.difficulty,
-    settings.language,
+    locale,
     settings.questionCount,
     settings.targetRole,
+    t,
   ])
 
   return (
     <div className="page-shell-narrow">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="typography-h1">Generate Test Setup</h1>
+          <h1 className="typography-h1">{t("documents.generateTest.title")}</h1>
           <p className="mt-1 typography-p text-muted-foreground">
-            Configure test settings from one or more source documents, topics, and chunks.
+            {t("documents.generateTest.subtitle")}
           </p>
           <p className="mt-1 typography-small text-muted-foreground">
-            AI-generated draft. Review before publishing.
+            {t("documents.generateTest.aiDraftHint")}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" size="lg">
             <Link href={`/admin/documents/${routeDocumentId}`}>
               <ArrowLeft className="mr-2 size-4" />
-              Back to Document
+              {t("documents.generateTest.backToDocument")}
             </Link>
           </Button>
           <Button
@@ -319,7 +320,7 @@ export function GenerateTestSetup({
             disabled={selectedDocuments.length === 0}
           >
             <RotateCcw className="mr-2 size-4" />
-            Reset
+            {t("common.reset")}
           </Button>
           <Button
             type="button"
@@ -328,7 +329,7 @@ export function GenerateTestSetup({
             title={
               canPreview
                 ? undefined
-                : getGenerateBlockReason(firstInvalidSelectedDocument ?? document)
+                : getGenerateBlockReason(firstInvalidSelectedDocument ?? document, t)
             }
             onClick={() => handleGeneratePreview()}
           >
@@ -337,7 +338,9 @@ export function GenerateTestSetup({
             ) : (
               <Sparkles className="mr-2 size-4" />
             )}
-            {isGenerating ? "Generating test draft..." : "Generate Test Preview"}
+            {isGenerating
+              ? t("documents.generateTest.generatingDraft")
+              : t("documents.generateTest.generatePreview")}
           </Button>
         </div>
       </div>
@@ -345,9 +348,9 @@ export function GenerateTestSetup({
       <div className="mt-2 flex flex-col gap-2">
         <Breadcrumbs
           items={[
-            { label: "Documents", href: "/admin/documents" },
+            { label: t("nav.documents"), href: "/admin/documents" },
             { label: document.title, href: `/admin/documents/${routeDocumentId}` },
-            { label: "Generate Test" },
+            { label: t("documents.detail.generateTest") },
           ]}
         />
 
@@ -365,18 +368,18 @@ export function GenerateTestSetup({
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
               <div>
-                <p className="font-medium">This is not the latest document version.</p>
-                <p className="mt-1">Use the latest version instead, or explicitly continue here.</p>
+                <p className="font-medium">{t("documents.generateTest.notLatestVersion.title")}</p>
+                <p className="mt-1">{t("documents.generateTest.notLatestVersion.body")}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline" size="sm">
                 <Link href={`/admin/documents/${latestDocumentId}/generate-test`}>
-                  Use latest version
+                  {t("documents.generateTest.notLatestVersion.useLatest")}
                 </Link>
               </Button>
               <Button type="button" size="sm" onClick={() => setHasAcceptedOldVersion(true)}>
-                Continue with this version
+                {t("documents.generateTest.notLatestVersion.continue")}
               </Button>
             </div>
           </div>
@@ -385,13 +388,13 @@ export function GenerateTestSetup({
         {!isGeneratable && (
           <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300">
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-orange-500" />
-            <p>{getGenerateBlockReason(firstInvalidSelectedDocument ?? document)}</p>
+            <p>{getGenerateBlockReason(firstInvalidSelectedDocument ?? document, t)}</p>
           </div>
         )}
 
         {isGeneratable && (selectedTopicIds.length === 0 || selectedChunkIds.length === 0) && (
           <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-            Select at least one topic and one source chunk across the selected documents.
+            {t("documents.generateTest.selectTopicsChunks")}
           </div>
         )}
 

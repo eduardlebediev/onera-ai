@@ -1,5 +1,9 @@
 # Decisions
 
+## 070 — UI locale is the source of truth for new AI-generated content
+
+The selected interface language (`NEXT_LOCALE` cookie, `en`/`de`) drives static UI copy and **new** AI-generated test drafts, attempt feedback, and follow-up questions. Persisted historical feedback and stored test content are not auto-translated on locale switch. Test generation no longer exposes a separate content-language control; the server reads UI locale from cookies when generating content.
+
 ## 069 — Employees access source material via scoped document view
 
 Employees cannot open `/admin/documents/...`. **Review Source Material** links to `/employee/documents/[id]` with optional `testId` and `attemptId` query params. Server-side access requires an assignment or completed attempt on a test linked to that document (`test_documents` or `tests.source_document_id`). Original files are served via `POST /api/employee/documents/[id]/download-url` (signed URL); extracted text is shown on the employee page when no file is stored.

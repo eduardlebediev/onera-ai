@@ -3,7 +3,7 @@
 import { AlertTriangle, Check } from "lucide-react"
 
 import {
-  EMPLOYEE_FILTER_OPTIONS,
+  getEmployeeFilterOptions,
   formatAssignmentStatus,
   type EmployeeFilter,
   type EmployeeWithAssignmentStatus,
@@ -12,6 +12,7 @@ import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { FilterTabBar } from "@/shared/ui/filter-tab-bar"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 import { cn } from "@/lib/utils"
 
@@ -30,7 +31,8 @@ function AssignmentStatusBadge({
 }: {
   status: EmployeeWithAssignmentStatus["assignmentStatus"]
 }) {
-  const label = formatAssignmentStatus(status)
+  const { t } = useTranslation()
+  const label = formatAssignmentStatus(status, t)
 
   if (status === "completed") {
     return (
@@ -85,6 +87,8 @@ export function AssignEmployeeList({
   onSelectAllVisible,
   onDeselectAllVisible,
 }: AssignEmployeeListProps) {
+  const { t } = useTranslation()
+  const filterOptions = getEmployeeFilterOptions(t)
   const allVisibleSelected =
     employees.length > 0 && employees.every((employee) => selectedEmployeeIds.includes(employee.id))
   const hasVisibleSelected = employees.some((employee) => selectedEmployeeIds.includes(employee.id))
@@ -94,14 +98,14 @@ export function AssignEmployeeList({
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Select Employees</CardTitle>
+            <CardTitle>{t("tests.assign.employeeList.selectEmployees")}</CardTitle>
             <p className="mt-1 typography-small text-muted-foreground">
-              Choose employees to assign this test to.
+              {t("tests.assign.employeeList.subtitle")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={onSelectAllVisible}>
-              Select all visible
+              {t("tests.assign.employeeList.selectAll")}
             </Button>
             <Button
               type="button"
@@ -110,12 +114,12 @@ export function AssignEmployeeList({
               onClick={onDeselectAllVisible}
               disabled={!hasVisibleSelected}
             >
-              Deselect visible
+              {t("tests.assign.employeeList.deselectVisible")}
             </Button>
           </div>
         </div>
 
-        <FilterTabBar options={EMPLOYEE_FILTER_OPTIONS} value={filter} onChange={onFilterChange} />
+        <FilterTabBar options={filterOptions} value={filter} onChange={onFilterChange} />
       </CardHeader>
 
       <CardContent className="p-0">
@@ -133,25 +137,33 @@ export function AssignEmployeeList({
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-background"
                     )}
-                    aria-label={allVisibleSelected ? "Deselect all visible" : "Select all visible"}
+                    aria-label={
+                      allVisibleSelected
+                        ? t("tests.assign.employeeList.deselectAll")
+                        : t("tests.assign.employeeList.selectAll")
+                    }
                   >
                     {allVisibleSelected && <Check className="size-3" />}
                   </button>
                 </TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">
-                  Employee
+                  {t("dataTable.name")}
                 </TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">
-                  Department
-                </TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">
-                  Completed
+                  {t("dataTable.department")}
                 </TableHead>
                 <TableHead className="text-xs font-medium text-muted-foreground">
-                  Avg Score
+                  {t("dataTable.status")}
                 </TableHead>
-                <TableHead className="text-xs font-medium text-muted-foreground">Risk</TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t("dataTable.completed")}
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t("dataTable.avgScore")}
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t("tests.assign.employeeList.risk")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -188,7 +200,15 @@ export function AssignEmployeeList({
                             !isSelectable && "cursor-not-allowed bg-muted"
                           )}
                           aria-pressed={isSelected}
-                          aria-label={`${isSelected ? "Deselect" : "Select"} ${employee.name}`}
+                          aria-label={
+                            isSelected
+                              ? t("tests.assign.employeeList.deselectEmployee", {
+                                  name: employee.name,
+                                })
+                              : t("tests.assign.employeeList.selectEmployee", {
+                                  name: employee.name,
+                                })
+                          }
                         >
                           {isSelected && <Check className="size-3" />}
                         </button>
@@ -206,7 +226,9 @@ export function AssignEmployeeList({
                       </TableCell>
                       <TableCell className="text-sm">{employee.completedTestsCount}</TableCell>
                       <TableCell className="text-sm">
-                        {employee.completedTestsCount > 0 ? `${employee.averageScore}%` : "—"}
+                        {employee.completedTestsCount > 0
+                          ? t("common.percent", { value: employee.averageScore })
+                          : t("common.dash")}
                       </TableCell>
                       <TableCell>
                         {employee.riskLevel === "at_risk" ? (
@@ -215,14 +237,14 @@ export function AssignEmployeeList({
                             className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-400"
                           >
                             <AlertTriangle className="mr-1 size-3" />
-                            At risk
+                            {t("tests.assign.employeeList.atRisk")}
                           </Badge>
                         ) : (
                           <Badge
                             variant="outline"
                             className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-400"
                           >
-                            On track
+                            {t("tests.assign.employeeList.onTrack")}
                           </Badge>
                         )}
                       </TableCell>
@@ -233,7 +255,7 @@ export function AssignEmployeeList({
                 <TableRow>
                   <TableCell colSpan={7} className="h-32 text-center">
                     <p className="typography-p text-muted-foreground">
-                      No employees match the current filter.
+                      {t("tests.assign.employeeList.empty")}
                     </p>
                   </TableCell>
                 </TableRow>

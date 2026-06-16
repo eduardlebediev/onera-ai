@@ -22,6 +22,7 @@ import {
 } from "@/features/tests/lib/assign-employees-model"
 import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
 import type { AssignableEmployee, TestEmployeeAssignment } from "@/features/tests/types/assignment"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -41,6 +42,7 @@ export function AssignEmployeesPage({
   employees,
   initialAssignments,
 }: AssignEmployeesPageProps) {
+  const { locale, t } = useTranslation()
   const [assignments, setAssignments] = useState<TestEmployeeAssignment[]>(initialAssignments)
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([])
   const [filter, setFilter] = useState<EmployeeFilter>("all")
@@ -109,7 +111,7 @@ export function AssignEmployeesPage({
       } | null
 
       if (!response.ok) {
-        throw new Error(payload?.error ?? "Failed to assign test")
+        throw new Error(payload?.error ?? t("tests.assign.failed"))
       }
 
       const createdAssignments = payload?.created ?? []
@@ -128,12 +130,15 @@ export function AssignEmployeesPage({
         deadline: settings.deadline,
       })
       toast.success(
-        `${assignedCount} employee${assignedCount === 1 ? "" : "s"} assigned successfully`
+        t("tests.assign.success.toast", {
+          count: assignedCount,
+          plural: assignedCount === 1 ? "" : "s",
+        })
       )
       setSelectedEmployeeIds([])
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Failed to assign test")
-      toast.error("Assignment failed. Try again.")
+      setErrorMessage(error instanceof Error ? error.message : t("tests.assign.failed"))
+      toast.error(t("tests.assign.failedToast"))
     } finally {
       setIsAssigning(false)
     }
@@ -158,42 +163,52 @@ export function AssignEmployeesPage({
             </div>
 
             <div>
-              <h1 className="typography-h2">Test assigned successfully</h1>
+              <h1 className="typography-h2">{t("tests.assign.success.title")}</h1>
               <p className="mt-2 typography-p text-muted-foreground">
-                {successState.assignedCount} employee
-                {successState.assignedCount === 1 ? "" : "s"} assigned to{" "}
-                <span className="font-medium text-foreground">{test.title}</span>.
+                {t("tests.assign.success.subtitle", {
+                  count: successState.assignedCount,
+                  plural: successState.assignedCount === 1 ? "" : "s",
+                  title: test.title,
+                })}
               </p>
             </div>
 
             <div className="mx-auto max-w-sm space-y-2 rounded-xl border border-border/50 bg-muted/20 px-4 py-4 text-left">
               <div className="flex justify-between gap-4">
-                <span className="typography-small text-muted-foreground">Test</span>
+                <span className="typography-small text-muted-foreground">
+                  {t("tests.assign.success.test")}
+                </span>
                 <span className="text-sm font-medium text-foreground">{test.title}</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="typography-small text-muted-foreground">Assigned employees</span>
+                <span className="typography-small text-muted-foreground">
+                  {t("tests.assign.success.assignedEmployees")}
+                </span>
                 <span className="text-sm font-medium text-foreground">
                   {successState.assignedCount}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="typography-small text-muted-foreground">Deadline</span>
+                <span className="typography-small text-muted-foreground">
+                  {t("tests.assign.success.deadline")}
+                </span>
                 <span className="text-sm font-medium text-foreground">
-                  {formatAssignmentDeadline(successState.deadline)}
+                  {formatAssignmentDeadline(locale, successState.deadline, t)}
                 </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button asChild>
-                <Link href="/employee/tests">View Employee Tests</Link>
+                <Link href="/employee/tests">{t("tests.assign.success.viewEmployeeTests")}</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>
+                <Link href={`/admin/tests/${test.id}`}>
+                  {t("tests.assign.success.backToTestDetail")}
+                </Link>
               </Button>
               <Button type="button" variant="outline" onClick={handleAssignMore}>
-                Assign More Employees
+                {t("tests.assign.success.assignMore")}
               </Button>
             </div>
           </CardContent>
@@ -206,14 +221,12 @@ export function AssignEmployeesPage({
     <div className="page-shell-narrow">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="typography-h1">Assign to Employees</h1>
-          <p className="mt-1 typography-p text-muted-foreground">
-            Select employees, set a deadline, and confirm the assignment.
-          </p>
+          <h1 className="typography-h1">{t("tests.assign.title")}</h1>
+          <p className="mt-1 typography-p text-muted-foreground">{t("tests.assign.subtitle")}</p>
           <AssignBreadcrumb testId={test.id} testTitle={test.title} className="mt-4" />
         </div>
         <Button asChild variant="outline" className="shrink-0">
-          <Link href={`/admin/tests/${test.id}`}>Back to Test Detail</Link>
+          <Link href={`/admin/tests/${test.id}`}>{t("tests.assign.backToTestDetail")}</Link>
         </Button>
       </div>
 

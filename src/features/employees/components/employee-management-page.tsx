@@ -17,6 +17,7 @@ import type {
   EmployeeProgressStatus,
 } from "@/features/employees/lib/supabase-employees"
 import { Button } from "@/shared/ui/button"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { DataTableFilterSelect } from "@/shared/ui/data-table/data-table-filter-select"
 import { DataTableBulkActions } from "@/shared/ui/data-table-bulk-actions"
 import { DataTableShell } from "@/shared/ui/data-table-shell"
@@ -50,19 +51,13 @@ interface EmployeeManagementPageProps {
   loadError?: boolean
 }
 
-const STATUS_OPTIONS: Array<{ label: string; value: StatusFilter }> = [
-  { label: "All statuses", value: "all" },
-  { label: "Completed", value: "completed" },
-  { label: "Pending", value: "pending" },
-  { label: "Overdue", value: "overdue" },
-]
-
 function getErrorMessage(payload: { error?: string } | null, fallback: string): string {
   return payload?.error ?? fallback
 }
 
 export function EmployeeManagementPage({ data, loadError = false }: EmployeeManagementPageProps) {
   const router = useRouter()
+  const { t } = useTranslation()
   const { selectedIds, toggle, selectAll, clearSelection } = useSelection()
   const [invitedEmployees, setInvitedEmployees] = useState<EmployeeListItem[]>([])
   const [departmentFilter, setDepartmentFilter] = useState("all")
@@ -130,12 +125,22 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     [departmentFilter, employees, statusFilter]
   )
 
+  const statusFilterOptions = useMemo(
+    () => [
+      { label: t("dataTable.filters.allStatuses"), value: "all" as const },
+      { label: t("status.employeeProgress.completed"), value: "completed" as const },
+      { label: t("status.employeeProgress.pending"), value: "pending" as const },
+      { label: t("status.employeeProgress.overdue"), value: "overdue" as const },
+    ],
+    [t]
+  )
+
   const departmentFilterOptions = useMemo(
     () => [
-      { label: "All departments", value: "all" },
+      { label: t("dataTable.filters.allDepartments"), value: "all" },
       ...departments.map((department) => ({ label: department, value: department })),
     ],
-    [departments]
+    [departments, t]
   )
 
   const overdueEmployeeIds = employees
@@ -180,13 +185,14 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
           : [...current, payload.employee as EmployeeListItem]
       )
       setIsInviteOpen(false)
-      toast.success("Invite sent", {
-        description: `${payload.employee.name} was added to the employee list.`,
+      toast.success(t("employees.invite.success"), {
+        description: t("employees.invite.successDescription", { name: payload.employee.name }),
         position: "bottom-right",
       })
     } catch (error) {
-      toast.error("Invite failed", {
-        description: error instanceof Error ? error.message : "Try again later.",
+      toast.error(t("employees.invite.failed"), {
+        description:
+          error instanceof Error ? error.message : t("employees.invite.failedDescription"),
         position: "bottom-right",
       })
     } finally {
@@ -218,16 +224,19 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
 
       setIsAssignSelectedOpen(false)
       clearSelection()
-      toast.success("Selected assignment complete", {
-        description: `${payload?.created?.length ?? 0} new assignment${
-          payload?.created?.length === 1 ? "" : "s"
-        } created. ${payload?.skipped?.length ?? 0} skipped.`,
+      toast.success(t("employees.assignSelected.success"), {
+        description: t("employees.assignSelected.successDescription", {
+          created: payload?.created?.length ?? 0,
+          plural: (payload?.created?.length ?? 0) === 1 ? "" : "s",
+          skipped: payload?.skipped?.length ?? 0,
+        }),
         position: "bottom-right",
       })
       router.refresh()
     } catch (error) {
-      toast.error("Selected assignment failed", {
-        description: error instanceof Error ? error.message : "Try again later.",
+      toast.error(t("employees.assignSelected.failed"), {
+        description:
+          error instanceof Error ? error.message : t("employees.invite.failedDescription"),
         position: "bottom-right",
       })
     } finally {
@@ -254,16 +263,18 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
         throw new Error(getErrorMessage(payload, "Reminder could not be sent"))
       }
 
-      toast.success("Reminder sent", {
-        description: `${payload?.nudgedCount ?? employeeIds.length} employee${
-          (payload?.nudgedCount ?? employeeIds.length) === 1 ? "" : "s"
-        } nudged by email.`,
+      toast.success(t("employees.nudge.success"), {
+        description: t("employees.nudge.successDescription", {
+          count: payload?.nudgedCount ?? employeeIds.length,
+          plural: (payload?.nudgedCount ?? employeeIds.length) === 1 ? "" : "s",
+        }),
         position: "bottom-right",
       })
       return true
     } catch (error) {
-      toast.error("Reminder failed", {
-        description: error instanceof Error ? error.message : "Try again later.",
+      toast.error(t("employees.nudge.failed"), {
+        description:
+          error instanceof Error ? error.message : t("employees.invite.failedDescription"),
         position: "bottom-right",
       })
       return false
@@ -346,15 +357,15 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
     <div className="page-shell">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="typography-h2">Employees</h1>
+          <h1 className="typography-h2">{t("employees.management.title")}</h1>
           <p className="mt-1 typography-p text-muted-foreground">
-            Track employee progress, invite team members, assign training, and send reminders.
+            {t("employees.management.subtitle")}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button size="lg" onClick={() => setIsInviteOpen(true)}>
             <MailPlus />
-            Invite employee
+            {t("employees.management.inviteEmployee")}
           </Button>
         </div>
       </div>
@@ -366,8 +377,8 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
       <div className="mt-2">
         <DataTableShell
           icon={Users}
-          title="All Employees"
-          countLabel={`${filteredEmployees.length} shown`}
+          title={t("dataTable.allEmployees")}
+          countLabel={t("common.shown", { count: filteredEmployees.length })}
         >
           <DataTableBulkActions selectedCount={selectedIds.size}>
             <Button
@@ -378,7 +389,7 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
               onClick={() => setIsAssignSelectedOpen(true)}
             >
               <Send />
-              Assign test
+              {t("employees.management.assignTest")}
             </Button>
             <Button
               type="button"
@@ -388,7 +399,7 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
               onClick={async () => {
                 const success = await handleNudge(
                   selectedEmployeeIds,
-                  "Please complete your assigned training."
+                  t("employees.nudge.defaultMessage")
                 )
 
                 if (success) {
@@ -397,26 +408,28 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
               }}
             >
               <Bell />
-              Nudge reminder
+              {t("employees.management.nudgeReminder")}
             </Button>
           </DataTableBulkActions>
           {loadError ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <p className="typography-h3 font-semibold">Employees could not be loaded</p>
+              <p className="typography-h3 font-semibold">{t("common.loadError.employees")}</p>
               <p className="max-w-md typography-p text-muted-foreground">
-                Refresh the page or try again later. Only Supabase data is shown.
+                {t("common.refreshHint")}
               </p>
             </div>
           ) : employees.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
               <div>
-                <p className="typography-h3 font-semibold">No employees yet</p>
+                <p className="typography-h3 font-semibold">
+                  {t("employees.management.emptyTitle")}
+                </p>
                 <p className="mt-2 max-w-md typography-p text-muted-foreground">
-                  Invite your first employee to start assigning onboarding tests.
+                  {t("employees.management.emptySubtitle")}
                 </p>
               </div>
               <Button size="lg" onClick={() => setIsInviteOpen(true)}>
-                Invite your first employee
+                {t("employees.management.inviteFirstEmployee")}
               </Button>
             </div>
           ) : (
@@ -438,21 +451,18 @@ export function EmployeeManagementPage({ data, loadError = false }: EmployeeMana
                   <DataTableFilterSelect
                     value={statusFilter}
                     onChange={(value) => setStatusFilter(value as StatusFilter)}
-                    options={STATUS_OPTIONS}
+                    options={statusFilterOptions}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     disabled={overdueEmployeeIds.length === 0 || nudgingIds.length > 0}
                     onClick={() =>
-                      handleNudge(
-                        overdueEmployeeIds,
-                        "Please complete your overdue assigned training."
-                      )
+                      handleNudge(overdueEmployeeIds, t("employees.nudge.overdueMessage"))
                     }
                   >
                     <Bell />
-                    Nudge all overdue
+                    {t("employees.management.nudgeAllOverdue")}
                   </Button>
                 </>
               }

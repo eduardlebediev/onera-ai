@@ -2,15 +2,14 @@
 
 import {
   DIFFICULTY_OPTIONS,
-  LANGUAGE_OPTIONS,
   TARGET_ROLE_OPTIONS,
   type GenerateTestSettings,
   type TestDifficulty,
-  type TestLanguage,
 } from "./generate-test-model"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Input } from "@/shared/ui/input"
+import { useTranslation } from "@/shared/i18n/use-translation"
 
 interface GenerateTestFormProps {
   settings: GenerateTestSettings
@@ -31,26 +30,43 @@ function parseNumericInput(value: string, fallback: number, min: number, max: nu
   return fallback
 }
 
+const TARGET_ROLE_LABEL_KEYS = {
+  "All employees": "common.targetRoles.allEmployees",
+  "New employees": "common.targetRoles.newEmployees",
+  "Engineering team": "common.targetRoles.engineeringTeam",
+  "Customer support": "common.targetRoles.customerSupport",
+  "Operations staff": "common.targetRoles.operationsStaff",
+  "HR team": "common.targetRoles.hrTeam",
+} as const
+
 export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFormProps) {
+  const { t } = useTranslation()
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="px-6 py-5 border-b border-border/50">
-        <CardTitle className="text-base font-semibold">Test Configuration</CardTitle>
+        <CardTitle className="text-base font-semibold">
+          {t("documents.generateTest.configuration.title")}
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         <div className="grid gap-6 md:grid-cols-12">
           <label className="space-y-2 md:col-span-5">
-            <span className="typography-small font-medium text-foreground">Test Title</span>
+            <span className="typography-small font-medium text-foreground">
+              {t("documents.generateTest.configuration.testTitle")}
+            </span>
             <Input
               value={settings.title}
               onChange={(event) => onSettingsChange({ title: event.target.value })}
-              placeholder="Enter a test title"
+              placeholder={t("documents.generateTest.configuration.testTitlePlaceholder")}
               className="h-11 rounded-xl bg-background border-border"
             />
           </label>
 
           <label className="space-y-2 md:col-span-3">
-            <span className="typography-small font-medium text-foreground">Difficulty</span>
+            <span className="typography-small font-medium text-foreground">
+              {t("documents.generateTest.configuration.difficulty")}
+            </span>
             <div className="relative">
               <select
                 value={settings.difficulty}
@@ -61,7 +77,7 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
               >
                 {DIFFICULTY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {t(`common.difficulty.${option.value}`)}
                   </option>
                 ))}
               </select>
@@ -74,7 +90,9 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
           </label>
 
           <label className="space-y-2 md:col-span-4">
-            <span className="typography-small font-medium text-foreground">Target Role</span>
+            <span className="typography-small font-medium text-foreground">
+              {t("documents.generateTest.configuration.targetRole")}
+            </span>
             <div className="relative">
               <select
                 value={settings.targetRole}
@@ -83,7 +101,10 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
               >
                 {TARGET_ROLE_OPTIONS.map((role) => (
                   <option key={role} value={role}>
-                    {role}
+                    {t(
+                      TARGET_ROLE_LABEL_KEYS[role as keyof typeof TARGET_ROLE_LABEL_KEYS] ??
+                        "common.general"
+                    )}
                   </option>
                 ))}
               </select>
@@ -108,7 +129,9 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
           </label>
 
           <label className="space-y-2 md:col-span-3">
-            <span className="typography-small font-medium text-foreground">Question Count</span>
+            <span className="typography-small font-medium text-foreground">
+              {t("documents.generateTest.configuration.questionCount")}
+            </span>
             <Input
               type="number"
               min={3}
@@ -129,7 +152,9 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
           </label>
 
           <label className="space-y-2 md:col-span-3">
-            <span className="typography-small font-medium text-foreground">Passing Score (%)</span>
+            <span className="typography-small font-medium text-foreground">
+              {t("documents.generateTest.configuration.passingScore")}
+            </span>
             <Input
               type="number"
               min={1}
@@ -147,41 +172,6 @@ export function GenerateTestForm({ settings, onSettingsChange }: GenerateTestFor
               }
               className="h-11 rounded-xl bg-background border-border"
             />
-          </label>
-
-          <label className="space-y-2 md:col-span-6">
-            <span className="typography-small font-medium text-foreground">Language</span>
-            <div className="relative">
-              <select
-                value={settings.language}
-                onChange={(event) =>
-                  onSettingsChange({ language: event.target.value as TestLanguage })
-                }
-                className="h-11 w-full appearance-none rounded-xl border border-border bg-background pl-10 pr-4 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="absolute left-3.5 top-3.5 size-4 text-muted-foreground pointer-events-none"
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-                <path d="M2 12h20" />
-              </svg>
-            </div>
           </label>
         </div>
       </CardContent>

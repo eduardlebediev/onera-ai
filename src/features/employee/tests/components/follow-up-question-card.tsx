@@ -10,6 +10,7 @@ import {
 import { submitFollowUpAnswerForQuestion } from "@/features/employee/tests/lib/follow-up-question-api-client"
 import type { PersistedFollowUpAnswer } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -37,6 +38,7 @@ export function FollowUpQuestionCard({
   onBackToResults,
   onSubmitted,
 }: FollowUpQuestionCardProps) {
+  const { t } = useTranslation()
   const [selectedOptionId, setSelectedOptionId] = useState<string | undefined>(
     initialSubmittedAnswer?.selectedOptionId
   )
@@ -88,9 +90,7 @@ export function FollowUpQuestionCard({
         explanationAfterAnswer: result.explanationAfterAnswer,
       })
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : "Could not submit follow-up answer. Try again."
-      )
+      setSubmitError(error instanceof Error ? error.message : t("employee.followUp.submitFailed"))
     } finally {
       setIsChecking(false)
     }
@@ -111,11 +111,13 @@ export function FollowUpQuestionCard({
     <div className="space-y-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="size-4 text-primary" />
-        <p className="text-sm font-semibold">Check understanding</p>
+        <p className="text-sm font-semibold">{t("employee.result.checkUnderstanding")}</p>
       </div>
 
       <div className="space-y-2 rounded-lg border border-border/60 bg-background/80 p-4">
-        <p className="typography-label text-muted-foreground">What you missed</p>
+        <p className="typography-label text-muted-foreground">
+          {t("employee.followUp.whatYouMissed")}
+        </p>
         <p className="typography-small">{resolvedFollowUp.explanationBeforeQuestion}</p>
       </div>
 
@@ -137,11 +139,19 @@ export function FollowUpQuestionCard({
             <p className="text-sm font-medium">{resolvedFollowUp.questionText}</p>
             <p className="flex items-start gap-1.5 typography-small text-muted-foreground">
               <FileText className="mt-0.5 size-3.5 shrink-0" />
-              <span>Source: {resolvedFollowUp.sourceChunkReference}</span>
+              <span>
+                {t("employee.takeTest.progress.sourceReference", {
+                  reference: resolvedFollowUp.sourceChunkReference,
+                })}
+              </span>
             </p>
           </div>
 
-          <div className="space-y-2" role="radiogroup" aria-label="Follow-up answer options">
+          <div
+            className="space-y-2"
+            role="radiogroup"
+            aria-label={t("employee.result.checkUnderstanding")}
+          >
             {resolvedFollowUp.options.map((option) => {
               const isSelected = selectedOptionId === option.id
 
@@ -187,10 +197,10 @@ export function FollowUpQuestionCard({
             {isChecking ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                Checking...
+                {t("employee.followUp.checking")}
               </>
             ) : (
-              "Submit answer"
+              t("employee.followUp.submitAnswer")
             )}
           </Button>
         </>

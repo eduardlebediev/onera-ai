@@ -1,6 +1,10 @@
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
+import type { createTranslator } from "@/shared/i18n/translate"
+import type { TranslationKey } from "@/shared/i18n/translate"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 export type EmployeeTestDisplayStatus =
   | "not_started"
@@ -11,17 +15,27 @@ export type EmployeeTestDisplayStatus =
 
 export type EmployeeTestFilter = "all" | EmployeeTestDisplayStatus
 
-export const EMPLOYEE_TEST_FILTER_OPTIONS: Array<{
+const EMPLOYEE_TEST_STATUS_LABEL_KEYS: Record<EmployeeTestDisplayStatus, TranslationKey> = {
+  not_started: "status.employeeTest.notStarted",
+  in_progress: "status.employeeTest.inProgress",
+  completed: "status.employeeTest.completed",
+  failed: "status.employeeTest.failed",
+  overdue: "status.employeeTest.overdue",
+}
+
+export function getEmployeeTestFilterOptions(t: Translate): Array<{
   label: string
   value: EmployeeTestFilter
-}> = [
-  { label: "All", value: "all" },
-  { label: "Not Started", value: "not_started" },
-  { label: "In Progress", value: "in_progress" },
-  { label: "Completed", value: "completed" },
-  { label: "Failed", value: "failed" },
-  { label: "Overdue", value: "overdue" },
-]
+}> {
+  return [
+    { label: t("common.all"), value: "all" },
+    { label: t("status.employeeTest.notStarted"), value: "not_started" },
+    { label: t("status.employeeTest.inProgress"), value: "in_progress" },
+    { label: t("status.employeeTest.completed"), value: "completed" },
+    { label: t("status.employeeTest.failed"), value: "failed" },
+    { label: t("status.employeeTest.overdue"), value: "overdue" },
+  ]
+}
 
 export interface EmployeeTestAction {
   label: string
@@ -58,19 +72,8 @@ export function getEmployeeTestDisplayStatus(
   return test.status
 }
 
-export function formatEmployeeTestStatus(status: EmployeeTestDisplayStatus): string {
-  switch (status) {
-    case "not_started":
-      return "Not started"
-    case "in_progress":
-      return "In progress"
-    case "completed":
-      return "Completed"
-    case "failed":
-      return "Failed"
-    case "overdue":
-      return "Overdue"
-  }
+export function formatEmployeeTestStatus(status: EmployeeTestDisplayStatus, t: Translate): string {
+  return t(EMPLOYEE_TEST_STATUS_LABEL_KEYS[status])
 }
 
 const EMPLOYEE_TEST_STATUS_BADGE_CLASS = {
@@ -120,7 +123,10 @@ export function filterEmployeeTests(
   return tests.filter((test) => test.status === filter)
 }
 
-export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestAction {
+export function getEmployeeTestAction(
+  test: EmployeeAssignedTest,
+  t: Translate
+): EmployeeTestAction {
   const displayStatus = getEmployeeTestDisplayStatus(test)
   const resultHref =
     test.latestAttemptId != null
@@ -129,18 +135,16 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
 
   if (isEmployeeTestTakeBlocked(test)) {
     return {
-      label: "Unavailable",
+      label: t("employee.myTests.actions.unavailable"),
       variant: "outline",
       disabled: true,
-      disabledReason:
-        test.sourceInvalidReason ??
-        "This test is no longer active because its source document is invalid.",
+      disabledReason: test.sourceInvalidReason ?? t("employee.myTests.actions.unavailableReason"),
     }
   }
 
   if (displayStatus === "not_started" || displayStatus === "overdue") {
     return {
-      label: "Start Test",
+      label: t("employee.myTests.actions.startTest"),
       href: `/employee/tests/${test.id}/take`,
       variant: "default",
     }
@@ -148,7 +152,7 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
 
   if (displayStatus === "in_progress") {
     return {
-      label: "Continue",
+      label: t("employee.myTests.actions.continue"),
       href: `/employee/tests/${test.id}/take`,
       variant: "default",
     }
@@ -157,27 +161,37 @@ export function getEmployeeTestAction(test: EmployeeAssignedTest): EmployeeTestA
   if (test.status === "failed") {
     if (test.canRetake) {
       return {
-        label: "Retake Test",
+        label: t("employee.myTests.actions.retakeTest"),
         href: `/employee/tests/${test.id}/take`,
         variant: "default",
       }
     }
 
     return {
-      label: "Review",
+      label: t("employee.myTests.actions.review"),
       href: resultHref,
       variant: "outline",
     }
   }
 
   return {
-    label: "View Results",
+    label: t("employee.myTests.actions.viewResults"),
     href: resultHref,
     variant: "outline",
   }
 }
 
-export function formatPassFailStatus(score: number | null, passed: boolean | null): string | null {
+export function formatPassFailStatus(
+  score: number | null,
+  passed: boolean | null,
+  t: Translate
+): string | null {
   if (score === null || passed === null) return null
-  return passed ? "Passed" : "Failed"
+  return passed ? t("status.employeeTest.passed") : t("status.employeeTest.failed")
+}
+
+export function formatDifficultyLabel(difficulty: string, t: Translate): string {
+  const key = `common.difficulty.${difficulty}` as TranslationKey
+  const label = t(key)
+  return label === key ? difficulty : label
 }

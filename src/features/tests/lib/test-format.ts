@@ -1,7 +1,6 @@
-export function formatTestDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
+import type { AppLocale } from "@/shared/i18n/locale-config"
+import { formatDate as formatLocaleDate } from "@/shared/i18n/format"
+
+export function formatTestDate(locale: AppLocale, dateStr: string): string {
+  return formatLocaleDate(locale, dateStr)
 }

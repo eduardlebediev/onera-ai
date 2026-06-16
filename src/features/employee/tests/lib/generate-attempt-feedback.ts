@@ -8,6 +8,7 @@ import {
   AttemptFeedbackOutputSchema,
   type AttemptFeedbackOutput,
 } from "@/features/employee/tests/schemas/attempt-feedback-schema"
+import type { AppLocale } from "@/shared/i18n/locale-config"
 
 export const ATTEMPT_FEEDBACK_MODEL = "gpt-4.1-mini"
 export const ATTEMPT_FEEDBACK_TIMEOUT_MS = 15_000
@@ -22,6 +23,7 @@ export type AttemptFeedbackAnswerInput = {
 }
 
 export type AttemptFeedbackInput = {
+  language: AppLocale
   testTitle: string
   testDescription?: string | null
   score: number
@@ -57,6 +59,10 @@ function isAttemptFeedbackTimeoutError(error: unknown): boolean {
   )
 }
 
+function formatOutputLanguage(language: AppLocale): string {
+  return language === "de" ? "German" : "English"
+}
+
 function buildAttemptFeedbackPrompt(input: AttemptFeedbackInput): string {
   const incorrectAnswers = input.answers.filter((item) => !item.isCorrect)
   const correctAnswers = input.answers.filter((item) => item.isCorrect)
@@ -88,6 +94,7 @@ function buildAttemptFeedbackPrompt(input: AttemptFeedbackInput): string {
     "- needsImprovement: name specific missed topics or mistakes; reference actual wrong answers when relevant.",
     "- recommendedNextStep: one concrete next action (what to review, in which topic order).",
     "- Do not use generic phrases like 'try again' or 'study harder' without naming topics.",
+    `- Write all output in ${formatOutputLanguage(input.language)}.`,
     allCorrect
       ? "- All answers were correct: praise strengths only; do not invent weaknesses or missed topics."
       : null,

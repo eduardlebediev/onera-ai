@@ -11,10 +11,27 @@ export type DashboardActivityType =
   | "employee_completed"
   | "weak_topic_detected"
 
+export type DashboardKpiId =
+  | "documents"
+  | "activeTests"
+  | "assignedTests"
+  | "activeEmployees"
+  | "averageScore"
+  | "weakTopics"
+
+export type AnalyticsOverviewKpiId =
+  | "teamAverageScore"
+  | "completionRate"
+  | "completedAttempts"
+  | "weakTopics"
+  | "difficultQuestions"
+  | "failedAttempts"
+
 export interface KpiStat {
-  label: string
+  id: DashboardKpiId | AnalyticsOverviewKpiId | string
   value: string
-  description: string
+  descriptionParams?: Record<string, string | number>
+  useEmptyDescription?: boolean
 }
 
 export interface DashboardDocument {

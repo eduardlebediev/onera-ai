@@ -13,6 +13,7 @@ import {
   type TestLifecycleImpact,
 } from "@/features/tests/lib/test-lifecycle-api-client"
 import type { TestMetadataUpdateRequest } from "@/features/tests/schemas/test-lifecycle-schema"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import {
   DropdownMenu,
@@ -98,20 +99,30 @@ function normalizeDifficulty(value: string): TestMetadataUpdateRequest["difficul
 }
 
 function ImpactSummary({ impact }: { impact: TestLifecycleImpact }) {
+  const { t } = useTranslation()
+
   return (
     <div className="mt-4 grid gap-2 rounded-lg border border-border/60 bg-muted/20 p-3 text-sm sm:grid-cols-2">
       <p>
-        <span className="font-medium text-foreground">Assignments:</span> {impact.assignmentCount}
+        <span className="font-medium text-foreground">
+          {t("tests.detail.lifecycle.assignments")}
+        </span>{" "}
+        {impact.assignmentCount}
       </p>
       <p>
-        <span className="font-medium text-foreground">Active assignments:</span>{" "}
+        <span className="font-medium text-foreground">
+          {t("tests.detail.lifecycle.activeAssignments")}
+        </span>{" "}
         {impact.activeAssignmentCount}
       </p>
       <p>
-        <span className="font-medium text-foreground">Attempts:</span> {impact.attemptCount}
+        <span className="font-medium text-foreground">{t("tests.detail.lifecycle.attempts")}</span>{" "}
+        {impact.attemptCount}
       </p>
       <p>
-        <span className="font-medium text-foreground">Completed attempts:</span>{" "}
+        <span className="font-medium text-foreground">
+          {t("tests.detail.lifecycle.completedAttempts")}
+        </span>{" "}
         {impact.completedAttemptCount}
       </p>
     </div>
@@ -130,6 +141,7 @@ export function SavedTestLifecycleActionsProvider({
   impact,
 }: SavedTestLifecycleActionsProps & { children: ReactNode }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [isEditing, setIsEditing] = useState(false)
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -169,13 +181,14 @@ export function SavedTestLifecycleActionsProvider({
         passingScore: Number(form.passingScore),
         targetRole: form.targetRole || null,
       })
-      setMessage({ status: "success", text: "Test metadata updated." })
+      setMessage({ status: "success", text: t("tests.detail.lifecycle.metadataUpdated") })
       setIsEditing(false)
       router.refresh()
     } catch (error) {
       setMessage({
         status: "error",
-        text: error instanceof Error ? error.message : "Could not update test metadata.",
+        text:
+          error instanceof Error ? error.message : t("tests.detail.lifecycle.metadataUpdateFailed"),
       })
     } finally {
       setIsSubmitting(false)
@@ -188,12 +201,12 @@ export function SavedTestLifecycleActionsProvider({
 
     try {
       await restoreTest(testId)
-      setMessage({ status: "success", text: "Test restored and assignable again." })
+      setMessage({ status: "success", text: t("tests.detail.lifecycle.restored") })
       router.refresh()
     } catch (error) {
       setMessage({
         status: "error",
-        text: error instanceof Error ? error.message : "Could not restore test.",
+        text: error instanceof Error ? error.message : t("tests.detail.lifecycle.restoreFailed"),
       })
     } finally {
       setIsSubmitting(false)
@@ -210,7 +223,7 @@ export function SavedTestLifecycleActionsProvider({
         await archiveTest(testId)
         setMessage({
           status: "success",
-          text: "Test archived. Active assignments remain visible but employees cannot start it.",
+          text: t("tests.detail.lifecycle.archived"),
         })
         setPendingAction(null)
         setDeleteConfirmation("")
@@ -227,10 +240,10 @@ export function SavedTestLifecycleActionsProvider({
         status: "success",
         text:
           result.deleteMode === "tombstoned"
-            ? "Archived test tombstoned. Historical results remain available."
-            : "Test deleted.",
+            ? t("tests.detail.lifecycle.tombstoned")
+            : t("tests.detail.lifecycle.deleted"),
       })
-      toast.success("Test deleted.")
+      toast.success(t("tests.detail.lifecycle.deleted"))
       setPendingAction(null)
       setDeleteConfirmation("")
       setDeletionReason("")
@@ -239,10 +252,10 @@ export function SavedTestLifecycleActionsProvider({
     } catch (error) {
       setMessage({
         status: "error",
-        text: error instanceof Error ? error.message : "Could not complete this test action.",
+        text: error instanceof Error ? error.message : t("tests.detail.lifecycle.actionFailed"),
       })
       if (pendingAction === "delete") {
-        toast.error("Delete failed. Test has active attempts.")
+        toast.error(t("tests.detail.lifecycle.deleteFailedActiveAttempts"))
       }
     } finally {
       setIsSubmitting(false)
@@ -284,6 +297,7 @@ export function SavedTestLifecycleActionsProvider({
 }
 
 export function SavedTestLifecycleActionsMenu() {
+  const { t } = useTranslation()
   const {
     canArchive,
     canRestore,
@@ -298,7 +312,7 @@ export function SavedTestLifecycleActionsMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Test actions">
+        <Button variant="outline" size="icon" aria-label={t("tests.detail.lifecycle.testActions")}>
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -310,7 +324,7 @@ export function SavedTestLifecycleActionsMenu() {
           }}
         >
           <Pencil className="size-4" />
-          Edit
+          {t("tests.detail.lifecycle.edit")}
         </DropdownMenuItem>
         {canRestore ? (
           <DropdownMenuItem disabled={isSubmitting} onSelect={() => void handleRestore()}>
@@ -319,30 +333,26 @@ export function SavedTestLifecycleActionsMenu() {
             ) : (
               <RotateCcw className="size-4" />
             )}
-            Restore
+            {t("tests.detail.lifecycle.restore")}
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
             disabled={!canArchive}
-            title={canArchive ? undefined : "Only published tests can be archived"}
+            title={canArchive ? undefined : t("tests.detail.lifecycle.onlyPublishedArchive")}
             onSelect={() => setPendingAction("archive")}
           >
             <Archive className="size-4" />
-            Archive
+            {t("tests.detail.lifecycle.archive")}
           </DropdownMenuItem>
         )}
         <DropdownMenuItem
           variant="destructive"
           disabled={!canDelete}
-          title={
-            canDelete
-              ? undefined
-              : "Published tests are protected. Archive this test before deleting it."
-          }
+          title={canDelete ? undefined : t("tests.detail.lifecycle.protectedDelete")}
           onSelect={() => setPendingAction("delete")}
         >
           <Trash2 className="size-4" />
-          Delete
+          {t("tests.detail.lifecycle.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -350,6 +360,7 @@ export function SavedTestLifecycleActionsMenu() {
 }
 
 export function SavedTestLifecycleActionsPanel() {
+  const { t } = useTranslation()
   const {
     status,
     isEditing,
@@ -371,8 +382,7 @@ export function SavedTestLifecycleActionsPanel() {
     <div className="space-y-3">
       {status === "published" ? (
         <p className="text-sm text-muted-foreground">
-          Published tests with attempts are protected from deletion. Archive first if this test
-          should be removed from assignment.
+          {t("tests.detail.lifecycle.protectedPublished")}
         </p>
       ) : null}
 
@@ -392,7 +402,9 @@ export function SavedTestLifecycleActionsPanel() {
           className="grid w-full max-w-2xl gap-3 rounded-xl border border-border bg-card p-4 text-sm"
         >
           <label className="grid gap-1">
-            <span className="font-medium text-foreground">Title</span>
+            <span className="font-medium text-foreground">
+              {t("tests.detail.lifecycle.titleLabel")}
+            </span>
             <input
               value={form.title}
               onChange={(event) =>
@@ -404,7 +416,9 @@ export function SavedTestLifecycleActionsPanel() {
             />
           </label>
           <label className="grid gap-1">
-            <span className="font-medium text-foreground">Description</span>
+            <span className="font-medium text-foreground">
+              {t("tests.detail.lifecycle.descriptionLabel")}
+            </span>
             <textarea
               value={form.description}
               onChange={(event) =>
@@ -416,7 +430,9 @@ export function SavedTestLifecycleActionsPanel() {
           </label>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="grid gap-1">
-              <span className="font-medium text-foreground">Difficulty</span>
+              <span className="font-medium text-foreground">
+                {t("tests.detail.lifecycle.difficultyLabel")}
+              </span>
               <select
                 value={form.difficulty}
                 onChange={(event) =>
@@ -427,13 +443,15 @@ export function SavedTestLifecycleActionsPanel() {
                 }
                 className="rounded-md border border-border bg-background px-3 py-2 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                <option value="easy">{t("common.difficulty.easy")}</option>
+                <option value="medium">{t("common.difficulty.medium")}</option>
+                <option value="hard">{t("common.difficulty.hard")}</option>
               </select>
             </label>
             <label className="grid gap-1">
-              <span className="font-medium text-foreground">Passing score</span>
+              <span className="font-medium text-foreground">
+                {t("tests.detail.lifecycle.passingScoreLabel")}
+              </span>
               <input
                 type="number"
                 min={1}
@@ -447,7 +465,9 @@ export function SavedTestLifecycleActionsPanel() {
               />
             </label>
             <label className="grid gap-1">
-              <span className="font-medium text-foreground">Target role</span>
+              <span className="font-medium text-foreground">
+                {t("tests.detail.lifecycle.targetRoleLabel")}
+              </span>
               <input
                 value={form.targetRole}
                 onChange={(event) =>
@@ -465,11 +485,11 @@ export function SavedTestLifecycleActionsPanel() {
               onClick={() => setIsEditing(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Save metadata
+              {t("tests.detail.lifecycle.saveMetadata")}
             </Button>
           </div>
         </form>
@@ -479,6 +499,7 @@ export function SavedTestLifecycleActionsPanel() {
 }
 
 function SavedTestLifecycleActionsDialog() {
+  const { t } = useTranslation()
   const {
     status,
     impact,
@@ -503,17 +524,19 @@ function SavedTestLifecycleActionsDialog() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              {pendingAction === "archive" ? "Archive test?" : "Delete test?"}
+              {pendingAction === "archive"
+                ? t("tests.detail.lifecycle.archiveTitle")
+                : t("tests.detail.lifecycle.deleteTitle")}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {pendingAction === "archive"
-                ? "Archiving this test hides it from future assignment and blocks employees from starting active assignments. Existing assignments and completed results are kept."
+                ? t("tests.detail.lifecycle.archiveBody")
                 : status === "archived"
-                  ? "Archived tests with attempts are tombstoned so historical results remain available. Archived tests without attempts are removed."
-                  : "Draft tests without attempts are permanently removed."}
+                  ? t("tests.detail.lifecycle.deleteArchivedBody")
+                  : t("tests.detail.lifecycle.deleteDraftBody")}
             </p>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Close" onClick={resetDialog}>
+          <Button variant="ghost" size="icon" aria-label={t("common.close")} onClick={resetDialog}>
             <X className="size-4" />
           </Button>
         </div>
@@ -523,18 +546,20 @@ function SavedTestLifecycleActionsDialog() {
         {pendingAction === "delete" ? (
           <div className="mt-4 space-y-3">
             <label className="grid gap-1 text-sm">
-              <span className="font-medium text-foreground">Deletion reason (optional)</span>
+              <span className="font-medium text-foreground">
+                {t("tests.detail.lifecycle.deletionReason")}
+              </span>
               <textarea
                 value={deletionReason}
                 onChange={(event) => setDeletionReason(event.target.value)}
                 className="min-h-20 rounded-md border border-border bg-background px-3 py-2 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 maxLength={1000}
-                placeholder="Why is this test being deleted?"
+                placeholder={t("tests.detail.lifecycle.deletionReasonPlaceholder")}
               />
             </label>
             <label className="grid gap-1 text-sm">
               <span className="font-medium text-foreground">
-                Type DELETE to confirm this action
+                {t("tests.detail.lifecycle.confirmDelete")}
               </span>
               <input
                 value={deleteConfirmation}
@@ -547,7 +572,7 @@ function SavedTestLifecycleActionsDialog() {
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="ghost" onClick={resetDialog} disabled={isSubmitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant={pendingAction === "delete" ? "destructive" : "default"}
@@ -555,7 +580,9 @@ function SavedTestLifecycleActionsDialog() {
             disabled={isSubmitting || (pendingAction === "delete" && !deleteConfirmationMatches)}
           >
             {isSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            {pendingAction === "archive" ? "Archive test" : "Delete test"}
+            {pendingAction === "archive"
+              ? t("tests.detail.lifecycle.archiveAction")
+              : t("tests.detail.lifecycle.deleteAction")}
           </Button>
         </div>
       </div>

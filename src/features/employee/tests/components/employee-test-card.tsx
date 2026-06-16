@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { BookOpen, Clock, FileText, Target } from "lucide-react"
 
@@ -7,6 +9,7 @@ import {
 } from "@/features/employee/tests/lib/employee-test-format"
 import { getEmployeeTestPriorityIndicators } from "@/features/employee/tests/lib/employee-test-indicators"
 import {
+  formatDifficultyLabel,
   formatEmployeeTestStatus,
   formatPassFailStatus,
   getEmployeeTestAction,
@@ -15,6 +18,7 @@ import {
   isEmployeeTestTakeBlocked,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -25,10 +29,11 @@ interface EmployeeTestCardProps {
 }
 
 export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
+  const { t, locale } = useTranslation()
   const displayStatus = getEmployeeTestDisplayStatus(test)
-  const action = getEmployeeTestAction(test)
-  const indicators = getEmployeeTestPriorityIndicators(test)
-  const passFailLabel = formatPassFailStatus(test.score, test.passed)
+  const action = getEmployeeTestAction(test, t)
+  const indicators = getEmployeeTestPriorityIndicators(test, t)
+  const passFailLabel = formatPassFailStatus(test.score, test.passed, t)
   const isBlocked = isEmployeeTestTakeBlocked(test)
 
   return (
@@ -42,11 +47,11 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
                 variant="outline"
                 className={cn("status-badge", getEmployeeTestStatusBadgeClass(displayStatus))}
               >
-                {formatEmployeeTestStatus(displayStatus)}
+                {formatEmployeeTestStatus(displayStatus, t)}
               </Badge>
               {isBlocked ? (
                 <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                  Unavailable
+                  {t("status.employeeTest.unavailable")}
                 </Badge>
               ) : null}
             </div>
@@ -97,7 +102,7 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Source</p>
+            <p className="typography-label text-muted-foreground">{t("dataTable.source")}</p>
             <p className="flex items-start gap-1.5 typography-small text-foreground">
               <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
               <span className="line-clamp-2">{test.sourceDocument}</span>
@@ -105,12 +110,14 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
           </div>
 
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Difficulty</p>
-            <p className="typography-small capitalize text-foreground">{test.difficulty}</p>
+            <p className="typography-label text-muted-foreground">{t("dataTable.difficulty")}</p>
+            <p className="typography-small text-foreground">
+              {formatDifficultyLabel(test.difficulty, t)}
+            </p>
           </div>
 
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Questions</p>
+            <p className="typography-label text-muted-foreground">{t("common.questions")}</p>
             <p className="flex items-center gap-1.5 typography-small text-foreground">
               <BookOpen className="size-3.5 text-muted-foreground" />
               {test.questionCount}
@@ -118,23 +125,25 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
           </div>
 
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Deadline</p>
+            <p className="typography-label text-muted-foreground">
+              {t("employee.dashboard.deadline")}
+            </p>
             <p className="typography-small text-foreground">
-              {formatEmployeeTestDeadline(test.deadline)}
+              {formatEmployeeTestDeadline(locale, test.deadline, t)}
             </p>
           </div>
 
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Est. time</p>
+            <p className="typography-label text-muted-foreground">{t("dataTable.estTime")}</p>
             <p className="flex items-center gap-1.5 typography-small text-foreground">
               <Clock className="size-3.5 text-muted-foreground" />
-              {formatEstimatedTime(test.estimatedMinutes)}
+              {formatEstimatedTime(locale, test.estimatedMinutes)}
             </p>
           </div>
 
           {test.score !== null ? (
             <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Score</p>
+              <p className="typography-label text-muted-foreground">{t("dataTable.score")}</p>
               <p className="flex items-center gap-1.5 typography-small text-foreground">
                 <Target className="size-3.5 text-muted-foreground" />
                 {test.score}%
@@ -154,8 +163,12 @@ export function EmployeeTestCard({ test }: EmployeeTestCardProps) {
             </div>
           ) : test.status === "in_progress" ? (
             <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Progress</p>
-              <p className="typography-small text-foreground">{test.progressPercent}% complete</p>
+              <p className="typography-label text-muted-foreground">
+                {t("employee.dashboard.progress")}
+              </p>
+              <p className="typography-small text-foreground">
+                {t("employee.myTests.percentComplete", { percent: test.progressPercent })}
+              </p>
             </div>
           ) : null}
         </div>

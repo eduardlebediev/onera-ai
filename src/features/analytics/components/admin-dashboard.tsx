@@ -1,3 +1,5 @@
+"use client"
+
 import type {
   KpiStat,
   DashboardDocument,
@@ -12,6 +14,7 @@ import { TestCompletionPieChart } from "@/features/analytics/components/test-com
 import { TestCompletionsChart } from "@/features/analytics/components/test-completions-chart"
 import { TestPerformanceTable } from "@/features/analytics/components/test-performance-table"
 import { RecentDocumentsCard } from "@/features/analytics/components/recent-documents-card"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Card, CardContent } from "@/shared/ui/card"
 
 interface AdminDashboardProps {
@@ -35,6 +38,8 @@ export function AdminDashboard({
   weeklyCompletions,
   recentAttempts = [],
 }: AdminDashboardProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       <DashboardHeader adminName={adminName} generateTestHref={generateTestHref} />
@@ -42,10 +47,8 @@ export function AdminDashboard({
       {loadError ? (
         <Card className="mt-8">
           <CardContent className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <p className="typography-h3 font-semibold">Dashboard data could not be loaded</p>
-            <p className="max-w-md typography-p text-muted-foreground">
-              Refresh the page or try again later. Only Supabase data is shown.
-            </p>
+            <p className="typography-h3 font-semibold">{t("common.loadError.dashboard")}</p>
+            <p className="max-w-md typography-p text-muted-foreground">{t("common.refreshHint")}</p>
           </CardContent>
         </Card>
       ) : null}

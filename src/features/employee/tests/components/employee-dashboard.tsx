@@ -12,6 +12,7 @@ import {
 import { getEmployeeReminders } from "@/features/employee/tests/lib/supabase-employee-reminders"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import type { AssignableEmployee } from "@/features/tests/types/assignment"
+import { getTranslator } from "@/shared/i18n/get-locale"
 
 interface EmployeeDashboardProps {
   employee: AssignableEmployee
@@ -26,23 +27,26 @@ export async function EmployeeDashboard({
   tests,
   userId,
 }: EmployeeDashboardProps) {
+  const { t, locale } = await getTranslator()
+
   const [{ recentFeedback, weakTopics }, reminders] = await Promise.all([
     getEmployeeDashboardAttemptInsights({
       userId,
       organizationId,
       tests,
+      t,
     }),
     getEmployeeReminders({ userId, organizationId }).catch((error) => {
       console.error("Failed to load employee reminders from Supabase:", error)
       return []
     }),
   ])
-  const nextTest = getNextRequiredTest(tests)
-  const kpiStats = getEmployeeDashboardKpiStats(tests, weakTopics.length)
+  const nextTest = getNextRequiredTest(tests, t)
+  const kpiStats = getEmployeeDashboardKpiStats(tests, weakTopics.length, t)
 
   return (
     <div className="page-shell">
-      <EmployeeDashboardHeader employee={employee} />
+      <EmployeeDashboardHeader employee={employee} t={t} />
 
       <div className="mt-8">
         <EmployeeDashboardKpiSection stats={kpiStats} />
@@ -50,19 +54,19 @@ export async function EmployeeDashboard({
 
       <div className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-12">
         <div className="lg:col-span-8">
-          <EmployeeDashboardNextTest nextTest={nextTest} />
+          <EmployeeDashboardNextTest nextTest={nextTest} locale={locale} t={t} />
         </div>
 
         <div className="lg:col-span-4">
-          <EmployeeDashboardReminders reminders={reminders} />
+          <EmployeeDashboardReminders reminders={reminders} locale={locale} t={t} />
         </div>
 
         <div className="lg:col-span-6">
-          <EmployeeDashboardRecentFeedback recentFeedback={recentFeedback} />
+          <EmployeeDashboardRecentFeedback recentFeedback={recentFeedback} t={t} />
         </div>
 
         <div className="lg:col-span-6">
-          <EmployeeDashboardLearningFocus weakTopics={weakTopics} />
+          <EmployeeDashboardLearningFocus weakTopics={weakTopics} t={t} />
         </div>
       </div>
     </div>

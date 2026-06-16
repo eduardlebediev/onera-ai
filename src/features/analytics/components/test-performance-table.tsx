@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { ClipboardList } from "lucide-react"
 
@@ -6,12 +8,14 @@ import {
   getScoreColorClass,
   getDashboardTestStatusBadgeConfig,
 } from "@/features/analytics/lib/dashboard-formatters"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"
 
 function DashboardTestStatusBadge({ status }: { status: DashboardTestStatus }) {
-  const { label, className } = getDashboardTestStatusBadgeConfig(status)
+  const { t } = useTranslation()
+  const { label, className } = getDashboardTestStatusBadgeConfig(status, t)
 
   return (
     <span
@@ -27,15 +31,17 @@ interface TestPerformanceTableProps {
 }
 
 export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
+  const { t } = useTranslation()
+
   return (
     <Card className="col-span-12 h-full lg:col-span-7">
       <CardHeader className="px-6 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <ClipboardList className="size-5 text-muted-foreground" />
-          <h3 className="typography-h3">Test Performance Overview</h3>
+          <h3 className="typography-h3">{t("admin.dashboard.testPerformanceOverview")}</h3>
           <div className="ml-auto">
             <Button variant="link" size="sm" asChild>
-              <Link href="/admin/tests">View all &gt;</Link>
+              <Link href="/admin/tests">{t("common.viewAll")}</Link>
             </Button>
           </div>
         </div>
@@ -43,12 +49,14 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
       <CardContent className="p-0">
         {tests.length === 0 ? (
           <div className="flex flex-col items-start gap-3 px-6 py-8">
-            <p className="typography-small font-medium text-foreground">No tests yet</p>
+            <p className="typography-small font-medium text-foreground">
+              {t("admin.dashboard.noTestsYet")}
+            </p>
             <p className="typography-small text-muted-foreground">
-              Generate your first test from a ready document.
+              {t("admin.dashboard.noTestsHint")}
             </p>
             <Button asChild variant="outline" size="sm">
-              <Link href="/admin/documents">Generate Test</Link>
+              <Link href="/admin/documents">{t("admin.dashboard.generateTest")}</Link>
             </Button>
           </div>
         ) : (
@@ -56,28 +64,34 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Test</span>
-                </TableHead>
-                <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Role</span>
-                </TableHead>
-                <TableHead className="py-3">
                   <span className="typography-small font-medium text-muted-foreground">
-                    Assigned
+                    {t("dataTable.test")}
                   </span>
                 </TableHead>
                 <TableHead className="py-3">
                   <span className="typography-small font-medium text-muted-foreground">
-                    Completed
+                    {t("dataTable.role")}
                   </span>
                 </TableHead>
                 <TableHead className="py-3">
                   <span className="typography-small font-medium text-muted-foreground">
-                    Ø Score
+                    {t("dataTable.assigned")}
                   </span>
                 </TableHead>
                 <TableHead className="py-3">
-                  <span className="typography-small font-medium text-muted-foreground">Status</span>
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("dataTable.completed")}
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("dataTable.avgScore")}
+                  </span>
+                </TableHead>
+                <TableHead className="py-3">
+                  <span className="typography-small font-medium text-muted-foreground">
+                    {t("dataTable.status")}
+                  </span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -99,19 +113,21 @@ export function TestPerformanceTable({ tests }: TestPerformanceTableProps) {
                   </TableCell>
                   <TableCell>
                     <p className="typography-small font-medium text-muted-foreground">
-                      {test.assignedCount} assigned
+                      {t("common.assigned", { count: test.assignedCount })}
                     </p>
                   </TableCell>
                   <TableCell>
                     <p className="typography-small font-medium text-muted-foreground">
-                      {test.completedCount} completed
+                      {t("common.completed", { count: test.completedCount })}
                     </p>
                   </TableCell>
                   <TableCell>
                     <span
                       className={`typography-p font-medium ${test.averageScore > 0 ? getScoreColorClass(test.averageScore) : "text-muted-foreground"}`}
                     >
-                      {test.averageScore > 0 ? `${test.averageScore}%` : "—"}
+                      {test.averageScore > 0
+                        ? t("common.percent", { value: test.averageScore })
+                        : t("common.dash")}
                     </span>
                   </TableCell>
                   <TableCell>

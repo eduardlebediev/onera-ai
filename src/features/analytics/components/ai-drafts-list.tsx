@@ -1,8 +1,11 @@
+"use client"
+
 import Link from "next/link"
 import { Sparkles } from "lucide-react"
 
 import type { DashboardAiDraft } from "@/features/analytics/types/admin-dashboard"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 
@@ -22,16 +25,20 @@ function getDraftReviewHref(draft: DashboardAiDraft): string {
   return "/admin/tests"
 }
 
-function getDraftActionLabel(draft: DashboardAiDraft): string {
-  return draft.actionLabel ?? "Review"
+function getDraftActionLabel(draft: DashboardAiDraft, t: ReturnType<typeof useTranslation>["t"]) {
+  return draft.actionLabel ?? t("admin.dashboard.documentActions.view")
 }
 
-function getDraftSubtitle(draft: DashboardAiDraft): string {
+function getDraftSubtitle(
+  draft: DashboardAiDraft,
+  locale: ReturnType<typeof useTranslation>["locale"],
+  t: ReturnType<typeof useTranslation>["t"]
+): string {
   if (draft.status || draft.model || draft.createdAt) {
     const parts = [
       draft.status ? draft.status : null,
       draft.model ? draft.model : null,
-      draft.createdAt ? formatTestDate(draft.createdAt) : null,
+      draft.createdAt ? formatTestDate(locale, draft.createdAt) : null,
     ].filter((part): part is string => Boolean(part))
 
     if (parts.length > 0) {
@@ -39,7 +46,7 @@ function getDraftSubtitle(draft: DashboardAiDraft): string {
     }
   }
 
-  return `${draft.questionCount} AI-generated questions`
+  return t("common.questions")
 }
 
 interface AiDraftsListProps {
@@ -47,6 +54,8 @@ interface AiDraftsListProps {
 }
 
 export function AiDraftsList({ drafts }: AiDraftsListProps) {
+  const { t, locale } = useTranslation()
+
   return (
     <Card className="col-span-12 h-full lg:col-span-4">
       <CardHeader className="px-6 pb-3 pt-4">
@@ -55,9 +64,9 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
             <Sparkles className="size-6" />
           </div>
           <div>
-            <h3 className="typography-h3">AI Review</h3>
+            <h3 className="typography-h3">{t("tests.review.title")}</h3>
             <p className="mt-1 typography-small text-muted-foreground font-medium">
-              {drafts.length} test drafts need to be reviewed
+              {drafts.length} {t("tests.review.title").toLowerCase()}
             </p>
           </div>
         </div>
@@ -67,10 +76,10 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
           {drafts.length === 0 ? (
             <div className="py-6">
               <p className="typography-small font-medium text-foreground">
-                No AI drafts waiting for review
+                {t("tests.review.selectQuestion")}
               </p>
               <p className="mt-1 typography-small text-muted-foreground">
-                Generate a test from a ready document to create a review draft.
+                {t("admin.dashboard.noTestsHint")}
               </p>
             </div>
           ) : (
@@ -79,11 +88,11 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
                 <div>
                   <p className="typography-small font-medium">{draft.title}</p>
                   <p className="mt-0.5 typography-small text-muted-foreground font-medium">
-                    {getDraftSubtitle(draft)}
+                    {getDraftSubtitle(draft, locale, t)}
                   </p>
                 </div>
                 <Button variant="secondary" size="sm" asChild>
-                  <Link href={getDraftReviewHref(draft)}>{getDraftActionLabel(draft)}</Link>
+                  <Link href={getDraftReviewHref(draft)}>{getDraftActionLabel(draft, t)}</Link>
                 </Button>
               </div>
             ))
@@ -91,7 +100,7 @@ export function AiDraftsList({ drafts }: AiDraftsListProps) {
         </div>
         <div className="px-6 pb-4 pt-2">
           <Button variant="link" asChild>
-            <Link href="/admin/tests">View all tests &gt;</Link>
+            <Link href="/admin/tests">{t("common.viewAll")}</Link>
           </Button>
         </div>
       </CardContent>

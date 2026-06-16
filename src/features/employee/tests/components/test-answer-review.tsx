@@ -9,6 +9,7 @@ import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-te
 import type { PersistedFollowUpState } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
 import type { AnswerReviewItem } from "@/features/employee/tests/lib/test-result-model"
 import type { FollowUpQuestion } from "@/features/employee/tests/types/follow-up"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -71,6 +72,7 @@ export function TestAnswerReview({
   followUpsByOriginalQuestionId,
   onFollowUpComplete,
 }: TestAnswerReviewProps) {
+  const { t } = useTranslation()
   const initialState = buildInitialFollowUpState(answerReview, followUpsByOriginalQuestionId)
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(
     initialState.expandedQuestionId
@@ -157,14 +159,14 @@ export function TestAnswerReview({
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
-        <h2 className="typography-h3 font-semibold">Answer Review</h2>
+        <h2 className="typography-h3 font-semibold">{t("employee.result.answerReview")}</h2>
         <p className="typography-small text-muted-foreground">
-          Follow-up questions help you check understanding after a wrong answer.
+          {t("employee.result.followUpHint")}
         </p>
 
         {answerReview.every((item) => item.isCorrect) ? (
           <p className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3 typography-small text-muted-foreground">
-            All answers were correct — no follow-up questions needed for this attempt.
+            {t("employee.result.allCorrectNoFollowUp")}
           </p>
         ) : null}
 
@@ -196,18 +198,24 @@ export function TestAnswerReview({
                     className={cn("shrink-0 gap-1", getPassFailBadgeClass(item.isCorrect))}
                   >
                     <StatusIcon className="size-3" />
-                    {item.isCorrect ? "Correct" : "Incorrect"}
+                    {item.isCorrect
+                      ? t("employee.result.correctLabel")
+                      : t("employee.result.incorrectLabel")}
                   </Badge>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <p className="typography-label text-muted-foreground">Your answer</p>
+                    <p className="typography-label text-muted-foreground">
+                      {t("employee.result.yourAnswer")}
+                    </p>
                     <p className="typography-small">{item.employeeAnswer}</p>
                   </div>
                   {!item.isCorrect ? (
                     <div className="space-y-1">
-                      <p className="typography-label text-muted-foreground">Correct answer</p>
+                      <p className="typography-label text-muted-foreground">
+                        {t("employee.result.correctAnswer")}
+                      </p>
                       <p className="typography-small font-medium text-emerald-700 dark:text-emerald-400">
                         {item.correctAnswer}
                       </p>
@@ -216,12 +224,16 @@ export function TestAnswerReview({
                 </div>
 
                 <div className="space-y-1">
-                  <p className="typography-label text-muted-foreground">Explanation</p>
+                  <p className="typography-label text-muted-foreground">
+                    {t("employee.result.explanation")}
+                  </p>
                   <p className="typography-small">{item.explanation}</p>
                 </div>
 
                 <p className="typography-small text-muted-foreground">
-                  <span className="font-medium text-foreground">Topic: </span>
+                  <span className="font-medium text-foreground">
+                    {t("employee.result.topicLabel")}:{" "}
+                  </span>
                   {item.topic}
                 </p>
 
@@ -235,21 +247,23 @@ export function TestAnswerReview({
                         onClick={() => void handleFollowUpClick(item)}
                       >
                         <Sparkles className="size-4" />
-                        {hasPersistedFollowUp ? "View follow-up" : "Check understanding"}
+                        {hasPersistedFollowUp
+                          ? t("employee.result.viewFollowUp")
+                          : t("employee.result.checkUnderstanding")}
                       </Button>
                     ) : null}
 
                     {isFollowUpExpanded && followUpState.status === "loading" ? (
                       <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-4 typography-small text-muted-foreground">
                         <Loader2 className="size-4 animate-spin text-primary" />
-                        Generating follow-up question...
+                        {t("employee.result.generatingFollowUp")}
                       </div>
                     ) : null}
 
                     {isFollowUpExpanded && followUpState.status === "error" ? (
                       <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                         <p className="typography-small text-destructive">
-                          Could not generate question. Try again.
+                          {t("employee.result.couldNotGenerateFollowUp")}
                         </p>
                         <Button
                           type="button"
@@ -257,7 +271,7 @@ export function TestAnswerReview({
                           size="sm"
                           onClick={() => void handleFollowUpClick(item)}
                         >
-                          Try again
+                          {t("common.tryAgain")}
                         </Button>
                       </div>
                     ) : null}

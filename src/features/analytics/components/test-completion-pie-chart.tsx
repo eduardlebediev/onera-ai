@@ -3,6 +3,7 @@
 import { Pie, PieChart, Cell } from "recharts"
 
 import type { AdminDashboardRecentAttempt } from "@/features/analytics/lib/supabase-admin-dashboard"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Card, CardContent, CardHeader } from "@/shared/ui/card"
 
 interface TestCompletionPieChartProps {
@@ -24,6 +25,7 @@ export function TestCompletionPieChart({
   totalFailed: failedProp,
   totalTests: totalProp,
 }: TestCompletionPieChartProps) {
+  const { t } = useTranslation()
   const passedCount = passedProp ?? recentAttempts.filter((a) => a.passed).length
   const failedCount = failedProp ?? recentAttempts.filter((a) => !a.passed).length
   const draftCount = totalProp
@@ -33,9 +35,21 @@ export function TestCompletionPieChart({
   const passRate = total > 0 ? Math.round((passedCount / total) * 100) : 0
 
   const data = [
-    { name: "Passed", value: passedCount, color: COLORS.passed },
-    { name: "Failed", value: failedCount, color: COLORS.failed },
-    { name: "Draft", value: draftCount, color: COLORS.draft },
+    {
+      name: t("status.employeeTest.passed"),
+      value: passedCount,
+      color: COLORS.passed,
+    },
+    {
+      name: t("status.assignment.failed"),
+      value: failedCount,
+      color: COLORS.failed,
+    },
+    {
+      name: t("status.test.draft"),
+      value: draftCount,
+      color: COLORS.draft,
+    },
   ].filter((d) => d.value > 0)
 
   if (data.length === 0) {
@@ -43,13 +57,15 @@ export function TestCompletionPieChart({
       <Card className="col-span-12 h-full lg:col-span-4">
         <CardHeader className="px-6 pb-3 pt-4">
           <div className="space-y-1">
-            <h3 className="typography-h3">Test Completion</h3>
-            <p className="typography-small text-muted-foreground font-medium">No test data yet</p>
+            <h3 className="typography-h3">{t("admin.dashboard.testCompletion")}</h3>
+            <p className="typography-small text-muted-foreground font-medium">
+              {t("admin.dashboard.noTestDataYet")}
+            </p>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center pb-6">
           <p className="typography-small text-muted-foreground">
-            Complete some tests to see completion data.
+            {t("admin.dashboard.noTestDataHint")}
           </p>
         </CardContent>
       </Card>
@@ -60,9 +76,10 @@ export function TestCompletionPieChart({
     <Card className="col-span-12 h-full lg:col-span-4">
       <CardHeader className="px-6 pb-3 pt-4">
         <div className="space-y-1">
-          <h3 className="typography-h3">Test Completion</h3>
+          <h3 className="typography-h3">{t("admin.dashboard.testCompletion")}</h3>
           <p className="typography-small text-muted-foreground font-medium">
-            {total} test{total !== 1 ? "s" : ""} · {passRate}% pass rate
+            {t("common.testCount", { count: total, plural: total !== 1 ? "s" : "" })} ·{" "}
+            {t("common.percent", { value: passRate })} {t("common.passRate")}
           </p>
         </div>
       </CardHeader>
@@ -79,14 +96,18 @@ export function TestCompletionPieChart({
               dataKey="value"
               strokeWidth={0}
             >
-              {data.map((entry, index) => (
+              {data.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
               ))}
             </Pie>
           </PieChart>
           <div className="absolute flex flex-col items-center">
-            <span className="text-2xl font-bold text-foreground">{passRate}%</span>
-            <span className="text-[11px] font-medium text-muted-foreground">pass rate</span>
+            <span className="text-2xl font-bold text-foreground">
+              {t("common.percent", { value: passRate })}
+            </span>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {t("common.passRate")}
+            </span>
           </div>
         </div>
 
@@ -94,7 +115,7 @@ export function TestCompletionPieChart({
           {data.map((entry) => (
             <div key={entry.name} className="flex items-center gap-1.5">
               <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-xs font-medium text-muted-foreground capitalize">
+              <span className="text-xs font-medium text-muted-foreground">
                 {entry.name}
                 <span className="ml-1 text-foreground">{entry.value}</span>
               </span>

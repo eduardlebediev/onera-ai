@@ -7,6 +7,7 @@ import {
   isTestAssignable,
 } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getLocale } from "@/shared/i18n/get-locale"
 import { parseCorrectAnswer, parseOptions, parseUserAnswer } from "@/shared/db/parse-json-fields"
 
 import { formatOptionTexts } from "./attempt-answer-format"
@@ -217,6 +218,7 @@ export async function getPersistedEmployeeTestResult(
     attemptId,
     organizationId
   )
+  const locale = await getLocale()
 
   return {
     id: testId,
@@ -241,7 +243,8 @@ export async function getPersistedEmployeeTestResult(
       test.title,
       score,
       passed,
-      answerReview
+      answerReview,
+      locale
     ),
     canRetake,
     retakeDisabledReason,

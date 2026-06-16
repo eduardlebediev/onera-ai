@@ -1,4 +1,6 @@
 import type { PersistedFollowUpState } from "@/features/employee/tests/lib/supabase-employee-follow-ups"
+import type { AppLocale } from "@/shared/i18n/locale-config"
+import { createTranslator } from "@/shared/i18n/translate"
 
 export type TestResultStatus = "passed" | "failed"
 
@@ -53,17 +55,23 @@ export interface EmployeeTestResult {
   followUpsByOriginalQuestionId?: Record<string, PersistedFollowUpState>
 }
 
-export function formatTestResultTimeSpent(minutes: number): string {
+export function formatTestResultTimeSpent(locale: AppLocale, minutes: number): string {
+  const { t } = createTranslator(locale)
+
   if (minutes < 60) {
-    return minutes === 1 ? "1 min" : `${minutes} min`
+    return minutes === 1
+      ? t("employee.format.timeSpentMinute")
+      : t("employee.format.timeSpentMinutes", { minutes })
   }
 
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
 
   if (remainingMinutes === 0) {
-    return hours === 1 ? "1 hr" : `${hours} hr`
+    return hours === 1
+      ? t("employee.format.timeSpentHour")
+      : t("employee.format.timeSpentHours", { hours })
   }
 
-  return `${hours} hr ${remainingMinutes} min`
+  return t("employee.format.timeSpentHoursMinutes", { hours, minutes: remainingMinutes })
 }

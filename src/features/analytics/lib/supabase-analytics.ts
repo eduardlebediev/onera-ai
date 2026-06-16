@@ -115,37 +115,32 @@ function buildOverviewStats(input: {
 }): KpiStat[] {
   return [
     {
-      label: "Team Average Score",
+      id: "teamAverageScore",
       value: input.averageScore !== null ? `${input.averageScore}%` : "—",
-      description:
-        input.averageScore !== null ? "Across completed attempts" : "No completed attempts yet",
+      useEmptyDescription: input.averageScore === null,
     },
     {
-      label: "Completion Rate",
+      id: "completionRate",
       value: `${input.completionRate}%`,
-      description: "Finished assignments",
     },
     {
-      label: "Completed Attempts",
+      id: "completedAttempts",
       value: String(input.completedAttemptsCount),
-      description: "Submitted tests",
     },
     {
-      label: "Weak Topics",
+      id: "weakTopics",
       value: String(input.weakTopicsCount),
-      description: input.weakTopicsCount > 0 ? "Topics with wrong answers" : "No weak topics yet",
+      useEmptyDescription: input.weakTopicsCount === 0,
     },
     {
-      label: "Difficult Questions",
+      id: "difficultQuestions",
       value: String(input.difficultQuestionsCount),
-      description:
-        input.difficultQuestionsCount > 0 ? "Questions with wrong answers" : "No difficult items",
+      useEmptyDescription: input.difficultQuestionsCount === 0,
     },
     {
-      label: "Failed Attempts",
+      id: "failedAttempts",
       value: String(input.failedAttemptsCount),
-      description:
-        input.failedAttemptsCount > 0 ? "Need follow-up review" : "No failed attempts yet",
+      useEmptyDescription: input.failedAttemptsCount === 0,
     },
   ]
 }

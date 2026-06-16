@@ -18,6 +18,7 @@ import {
   type SupabaseTestTakingAnswers,
 } from "@/features/employee/tests/lib/test-taking-state"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -29,6 +30,7 @@ const MIN_START_ATTEMPT_LOADING_MS = 350
 
 export function TestTakingPage({ test }: TestTakingPageProps) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const [supabaseAnswers, setSupabaseAnswers] = useState<SupabaseTestTakingAnswers>({})
@@ -55,7 +57,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
       } catch (error) {
         if (!cancelled) {
           setStartAttemptError(
-            error instanceof Error ? error.message : "Could not start the test attempt."
+            error instanceof Error ? error.message : t("employee.takeTest.couldNotStart")
           )
         }
       } finally {
@@ -77,7 +79,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     return () => {
       cancelled = true
     }
-  }, [test.id])
+  }, [test.id, t])
 
   const questions = test.questions
   const totalQuestions = questions.length
@@ -162,7 +164,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     setSubmitError(null)
 
     if (!attemptId) {
-      setSubmitError("Test attempt is not ready yet. Please wait and try again.")
+      setSubmitError(t("employee.takeTest.attemptNotReady"))
       setIsSubmitting(false)
       return
     }
@@ -189,7 +191,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
       const result = await submitEmployeeTestAttempt(test.id, payload)
       router.push(result.redirectTo)
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Failed to submit test.")
+      setSubmitError(error instanceof Error ? error.message : t("employee.takeTest.submitFailed"))
       setIsSubmitting(false)
     }
   }
@@ -198,16 +200,20 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     return null
   }
 
+  const breadcrumbItems = [
+    { label: t("breadcrumbs.myTests"), href: "/employee/tests" },
+    { label: test.title },
+  ]
+
   if (isStartingAttempt) {
     return (
       <div className="page-shell">
-        <Breadcrumbs
-          className="mb-6"
-          items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
-        />
+        <Breadcrumbs className="mb-6" items={breadcrumbItems} />
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
           <Loader2 className="size-8 animate-spin text-primary" />
-          <p className="typography-p text-muted-foreground">Starting your test attempt...</p>
+          <p className="typography-p text-muted-foreground">
+            {t("employee.takeTest.startingAttempt")}
+          </p>
         </div>
       </div>
     )
@@ -217,20 +223,18 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
     return (
       <div className="page-shell">
         <div className="space-y-4">
-          <Breadcrumbs
-            items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
-          />
+          <Breadcrumbs items={breadcrumbItems} />
           <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
             <Link href="/employee/tests">
               <ArrowLeft className="size-4" />
-              Back to My Tests
+              {t("employee.takeTest.backToMyTests")}
             </Link>
           </Button>
           <Card>
             <CardContent className="space-y-4 p-6">
               <p className="text-sm font-medium text-destructive">{startAttemptError}</p>
               <Button type="button" variant="outline" onClick={() => window.location.reload()}>
-                Try again
+                {t("common.tryAgain")}
               </Button>
             </CardContent>
           </Card>
@@ -250,10 +254,7 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
         </div>
       </div>
 
-      <Breadcrumbs
-        className="mt-6"
-        items={[{ label: "My Tests", href: "/employee/tests" }, { label: test.title }]}
-      />
+      <Breadcrumbs className="mt-6" items={breadcrumbItems} />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
@@ -299,12 +300,18 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-400" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-amber-900 dark:text-amber-300">
-                      Some questions are unanswered
+                      {t("employee.takeTest.incompleteWarning")}
                     </p>
                     <p className="typography-small text-amber-800 dark:text-amber-400">
-                      You have answered {progress.answeredCount} of {totalQuestions} questions.
+                      {t("common.answeredOf", {
+                        answered: progress.answeredCount,
+                        total: totalQuestions,
+                      })}
                       {progress.unansweredCount > 0
-                        ? ` ${progress.unansweredCount} question${progress.unansweredCount === 1 ? "" : "s"} remain unanswered.`
+                        ? ` ${t("common.questionsRemaining", {
+                            count: progress.unansweredCount,
+                            plural: progress.unansweredCount === 1 ? "" : "s",
+                          })}`
                         : null}
                     </p>
                   </div>
@@ -315,16 +322,16 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                     variant="outline"
                     onClick={() => setShowIncompleteWarning(false)}
                   >
-                    Keep reviewing
+                    {t("employee.takeTest.keepReviewing")}
                   </Button>
                   <Button type="button" onClick={() => void submitTest()} disabled={isSubmitting}>
                     {isSubmitting ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        Submitting...
+                        {t("employee.takeTest.submitting")}
                       </>
                     ) : (
-                      "Submit anyway"
+                      t("employee.takeTest.submitAnyway")
                     )}
                   </Button>
                 </div>
@@ -340,13 +347,13 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
               disabled={isFirstQuestion}
             >
               <ChevronLeft className="size-4" />
-              Previous
+              {t("employee.takeTest.previous")}
             </Button>
 
             <div className="flex flex-wrap gap-2">
               {!isLastQuestion ? (
                 <Button type="button" onClick={handleNext} disabled={!hasCurrentAnswer}>
-                  Next
+                  {t("employee.takeTest.next")}
                   <ChevronRight className="size-4" />
                 </Button>
               ) : (
@@ -354,10 +361,10 @@ export function TestTakingPage({ test }: TestTakingPageProps) {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Submitting...
+                      {t("employee.takeTest.submitting")}
                     </>
                   ) : (
-                    "Submit Test"
+                    t("employee.takeTest.submitTest")
                   )}
                 </Button>
               )}

@@ -6,7 +6,10 @@ import { useMemo, useState, useEffect } from "react"
 
 import type { DocumentStatus } from "@/features/documents/types/document"
 import type { ReviewQuestion, ReviewStatus } from "@/features/tests/types/review"
-import { DOCUMENT_STATUS_STYLE } from "@/features/documents/lib/document-status-style"
+import {
+  DOCUMENT_STATUS_STYLE,
+  getDocumentStatusLabel,
+} from "@/features/documents/lib/document-status-style"
 import {
   patchReviewQuestions,
   regenerateReviewQuestion,
@@ -25,6 +28,7 @@ import { ReviewQuestionList } from "@/features/tests/components/review-question-
 import type { TestReviewData } from "@/features/tests/types/review"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 
 interface TestReviewPageProps {
@@ -50,6 +54,7 @@ export function TestReviewPage({
   draftTestId: routeDraftTestId,
   reviewDataSource = "supabase",
 }: TestReviewPageProps) {
+  const { t } = useTranslation()
   const {
     reviewData,
     questions: resolvedQuestions,
@@ -194,7 +199,9 @@ export function TestReviewPage({
     void persistQuestionChanges({
       upsert: [{ ...nextQuestion, status }],
     }).catch((error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to save review status")
+      setActionError(
+        error instanceof Error ? error.message : t("tests.review.errors.saveReviewStatus")
+      )
     })
   }
 
@@ -213,7 +220,9 @@ export function TestReviewPage({
     void persistQuestionChanges({
       upsert: [{ ...nextQuestion, ...patch, status: "edited" }],
     }).catch((error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to save question edit")
+      setActionError(
+        error instanceof Error ? error.message : t("tests.review.errors.saveQuestionEdit")
+      )
     })
   }
 
@@ -240,7 +249,9 @@ export function TestReviewPage({
         setSelectedQuestionId(persistedQuestionId)
       })
       .catch((error) => {
-        setActionError(error instanceof Error ? error.message : "Failed to add question")
+        setActionError(
+          error instanceof Error ? error.message : t("tests.review.errors.addQuestion")
+        )
       })
   }
 
@@ -256,14 +267,16 @@ export function TestReviewPage({
     if (!draftTestId || !questionToDelete?.dbQuestionId) return
 
     void persistQuestionChanges({ deleteIds: [questionToDelete.dbQuestionId] }).catch((error) => {
-      setActionError(error instanceof Error ? error.message : "Failed to delete question")
+      setActionError(
+        error instanceof Error ? error.message : t("tests.review.errors.deleteQuestion")
+      )
     })
   }
 
   const handleRegenerateQuestion = async (questionId: string) => {
     const question = questions.find((item) => item.id === questionId)
     if (!question?.dbQuestionId || !draftTestId) {
-      setActionError("Regenerate is only available for persisted AI questions.")
+      setActionError(t("tests.review.errors.regenerateOnlyPersisted"))
       return
     }
 
@@ -286,7 +299,9 @@ export function TestReviewPage({
         )
       )
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Failed to regenerate question")
+      setActionError(
+        error instanceof Error ? error.message : t("tests.review.errors.regenerateQuestion")
+      )
     } finally {
       setRegeneratingQuestionId(null)
     }
@@ -321,15 +336,15 @@ export function TestReviewPage({
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground">Test Review</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                {t("tests.review.title")}
+              </h1>
               <p className="mt-1 text-base text-muted-foreground">{reviewData.testTitle}</p>
               {reviewData.description ? (
                 <p className="mt-1 text-sm text-muted-foreground">{reviewData.description}</p>
               ) : null}
               <p className="mt-1 text-sm text-muted-foreground">
-                {isAiDraft
-                  ? "AI-generated draft. Review before publishing."
-                  : "AI-generated questions stay in review until an admin approves them."}
+                {isAiDraft ? t("common.aiGeneratedDraft") : t("common.aiGeneratedReviewHint")}
               </p>
             </div>
 
@@ -351,12 +366,14 @@ export function TestReviewPage({
               )}
               <Badge variant="outline" className={`font-normal ${statusBadge.badgeClass}`}>
                 <span className={`mr-1.5 flex size-1.5 rounded-full ${statusBadge.dotClass}`} />
-                {statusBadge.label}
+                {getDocumentStatusLabel(sourceDocumentStatus, t)}
               </Badge>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>{totalQuestions} Questions</span>
+                <span>{t("tests.review.questionsCount", { count: totalQuestions })}</span>
                 <span className="size-1 rounded-full bg-border" />
-                <span className="capitalize">{reviewData.difficulty}</span>
+                <span className="capitalize">
+                  {t(`common.difficulty.${reviewData.difficulty}`)}
+                </span>
                 <span className="size-1 rounded-full bg-border" />
                 <span>{reviewData.targetRole}</span>
                 <span className="size-1 rounded-full bg-border" />
@@ -367,12 +384,14 @@ export function TestReviewPage({
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle2 className="size-4 text-emerald-500" />
               <span className="text-muted-foreground">
-                <span className="font-semibold text-foreground">{approvedQuestions}</span> of{" "}
-                {totalQuestions} questions approved
+                {t("common.ofQuestionsApproved", {
+                  approved: approvedQuestions,
+                  total: totalQuestions,
+                })}
               </span>
               {!canPublish && (
                 <span className="text-xs text-amber-600 font-medium">
-                  — approve at least one to publish
+                  {t("tests.review.approveAtLeastOne")}
                 </span>
               )}
             </div>
@@ -388,7 +407,7 @@ export function TestReviewPage({
             <Button asChild variant="outline" className="h-10 px-4">
               <Link href={`/admin/documents/${documentId}/generate-test`}>
                 <Settings className="mr-2 size-4" />
-                Test Setup
+                {t("tests.review.testSetup")}
               </Link>
             </Button>
             <Button
@@ -399,12 +418,12 @@ export function TestReviewPage({
               {canPublish ? (
                 <Link href={publishHref} onClick={handleContinueToPublish}>
                   <Rocket className="mr-2 size-4" />
-                  Continue to Publish
+                  {t("tests.review.continueToPublish")}
                 </Link>
               ) : (
                 <>
                   <Rocket className="mr-2 size-4" />
-                  Continue to Publish
+                  {t("tests.review.continueToPublish")}
                 </>
               )}
             </Button>
@@ -413,7 +432,10 @@ export function TestReviewPage({
 
         <Breadcrumbs
           className="mt-4"
-          items={[{ label: "Tests", href: "/admin/tests" }, { label: "Review" }]}
+          items={[
+            { label: t("nav.tests"), href: "/admin/tests" },
+            { label: t("tests.review.breadcrumbReview") },
+          ]}
         />
       </div>
 
@@ -465,7 +487,7 @@ export function TestReviewPage({
               />
             ) : (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-card">
-                <p className="text-sm text-muted-foreground">Select a question to review</p>
+                <p className="text-sm text-muted-foreground">{t("tests.review.selectQuestion")}</p>
               </div>
             )}
           </div>

@@ -10,6 +10,8 @@ import type {
   EmployeeProgressStatus,
 } from "@/features/employees/lib/supabase-employees"
 import { cn } from "@/lib/utils"
+import { formatDate } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { DataTable } from "@/shared/ui/data-table/data-table"
@@ -33,20 +35,24 @@ interface EmployeesTableProps {
 
 const STATUS_STYLE: Record<
   EmployeeProgressStatus,
-  { label: string; className: string; dotClassName: string }
+  {
+    labelKey: `status.employeeProgress.${EmployeeProgressStatus}`
+    className: string
+    dotClassName: string
+  }
 > = {
   completed: {
-    label: "Completed",
+    labelKey: "status.employeeProgress.completed",
     className: "border-green-200 bg-green-50 text-green-700",
     dotClassName: "bg-green-500",
   },
   pending: {
-    label: "Pending",
+    labelKey: "status.employeeProgress.pending",
     className: "border-amber-200 bg-amber-50 text-amber-700",
     dotClassName: "bg-amber-500",
   },
   overdue: {
-    label: "Overdue",
+    labelKey: "status.employeeProgress.overdue",
     className: "border-red-200 bg-red-50 text-red-700",
     dotClassName: "bg-red-500",
   },
@@ -54,16 +60,6 @@ const STATUS_STYLE: Record<
 
 function formatScore(score: number | null): string {
   return typeof score === "number" ? `${score}%` : "--"
-}
-
-function formatLastActive(value: string | null): string {
-  if (!value) return "No activity"
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value))
 }
 
 function getInitials(name: string): string {
@@ -98,6 +94,7 @@ export function EmployeesTable({
   onToggleSelected,
   onSelectAll,
 }: EmployeesTableProps) {
+  const { locale, t } = useTranslation()
   const tableRows = useMemo<EmployeeTableRow[]>(
     () =>
       employees.map((employee) => ({
@@ -119,7 +116,7 @@ export function EmployeesTable({
 
           return (
             <DataTableSelectionCheckbox
-              aria-label="Select all visible employees"
+              aria-label={t("dataTable.selectAllEmployees")}
               checked={allVisibleSelected}
               indeterminate={selectedVisibleCount > 0 && !allVisibleSelected}
               disabled={visibleIds.length === 0}
@@ -136,7 +133,7 @@ export function EmployeesTable({
         },
         cell: ({ row }) => (
           <DataTableSelectionCheckbox
-            aria-label={`Select ${row.original.name}`}
+            aria-label={t("dataTable.selectEmployee", { name: row.original.name })}
             checked={selectedIds.has(row.original.id)}
             onCheckedChange={() => onToggleSelected(row.original.id)}
           />
@@ -145,7 +142,9 @@ export function EmployeesTable({
       {
         id: "name",
         accessorKey: "name",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.name")} />
+        ),
         enableSorting: true,
         meta: { pin: "left", width: 280 },
         cell: ({ row }) => <EmployeeNameCell employee={row.original} />,
@@ -153,7 +152,9 @@ export function EmployeesTable({
       {
         id: "email",
         accessorKey: "email",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.email")} />
+        ),
         enableSorting: true,
         meta: { width: 240 },
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.email}</span>,
@@ -161,14 +162,18 @@ export function EmployeesTable({
       {
         id: "department",
         accessorKey: "department",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Department" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.department")} />
+        ),
         enableSorting: true,
         meta: { width: 180 },
       },
       {
         id: "progress",
         accessorKey: "progress",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Progress" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.progress")} />
+        ),
         enableSorting: true,
         meta: { width: 170 },
         cell: ({ row }) => <EmployeeProgressCell progress={row.original.progress} />,
@@ -176,7 +181,9 @@ export function EmployeesTable({
       {
         id: "status",
         accessorKey: "status",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.status")} />
+        ),
         enableSorting: true,
         meta: { width: 150 },
         cell: ({ row }) => <EmployeeStatusCell status={row.original.status} />,
@@ -184,7 +191,9 @@ export function EmployeesTable({
       {
         id: "averageScore",
         accessorKey: "averageScore",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.score")} />
+        ),
         enableSorting: true,
         meta: { width: 120 },
         cell: ({ row }) => formatScore(row.original.averageScore),
@@ -192,18 +201,22 @@ export function EmployeesTable({
       {
         id: "lastActiveAt",
         accessorKey: "lastActiveAt",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Last active" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.lastActive")} />
+        ),
         enableSorting: true,
         meta: { width: 160 },
         cell: ({ row }) => (
           <span className="text-muted-foreground">
-            {formatLastActive(row.original.lastActiveAt)}
+            {row.original.lastActiveAt
+              ? formatDate(locale, row.original.lastActiveAt)
+              : t("common.noActivity")}
           </span>
         ),
       },
       {
         id: "actions",
-        header: "Actions",
+        header: t("common.actions"),
         enableSorting: false,
         meta: {
           pin: "right",
@@ -220,7 +233,7 @@ export function EmployeesTable({
         ),
       },
     ],
-    [nudgingIds, onNudge, onSelectAll, onToggleSelected, selectedIds]
+    [locale, nudgingIds, onNudge, onSelectAll, onToggleSelected, selectedIds, t]
   )
 
   return (
@@ -228,13 +241,13 @@ export function EmployeesTable({
       columns={columns}
       data={tableRows}
       searchKey="searchText"
-      searchPlaceholder="Search by name, email, department"
-      emptyMessage="No employees match your filters."
+      searchPlaceholder={t("dataTable.searchEmployees")}
+      emptyMessage={t("dataTable.emptyEmployees")}
       toolbar={toolbar}
       getRowProps={(row) => ({
         tabIndex: 0,
         role: "button",
-        "aria-label": `Preview ${row.original.name}`,
+        "aria-label": t("dataTable.previewEmployee", { name: row.original.name }),
         onClick: () => onOpenPreview(row.original),
         onKeyDown: (event) => handleRowKeyDown(event, row.original, onOpenPreview),
         className: "cursor-pointer",
@@ -248,6 +261,8 @@ const EmployeeNameCell = memo(function EmployeeNameCell({
 }: {
   employee: EmployeeTableRow
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex items-center gap-3">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
@@ -256,7 +271,9 @@ const EmployeeNameCell = memo(function EmployeeNameCell({
       <div>
         <p className="typography-small font-medium text-foreground">{employee.name}</p>
         {employee.memberStatus === "invited" ? (
-          <p className="text-xs text-muted-foreground">Invite pending</p>
+          <p className="text-xs text-muted-foreground">
+            {t("status.employeeProgress.invitePending")}
+          </p>
         ) : null}
       </div>
     </div>
@@ -268,12 +285,16 @@ const EmployeeProgressCell = memo(function EmployeeProgressCell({
 }: {
   progress: number
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className="min-w-28">
       <div className="h-2 rounded-full bg-muted">
         <div className="h-2 rounded-full bg-primary" style={{ width: `${progress}%` }} />
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{progress}% complete</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t("employees.management.progressComplete", { percent: progress })}
+      </p>
     </div>
   )
 })
@@ -283,12 +304,13 @@ const EmployeeStatusCell = memo(function EmployeeStatusCell({
 }: {
   status: EmployeeProgressStatus
 }) {
+  const { t } = useTranslation()
   const statusStyle = STATUS_STYLE[status]
 
   return (
     <Badge variant="outline" className={cn("status-badge", statusStyle.className)}>
       <span className={cn("mr-1 size-1.5 rounded-full", statusStyle.dotClassName)} />
-      {statusStyle.label}
+      {t(statusStyle.labelKey)}
     </Badge>
   )
 })
@@ -302,6 +324,8 @@ const EmployeeActionsCell = memo(function EmployeeActionsCell({
   isNudging: boolean
   onNudge: (employeeIds: string[], label: string) => Promise<boolean>
 }) {
+  const { t } = useTranslation()
+
   return (
     <div
       onClick={(event) => event.stopPropagation()}
@@ -313,13 +337,15 @@ const EmployeeActionsCell = memo(function EmployeeActionsCell({
           variant="outline"
           size="sm"
           onClick={() =>
-            toast.message("Employee already completed", {
-              description: `${employee.name} has completed assigned work.`,
+            toast.message(t("employees.nudge.alreadyCompleted"), {
+              description: t("employees.nudge.alreadyCompletedDescription", {
+                name: employee.name,
+              }),
               position: "bottom-right",
             })
           }
         >
-          Completed
+          {t("status.employeeProgress.completed")}
         </Button>
       ) : (
         <Button
@@ -331,13 +357,13 @@ const EmployeeActionsCell = memo(function EmployeeActionsCell({
             void onNudge(
               [employee.id],
               employee.status === "overdue"
-                ? "Please complete your overdue assigned training."
-                : "Please complete your assigned training."
+                ? t("employees.nudge.overdueMessage")
+                : t("employees.nudge.defaultMessage")
             )
           }
         >
           <Bell />
-          {isNudging ? "Sending..." : "Nudge"}
+          {isNudging ? t("employees.nudge.sending") : t("employees.nudge.nudge")}
         </Button>
       )}
     </div>

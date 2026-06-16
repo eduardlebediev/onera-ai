@@ -5,6 +5,9 @@ import { isEmployeeTestFinished } from "@/features/employee/tests/lib/employee-t
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { getDaysUntilDeadline } from "@/features/employee/tests/lib/employee-test-format"
 import type { KpiTone } from "@/shared/lib/kpi-tone-styles"
+import type { createTranslator } from "@/shared/i18n/translate"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 export type EmployeeDashboardKpiStatus =
   | "assigned"
@@ -31,7 +34,8 @@ function isEmployeeTestDueSoon(test: EmployeeAssignedTest): boolean {
 
 export function getEmployeeDashboardKpiStats(
   tests: EmployeeAssignedTest[],
-  weakTopicCount: number
+  weakTopicCount: number,
+  t: Translate
 ): EmployeeDashboardKpiStat[] {
   const assignedCount = tests.length
   const dueSoonCount = tests.filter(isEmployeeTestDueSoon).length
@@ -47,35 +51,35 @@ export function getEmployeeDashboardKpiStats(
 
   return [
     {
-      label: "Assigned Tests",
+      label: t("kpi.employeeDashboard.assignedTests"),
       value: String(assignedCount),
       icon: ClipboardList,
       tone: "neutral",
       status: "assigned",
     },
     {
-      label: "Due Soon",
+      label: t("kpi.employeeDashboard.dueSoon"),
       value: String(dueSoonCount),
       icon: AlertTriangle,
       tone: dueSoonCount > 0 ? "warning" : "neutral",
       status: "dueSoon",
     },
     {
-      label: "Completed Tests",
+      label: t("kpi.employeeDashboard.completedTests"),
       value: String(completedCount),
       icon: CheckCircle2,
       tone: "success",
       status: "completed",
     },
     {
-      label: "Average Score",
-      value: scoredTests.length > 0 ? `${averageScore}%` : "—",
+      label: t("kpi.employeeDashboard.averageScore"),
+      value: scoredTests.length > 0 ? `${averageScore}%` : t("common.dash"),
       icon: Target,
       tone: "neutral",
       status: "averageScore",
     },
     {
-      label: "Weak Topics",
+      label: t("kpi.employeeDashboard.weakTopics"),
       value: String(weakTopicCount),
       icon: BookOpen,
       tone: weakTopicCount > 0 ? "warning" : "neutral",

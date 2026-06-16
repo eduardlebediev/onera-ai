@@ -1,8 +1,11 @@
+"use client"
+
 import { FileText } from "lucide-react"
 import Link from "next/link"
 
 import type { ResolvedTestListItem } from "@/features/tests/lib/test-source-document"
-import { TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { getTestStatusLabel, TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 
@@ -20,6 +23,7 @@ function ContextItem({ label, value }: { label: string; value: string | number }
 }
 
 export function AssignTestContext({ test }: AssignTestContextProps) {
+  const { t } = useTranslation()
   const statusStyle = TEST_STATUS_STYLE[test.status]
 
   return (
@@ -33,7 +37,7 @@ export function AssignTestContext({ test }: AssignTestContextProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className={statusStyle.detailBadgeClass}>
             {statusStyle.icon}
-            {statusStyle.label}
+            {getTestStatusLabel(test.status, t)}
           </Badge>
           <Badge variant="outline" className="capitalize">
             {test.difficulty}
@@ -42,11 +46,16 @@ export function AssignTestContext({ test }: AssignTestContextProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-          <ContextItem label="Questions" value={test.questionCount} />
-          <ContextItem label="Passing Score" value={`${test.passingScore}%`} />
-          <ContextItem label="Assigned Employees" value={test.assignedEmployeesCount} />
+          <ContextItem label={t("common.questions")} value={test.questionCount} />
+          <ContextItem label={t("dataTable.passingScore")} value={`${test.passingScore}%`} />
+          <ContextItem
+            label={t("tests.assign.summary.selectedEmployees")}
+            value={test.assignedEmployeesCount}
+          />
           <div className="col-span-2 sm:col-span-1">
-            <p className="typography-small text-muted-foreground">Source Document</p>
+            <p className="typography-small text-muted-foreground">
+              {t("dataTable.sourceDocument")}
+            </p>
             <div className="mt-0.5 flex items-center gap-1.5">
               <FileText className="size-4 text-muted-foreground" />
               <Link

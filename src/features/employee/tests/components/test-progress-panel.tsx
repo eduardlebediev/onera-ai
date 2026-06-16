@@ -1,3 +1,5 @@
+"use client"
+
 import { Clock, FileText } from "lucide-react"
 
 import {
@@ -5,11 +7,13 @@ import {
   formatEstimatedTime,
 } from "@/features/employee/tests/lib/employee-test-format"
 import {
+  formatDifficultyLabel,
   formatEmployeeTestStatus,
   getEmployeeTestDisplayStatus,
   getEmployeeTestStatusBadgeClass,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
@@ -44,18 +48,26 @@ export function TestProgressPanel({
   questionStates,
   onNavigateToQuestion,
 }: TestProgressPanelProps) {
+  const { t, locale } = useTranslation()
   const displayStatus = getEmployeeTestDisplayStatus(test)
 
   return (
     <Card className="h-fit border-border/50 bg-card/80">
       <CardContent className="space-y-5 p-5">
         <div className="space-y-2">
-          <p className="typography-label text-muted-foreground">Test progress</p>
+          <p className="typography-label text-muted-foreground">
+            {t("employee.takeTest.progress.title")}
+          </p>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3 typography-small">
-              <span className="text-foreground">{completionPercent}% complete</span>
+              <span className="text-foreground">
+                {t("employee.takeTest.progress.percentComplete", { percent: completionPercent })}
+              </span>
               <span className="text-muted-foreground">
-                {answeredCount} answered · {unansweredCount} left
+                {t("employee.takeTest.progress.answeredSummary", {
+                  answered: answeredCount,
+                  unanswered: unansweredCount,
+                })}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -68,13 +80,13 @@ export function TestProgressPanel({
         </div>
 
         <div className="space-y-2">
-          <p className="typography-label text-muted-foreground">Questions</p>
+          <p className="typography-label text-muted-foreground">{t("common.questions")}</p>
           <div className="flex flex-wrap gap-2">
             {questionStates.map((state, index) => (
               <button
                 key={index}
                 type="button"
-                aria-label={`Go to question ${index + 1}`}
+                aria-label={t("employee.takeTest.goToQuestion", { number: index + 1 })}
                 aria-current={state === "current" ? "step" : undefined}
                 onClick={() => onNavigateToQuestion(index)}
                 className={cn(
@@ -90,17 +102,19 @@ export function TestProgressPanel({
 
         <div className="space-y-3 border-t border-border/60 pt-4">
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Status</p>
+            <p className="typography-label text-muted-foreground">{t("dataTable.status")}</p>
             <Badge
               variant="outline"
               className={cn("status-badge", getEmployeeTestStatusBadgeClass(displayStatus))}
             >
-              {formatEmployeeTestStatus(displayStatus)}
+              {formatEmployeeTestStatus(displayStatus, t)}
             </Badge>
           </div>
 
           <div className="space-y-1">
-            <p className="typography-label text-muted-foreground">Source document</p>
+            <p className="typography-label text-muted-foreground">
+              {t("employee.takeTest.progress.sourceDocument")}
+            </p>
             <p className="flex items-start gap-1.5 typography-small text-foreground">
               <FileText className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
               <span>{test.sourceDocument}</span>
@@ -109,24 +123,28 @@ export function TestProgressPanel({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Difficulty</p>
-              <p className="typography-small capitalize text-foreground">{test.difficulty}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Questions</p>
-              <p className="typography-small text-foreground">{test.questionCount}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Deadline</p>
+              <p className="typography-label text-muted-foreground">{t("dataTable.difficulty")}</p>
               <p className="typography-small text-foreground">
-                {formatEmployeeTestDeadline(test.deadline)}
+                {formatDifficultyLabel(test.difficulty, t)}
               </p>
             </div>
             <div className="space-y-1">
-              <p className="typography-label text-muted-foreground">Est. time</p>
+              <p className="typography-label text-muted-foreground">{t("common.questions")}</p>
+              <p className="typography-small text-foreground">{test.questionCount}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="typography-label text-muted-foreground">
+                {t("employee.dashboard.deadline")}
+              </p>
+              <p className="typography-small text-foreground">
+                {formatEmployeeTestDeadline(locale, test.deadline, t)}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="typography-label text-muted-foreground">{t("dataTable.estTime")}</p>
               <p className="flex items-center gap-1.5 typography-small text-foreground">
                 <Clock className="size-3.5 text-muted-foreground" />
-                {formatEstimatedTime(test.estimatedMinutes)}
+                {formatEstimatedTime(locale, test.estimatedMinutes)}
               </p>
             </div>
           </div>

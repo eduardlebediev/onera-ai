@@ -1,26 +1,31 @@
 import { BookOpen } from "lucide-react"
 
 import type { DashboardWeakTopic } from "@/features/employee/tests/lib/employee-dashboard-model"
+import type { createTranslator } from "@/shared/i18n/translate"
 import { Card, CardContent } from "@/shared/ui/card"
+
+type Translate = ReturnType<typeof createTranslator>["t"]
 
 interface EmployeeDashboardLearningFocusProps {
   weakTopics: DashboardWeakTopic[]
+  t: Translate
 }
 
 export function EmployeeDashboardLearningFocus({
   weakTopics,
+  t,
 }: EmployeeDashboardLearningFocusProps) {
   return (
     <Card className="h-full">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center gap-2">
           <BookOpen className="size-4 text-muted-foreground" />
-          <h2 className="typography-h3 font-semibold">Learning Focus</h2>
+          <h2 className="typography-h3 font-semibold">{t("employee.dashboard.learningFocus")}</h2>
         </div>
 
         {weakTopics.length === 0 ? (
           <p className="typography-small text-muted-foreground">
-            No weak topics to review yet. Strong results so far.
+            {t("employee.dashboard.noWeakTopics")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -34,7 +39,9 @@ export function EmployeeDashboardLearningFocus({
                   {topic.explanation}
                 </p>
                 <p className="typography-small">
-                  <span className="font-medium text-foreground">Recommended: </span>
+                  <span className="font-medium text-foreground">
+                    {t("employee.dashboard.recommended")}{" "}
+                  </span>
                   {topic.recommendedAction}
                 </p>
               </li>

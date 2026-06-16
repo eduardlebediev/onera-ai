@@ -27,12 +27,16 @@ import {
 import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
 import { DocumentVersionHistory } from "@/features/documents/components/document-version-history"
 import { canGenerateTest } from "@/features/documents/components/generate-test-model"
+import { getDocumentStatusLabel } from "@/features/documents/lib/document-status-style"
 import { UpdateDocumentDropdownItem } from "@/features/documents/components/update-document-dropdown-item"
 import { UploadDocumentVersionButton } from "@/features/documents/components/upload-document-version-button"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
+import { formatDate as formatLocaleDate } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
+import type { TranslationKey } from "@/shared/i18n/translate"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs"
 
@@ -42,43 +46,25 @@ interface DocumentDetailProps {
   showBreadcrumbs?: boolean
 }
 
-const STATUS_CONFIG: Record<
-  DocumentStatus,
-  { label: string; icon: React.ReactNode; className: string }
-> = {
-  ready: {
-    label: "Ready",
-    icon: <CheckCircle2 className="mr-1 size-3" />,
-    className:
-      "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  processing: {
-    label: "Processing",
-    icon: <Clock className="mr-1 size-3 animate-spin" />,
-    className:
-      "bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
-  },
-  failed: {
-    label: "Failed",
-    icon: <XCircle className="mr-1 size-3" />,
-    className: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
-  },
-  uploaded: {
-    label: "Uploaded",
-    icon: null,
-    className: "bg-muted text-muted-foreground hover:bg-muted",
-  },
-  archived: {
-    label: "Archived",
-    icon: <AlertTriangle className="mr-1 size-3" />,
-    className:
-      "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  deleted: {
-    label: "Deleted",
-    icon: <Trash2 className="mr-1 size-3" />,
-    className: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
-  },
+const STATUS_ICONS: Record<DocumentStatus, React.ReactNode> = {
+  ready: <CheckCircle2 className="mr-1 size-3" />,
+  processing: <Clock className="mr-1 size-3 animate-spin" />,
+  failed: <XCircle className="mr-1 size-3" />,
+  uploaded: null,
+  archived: <AlertTriangle className="mr-1 size-3" />,
+  deleted: <Trash2 className="mr-1 size-3" />,
+}
+
+const STATUS_BADGE_CLASS: Record<DocumentStatus, string> = {
+  ready:
+    "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400",
+  processing:
+    "bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/30 dark:text-orange-400",
+  failed: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
+  uploaded: "bg-muted text-muted-foreground hover:bg-muted",
+  archived:
+    "bg-amber-100 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400",
+  deleted: "bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400",
 }
 
 const TOPIC_BADGE_COLORS = [
@@ -126,12 +112,8 @@ function ExtractedTextMarkdown({ children, preview = false }: ExtractedTextMarkd
   )
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
+function formatDate(locale: ReturnType<typeof useTranslation>["locale"], dateStr: string): string {
+  return formatLocaleDate(locale, dateStr)
 }
 
 function getDocumentTopics(document: DocumentDetail): DocumentTopic[] {
@@ -146,12 +128,15 @@ function getDocumentTopics(document: DocumentDetail): DocumentTopic[] {
   }))
 }
 
-function formatConfidence(confidence: number | null | undefined): string | null {
+function formatConfidence(
+  confidence: number | null | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+): string | null {
   if (typeof confidence !== "number" || !Number.isFinite(confidence)) {
     return null
   }
 
-  return `${Math.round(confidence * 100)}%`
+  return t("common.confidence", { percent: Math.round(confidence * 100) })
 }
 
 export function DocumentDetail({
@@ -159,7 +144,9 @@ export function DocumentDetail({
   onLifecycleComplete,
   showBreadcrumbs = true,
 }: DocumentDetailProps) {
-  const statusConfig = STATUS_CONFIG[document.status]
+  const { locale, t } = useTranslation()
+  const statusIcon = STATUS_ICONS[document.status]
+  const statusBadgeClass = STATUS_BADGE_CLASS[document.status]
   const isDeleted = document.status === "deleted"
   const isArchived = document.status === "archived"
   const isReady = !isDeleted && !isArchived && canGenerateTest(document)
@@ -185,9 +172,9 @@ export function DocumentDetail({
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <DocumentVersionBadge versionNumber={versionNumber} isLatest={isLatestVersion} />
             <span className="text-border">|</span>
-            <Badge variant="secondary" className={statusConfig.className}>
-              {statusConfig.icon}
-              {statusConfig.label}
+            <Badge variant="secondary" className={statusBadgeClass}>
+              {statusIcon}
+              {getDocumentStatusLabel(document.status, t)}
             </Badge>
             <span className="text-border">|</span>
             <div className="flex items-center gap-1.5">
@@ -199,7 +186,9 @@ export function DocumentDetail({
             <span className="text-border">|</span>
             <span>{fileSizeLabel}</span>
             <span className="text-border">|</span>
-            <span>Uploaded {formatDate(document.uploadedAt)}</span>
+            <span>
+              {t("documents.detail.uploaded", { date: formatDate(locale, document.uploadedAt) })}
+            </span>
           </div>
         </div>
 
@@ -212,12 +201,12 @@ export function DocumentDetail({
               {isReady ? (
                 <Link href={`/admin/documents/${document.id}/generate-test`}>
                   <Sparkles />
-                  Generate Test
+                  {t("documents.detail.generateTest")}
                 </Link>
               ) : (
                 <>
                   <Sparkles />
-                  Generate Test
+                  {t("documents.detail.generateTest")}
                 </>
               )}
             </Button>
@@ -225,7 +214,11 @@ export function DocumentDetail({
           {!isDeleted ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" aria-label="More actions">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t("documents.detail.moreActions")}
+                >
                   <MoreHorizontal />
                 </Button>
               </DropdownMenuTrigger>
@@ -247,53 +240,62 @@ export function DocumentDetail({
       {showBreadcrumbs ? (
         <Breadcrumbs
           className="mb-6"
-          items={[{ label: "Documents", href: "/admin/documents" }, { label: document.title }]}
+          items={[
+            { label: t("nav.documents"), href: "/admin/documents" },
+            { label: document.title },
+          ]}
         />
       ) : null}
 
       {isDeleted ? (
         <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
-          <p className="font-medium">This document was permanently deleted.</p>
-          <p className="mt-1">
-            The uploaded file, extracted text, chunks, and topics were removed. This page remains as
-            a reference for tests that used this source document.
-          </p>
+          <p className="font-medium">{t("documents.detail.deletedBanner.title")}</p>
+          <p className="mt-1">{t("documents.detail.deletedBanner.body")}</p>
           {document.deletionReason ? (
-            <p className="mt-2 text-muted-foreground">Reason: {document.deletionReason}</p>
+            <p className="mt-2 text-muted-foreground">
+              {t("documents.detail.deletedBanner.reason", { reason: document.deletionReason })}
+            </p>
           ) : null}
         </div>
       ) : isArchived ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
-          <p className="font-medium">This document is archived.</p>
-          <p className="mt-1">
-            It is no longer available for test generation. Dependent tests are inactive until
-            reviewed. Completed results remain available.
-          </p>
+          <p className="font-medium">{t("documents.detail.archivedBanner.title")}</p>
+          <p className="mt-1">{t("documents.detail.archivedBanner.body")}</p>
         </div>
       ) : !isLatestVersion ? (
         <div className="mb-6 flex flex-col gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-300 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <div>
-              <p className="font-medium">A newer version of this document exists.</p>
-              <p className="mt-1">New tests should usually use the latest ready version.</p>
+              <p className="font-medium">{t("documents.detail.outdatedVersionBanner.title")}</p>
+              <p className="mt-1">{t("documents.detail.outdatedVersionBanner.body")}</p>
             </div>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/documents/${latestDocumentId}`}>Open latest version</Link>
+            <Link href={`/admin/documents/${latestDocumentId}`}>
+              {t("documents.detail.outdatedVersionBanner.openLatest")}
+            </Link>
           </Button>
         </div>
       ) : null}
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {!isDeleted ? <TabsTrigger value="extracted-text">Extracted Text</TabsTrigger> : null}
+          <TabsTrigger value="overview">{t("documents.detail.tabs.overview")}</TabsTrigger>
           {!isDeleted ? (
-            <TabsTrigger value="topics">Topics ({documentTopics.length})</TabsTrigger>
+            <TabsTrigger value="extracted-text">
+              {t("documents.detail.tabs.extractedText")}
+            </TabsTrigger>
           ) : null}
-          <TabsTrigger value="metadata">Metadata</TabsTrigger>
-          <TabsTrigger value="versions">Versions ({document.versions.length})</TabsTrigger>
+          {!isDeleted ? (
+            <TabsTrigger value="topics">
+              {t("documents.detail.tabs.topics", { count: documentTopics.length })}
+            </TabsTrigger>
+          ) : null}
+          <TabsTrigger value="metadata">{t("documents.detail.tabs.metadata")}</TabsTrigger>
+          <TabsTrigger value="versions">
+            {t("documents.detail.tabs.versions", { count: document.versions.length })}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -304,26 +306,27 @@ export function DocumentDetail({
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Sparkles className="size-4 text-muted-foreground" />
-                      <CardTitle>Document Summary</CardTitle>
+                      <CardTitle>{t("documents.detail.summary.title")}</CardTitle>
                     </div>
-                    <CardDescription>From document metadata</CardDescription>
+                    <CardDescription>{t("documents.detail.summary.description")}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="typography-p">{document.description}</p>
                     <p className="mt-3 text-xs text-muted-foreground">
-                      Full AI-generated summary available after processing.
+                      {t("documents.detail.summary.aiSummaryHint")}
                     </p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Processing Status</CardTitle>
+                    <CardTitle>{t("documents.detail.processingStatus.title")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ProcessingStatusTimeline
                       status={document.status}
                       processingError={document.processingError}
+                      t={t}
                     />
                   </CardContent>
                 </Card>
@@ -331,25 +334,31 @@ export function DocumentDetail({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Version Notes</CardTitle>
-                  <CardDescription>Change context for this document version.</CardDescription>
+                  <CardTitle>{t("documents.detail.versionNotes.title")}</CardTitle>
+                  <CardDescription>
+                    {t("documents.detail.versionNotes.description")}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                   {document.changeMessage ? (
                     <div>
-                      <p className="font-medium text-foreground">Change message</p>
+                      <p className="font-medium text-foreground">
+                        {t("documents.detail.versionNotes.changeMessage")}
+                      </p>
                       <p className="mt-1 text-muted-foreground">{document.changeMessage}</p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground">
                       {versionNumber === 1
-                        ? "Initial upload."
-                        : "No admin change message was provided."}
+                        ? t("documents.detail.versionNotes.initialUpload")
+                        : t("documents.detail.versionNotes.noChangeMessage")}
                     </p>
                   )}
                   {document.aiChangeSummary ? (
                     <div>
-                      <p className="font-medium text-foreground">AI change summary</p>
+                      <p className="font-medium text-foreground">
+                        {t("documents.detail.versionNotes.aiChangeSummary")}
+                      </p>
                       <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                         {document.aiChangeSummary}
                       </p>
@@ -362,7 +371,7 @@ export function DocumentDetail({
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <FileText className="size-4 text-muted-foreground" />
-                    <CardTitle>Extracted Text Preview</CardTitle>
+                    <CardTitle>{t("documents.detail.extractedTextPreview")}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -383,8 +392,10 @@ export function DocumentDetail({
                         ))}
                         {document.chunks.length > 2 && (
                           <p className="opacity-50">
-                            +{document.chunks.length - 2} more chunk
-                            {document.chunks.length - 2 !== 1 ? "s" : ""}…
+                            {t("common.moreChunks", {
+                              count: document.chunks.length - 2,
+                              plural: document.chunks.length - 2 === 1 ? "" : "s",
+                            })}
                           </p>
                         )}
                       </div>
@@ -392,10 +403,10 @@ export function DocumentDetail({
                   ) : (
                     <p className="text-sm text-muted-foreground">
                       {document.status === "processing"
-                        ? "Text extraction is in progress."
+                        ? t("documents.detail.processingStatus.inProgress")
                         : document.status === "failed"
-                          ? "Text extraction failed for this document."
-                          : "No extracted text available."}
+                          ? t("documents.detail.processingStatus.failed")
+                          : t("documents.detail.processingStatus.none")}
                     </p>
                   )}
                 </CardContent>
@@ -405,13 +416,13 @@ export function DocumentDetail({
             <div className="space-y-2">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle>AI-extracted topics</CardTitle>
+                  <CardTitle>{t("documents.detail.aiExtractedTopics")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4 text-sm text-muted-foreground">
                     {documentTopics.length > 0
-                      ? `${documentTopics.length} topics identified`
-                      : "No topics extracted yet."}
+                      ? t("documents.detail.topicsIdentified", { count: documentTopics.length })
+                      : t("documents.detail.noTopicsYet")}
                   </div>
                   {documentTopics.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
@@ -427,61 +438,81 @@ export function DocumentDetail({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-muted-foreground">No topics extracted yet.</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("documents.detail.noTopicsYet")}
+                    </p>
                   )}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Document Details</CardTitle>
+                  <CardTitle>{t("documents.detail.documentDetails")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 text-sm">
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Version</span>
-                      <span className="font-medium text-foreground">v{versionNumber}</span>
-                    </div>
-                    <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Latest</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.version")}
+                      </span>
                       <span className="font-medium text-foreground">
-                        {isLatestVersion ? "Yes" : "No"}
+                        {t("common.version", { number: versionNumber })}
                       </span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">File Name</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.latest")}
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {isLatestVersion ? t("common.yes") : t("common.no")}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] gap-2">
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.fileName")}
+                      </span>
                       <span className="font-medium text-foreground truncate">
                         {document.fileName ?? document.title}
                       </span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">File Type</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.fileType")}
+                      </span>
                       <span className="font-medium text-foreground uppercase">
                         {document.fileType}
                       </span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">File Size</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.fileSize")}
+                      </span>
                       <span className="font-medium text-foreground">{fileSizeLabel}</span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Topics</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.topics")}
+                      </span>
                       <span className="font-medium text-foreground">{document.topics.length}</span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Chunks</span>
+                      <span className="text-muted-foreground">
+                        {t("documents.detail.metadata.chunks")}
+                      </span>
                       <span className="font-medium text-foreground">{document.chunks.length}</span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Uploaded</span>
+                      <span className="text-muted-foreground">
+                        {t("status.processingSteps.uploaded")}
+                      </span>
                       <span className="font-medium text-foreground">
-                        {formatDate(document.uploadedAt)}
+                        {formatDate(locale, document.uploadedAt)}
                       </span>
                     </div>
                     <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <span className="text-muted-foreground">Status</span>
+                      <span className="text-muted-foreground">{t("dataTable.status")}</span>
                       <span className="font-medium text-foreground capitalize">
-                        {document.status}
+                        {getDocumentStatusLabel(document.status, t)}
                       </span>
                     </div>
                   </div>
@@ -494,7 +525,7 @@ export function DocumentDetail({
                         />
                         {!canUploadNewVersion ? (
                           <p className="mt-2 text-xs text-muted-foreground">
-                            New versions can be uploaded from the latest uploaded document version.
+                            {t("documents.detail.newVersionHint")}
                           </p>
                         ) : null}
                       </>
@@ -512,7 +543,7 @@ export function DocumentDetail({
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <FileText className="size-4 text-muted-foreground" />
-                  <CardTitle>Full Extracted Text</CardTitle>
+                  <CardTitle>{t("documents.detail.fullExtractedText")}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
@@ -526,7 +557,7 @@ export function DocumentDetail({
                       <div key={chunk.id}>
                         <div className="mb-2 flex items-center gap-2">
                           <span className="text-xs font-medium text-muted-foreground">
-                            Chunk {index + 1}
+                            {t("documents.detail.chunkLabel", { number: index + 1 })}
                           </span>
                           <span className="text-xs text-muted-foreground">·</span>
                           <span className="text-xs font-medium text-foreground">{chunk.topic}</span>
@@ -540,10 +571,10 @@ export function DocumentDetail({
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     {document.status === "processing"
-                      ? "Text extraction is in progress."
+                      ? t("documents.detail.processingStatus.inProgress")
                       : document.status === "failed"
-                        ? "Text extraction failed for this document."
-                        : "No extracted text available."}
+                        ? t("documents.detail.processingStatus.failed")
+                        : t("documents.detail.processingStatus.none")}
                   </p>
                 )}
               </CardContent>
@@ -555,16 +586,14 @@ export function DocumentDetail({
           <TabsContent value="topics">
             <Card>
               <CardHeader>
-                <CardTitle>AI-extracted topics</CardTitle>
-                <CardDescription>
-                  Key learning topics extracted from this document after processing.
-                </CardDescription>
+                <CardTitle>{t("documents.detail.aiExtractedTopics")}</CardTitle>
+                <CardDescription>{t("documents.detail.topicsTabDescription")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {documentTopics.length > 0 ? (
                   <div className="flex flex-col gap-4">
                     {documentTopics.map((topicItem, i) => {
-                      const confidenceLabel = formatConfidence(topicItem.confidence)
+                      const confidenceLabel = formatConfidence(topicItem.confidence, t)
                       const topicChunks = document.chunks.filter((c) => c.topic === topicItem.topic)
 
                       return (
@@ -588,11 +617,14 @@ export function DocumentDetail({
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                               {confidenceLabel ? (
-                                <Badge variant="outline">Confidence {confidenceLabel}</Badge>
+                                <Badge variant="outline">{confidenceLabel}</Badge>
                               ) : null}
                               {topicChunks.length > 0 ? (
                                 <span>
-                                  {topicChunks.length} chunk{topicChunks.length !== 1 ? "s" : ""}
+                                  {t("common.chunks", {
+                                    count: topicChunks.length,
+                                    plural: topicChunks.length === 1 ? "" : "s",
+                                  })}
                                 </span>
                               ) : null}
                             </div>
@@ -612,67 +644,95 @@ export function DocumentDetail({
         <TabsContent value="metadata">
           <Card>
             <CardHeader>
-              <CardTitle>Document Metadata</CardTitle>
-              <CardDescription>Core metadata available from the document record.</CardDescription>
+              <CardTitle>{t("documents.detail.metadata.title")}</CardTitle>
+              <CardDescription>{t("documents.detail.metadata.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">Title</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.titleLabel")}
+                  </span>
                   <span className="text-sm text-foreground">{document.title}</span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">File Name</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.fileName")}
+                  </span>
                   <span className="text-sm text-foreground">
                     {document.fileName ?? document.title}
                   </span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
                   <span className="text-sm font-medium text-muted-foreground">
-                    Extraction Method
+                    {t("documents.detail.metadata.extractionMethod")}
                   </span>
                   <span className="text-sm text-foreground">
-                    {document.extractionMethod ?? "—"}
+                    {document.extractionMethod ?? t("common.dash")}
                   </span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">Processed</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.processed")}
+                  </span>
                   <span className="text-sm text-foreground">
-                    {document.processedAt ? formatDate(document.processedAt) : "—"}
+                    {document.processedAt
+                      ? formatDate(locale, document.processedAt)
+                      : t("common.dash")}
                   </span>
                 </div>
                 {document.processingError ? (
                   <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
                     <span className="text-sm font-medium text-muted-foreground">
-                      Processing Error
+                      {t("documents.detail.metadata.processingError")}
                     </span>
                     <span className="text-sm text-destructive">{document.processingError}</span>
                   </div>
                 ) : null}
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">File Type</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.fileType")}
+                  </span>
                   <span className="text-sm text-foreground uppercase">{document.fileType}</span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">File Size</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.fileSize")}
+                  </span>
                   <span className="text-sm text-foreground">{fileSizeLabel}</span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">Status</span>
-                  <span className="text-sm text-foreground capitalize">{document.status}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("dataTable.status")}
+                  </span>
+                  <span className="text-sm text-foreground capitalize">
+                    {getDocumentStatusLabel(document.status, t)}
+                  </span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-b border-border pb-4">
-                  <span className="text-sm font-medium text-muted-foreground">Uploaded</span>
-                  <span className="text-sm text-foreground">{formatDate(document.uploadedAt)}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.processed")}
+                  </span>
+                  <span className="text-sm text-foreground">
+                    {formatDate(locale, document.uploadedAt)}
+                  </span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4">
-                  <span className="text-sm font-medium text-muted-foreground">Version</span>
-                  <span className="text-sm text-foreground">v{versionNumber}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.version")}
+                  </span>
+                  <span className="text-sm text-foreground">
+                    {t("common.version", { number: versionNumber })}
+                  </span>
                 </div>
                 <div className="grid grid-cols-[150px_1fr] gap-4 border-t border-border pt-4">
-                  <span className="text-sm font-medium text-muted-foreground">Version State</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {t("documents.detail.metadata.versionState")}
+                  </span>
                   <span className="text-sm text-foreground">
-                    {isLatestVersion ? "Latest version" : "Old version"}
+                    {isLatestVersion
+                      ? t("documents.detail.metadata.latestVersion")
+                      : t("documents.detail.metadata.oldVersion")}
                   </span>
                 </div>
               </div>
@@ -683,10 +743,8 @@ export function DocumentDetail({
         <TabsContent value="versions">
           <Card>
             <CardHeader>
-              <CardTitle>Version History</CardTitle>
-              <CardDescription>
-                Immutable document versions and change history for this source.
-              </CardDescription>
+              <CardTitle>{t("documents.detail.versionHistory.title")}</CardTitle>
+              <CardDescription>{t("documents.detail.versionHistory.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               <DocumentVersionHistory versions={document.versions} />
@@ -701,15 +759,17 @@ export function DocumentDetail({
 function ProcessingStatusTimeline({
   status,
   processingError,
+  t,
 }: {
   status: DocumentStatus
   processingError?: string | null
+  t: ReturnType<typeof useTranslation>["t"]
 }) {
-  const steps: Array<{ key: DocumentStatus | "complete"; label: string }> = [
-    { key: "uploaded", label: "Uploaded" },
-    { key: "processing", label: "Processing" },
-    { key: "complete", label: "Analysis Complete" },
-    { key: "ready", label: "Ready" },
+  const steps: Array<{ key: DocumentStatus | "complete"; labelKey: TranslationKey }> = [
+    { key: "uploaded", labelKey: "status.processingSteps.uploaded" },
+    { key: "processing", labelKey: "status.processingSteps.processing" },
+    { key: "complete", labelKey: "status.processingSteps.analysisComplete" },
+    { key: "ready", labelKey: "status.processingSteps.ready" },
   ]
 
   const completedStepKeys: Set<string> = new Set(
@@ -750,7 +810,7 @@ function ProcessingStatusTimeline({
               <div
                 className={`text-sm font-medium ${isDone ? "text-foreground" : "text-muted-foreground"}`}
               >
-                {step.label}
+                {t(step.labelKey)}
               </div>
             </div>
           </div>
@@ -759,7 +819,7 @@ function ProcessingStatusTimeline({
       {status === "failed" && (
         <div className="mt-2 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
           <XCircle className="size-4 shrink-0" />
-          {processingError ?? "Processing failed. Please re-upload the document."}
+          {processingError ?? t("documents.detail.processingStatus.defaultError")}
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { Search } from "lucide-react"
 
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Input } from "@/shared/ui/input"
 
 interface DataTableToolbarProps {
@@ -14,10 +15,12 @@ interface DataTableToolbarProps {
 
 export function DataTableToolbar({
   search,
-  searchPlaceholder = "Search...",
+  searchPlaceholder,
   onSearchChange,
   toolbar,
 }: DataTableToolbarProps) {
+  const { t } = useTranslation()
+
   if (!onSearchChange && !toolbar) {
     return null
   }
@@ -30,7 +33,7 @@ export function DataTableToolbar({
           <Input
             value={search ?? ""}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t("common.search")}
             className="bg-background pl-8"
           />
         </div>

@@ -1,10 +1,13 @@
 import Link from "next/link"
 import { ArrowLeft, ClipboardList } from "lucide-react"
 
+import { getTranslator } from "@/shared/i18n/get-locale"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 
-export function TestTakingNotFound() {
+export async function TestTakingNotFound() {
+  const { t } = await getTranslator()
+
   return (
     <div className="page-shell">
       <div className="flex items-center gap-3">
@@ -12,9 +15,9 @@ export function TestTakingNotFound() {
           <ClipboardList className="size-4.5 text-muted-foreground" />
         </div>
         <div>
-          <h1 className="typography-h1">Test not found</h1>
+          <h1 className="typography-h1">{t("employee.takeTest.notFound.title")}</h1>
           <p className="mt-1 typography-p text-muted-foreground">
-            This test is not assigned to you or does not exist.
+            {t("employee.takeTest.notFound.subtitle")}
           </p>
         </div>
       </div>
@@ -22,12 +25,12 @@ export function TestTakingNotFound() {
       <Card className="mt-8">
         <CardContent className="flex flex-col items-center justify-center gap-4 py-16">
           <p className="typography-p text-muted-foreground">
-            Return to My Tests to view your assigned assessments.
+            {t("employee.takeTest.notFound.body")}
           </p>
           <Button asChild variant="outline">
             <Link href="/employee/tests">
               <ArrowLeft className="size-4" />
-              Back to My Tests
+              {t("employee.takeTest.notFound.backToMyTests")}
             </Link>
           </Button>
         </CardContent>

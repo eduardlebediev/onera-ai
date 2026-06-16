@@ -32,6 +32,7 @@ import type {
 } from "@/features/tests/schemas/generated-test-schema"
 import { AuthError, requireAdminApiUser } from "@/features/auth/lib/require-auth"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getLocale } from "@/shared/i18n/get-locale"
 import type { Json } from "@/lib/supabase/types"
 
 export const GENERATION_MODEL = "gpt-4.1-mini"
@@ -176,6 +177,7 @@ export async function POST(request: Request) {
     }
 
     const input = parsedRequest.data
+    const uiLocale = await getLocale()
     const normalizedDocumentIds = normalizeGenerateTestDocumentIds(input)
 
     if (!process.env.OPENAI_API_KEY) {
@@ -211,7 +213,7 @@ export async function POST(request: Request) {
       documentsById,
       questionCount: input.questionCount,
       difficulty: input.difficulty,
-      language: input.language,
+      language: normalizeLanguage(uiLocale),
       targetRole: input.targetRole,
       passingScore: 70,
       questionTypes: input.questionTypes,
@@ -266,7 +268,6 @@ export async function POST(request: Request) {
         input.questionCount
       )
       effectiveSettings.difficulty = normalizeDifficulty(template.difficulty)
-      effectiveSettings.language = normalizeLanguage(template.language)
       effectiveSettings.targetRole = template.target_role ?? input.targetRole
       effectiveSettings.passingScore = clampPassingScore(template.passing_score)
       effectiveSettings.templateTitle = template.title

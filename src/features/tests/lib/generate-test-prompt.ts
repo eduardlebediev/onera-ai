@@ -55,6 +55,7 @@ export function buildGenerateTestPrompt({
   const chunkBlocks = chunks.map(formatChunk).join("\n\n---\n\n")
   const supportedTypes = questionTypes.join(", ")
   const documentTitles = documents.map((document) => document.title).join(", ")
+  const trueFalseLabels = language === "de" ? "Wahr and Falsch" : "True and False"
 
   return [
     "You are an expert employee knowledge test author.",
@@ -73,7 +74,7 @@ export function buildGenerateTestPrompt({
     `- Supported question types only: ${supportedTypes}.`,
     "- single_choice: exactly 4 options and exactly 1 correct option.",
     "- multiple_choice: exactly 4 options and at least 2 correct options.",
-    "- true_false: exactly 2 options (prefer True and False) and exactly 1 correct option.",
+    `- true_false: exactly 2 options (prefer ${trueFalseLabels}) and exactly 1 correct option.`,
     "- open_question: no options; set correctAnswer.expectedAnswer to the model answer text.",
     "- Use stable option ids such as opt-a, opt-b, opt-c, opt-d.",
     "- correctAnswer.optionIds must reference existing option ids.",

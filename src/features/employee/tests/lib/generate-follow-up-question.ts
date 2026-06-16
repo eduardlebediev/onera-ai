@@ -8,6 +8,7 @@ import {
   FollowUpQuestionOutputSchema,
   type FollowUpQuestionOutput,
 } from "@/features/employee/tests/schemas/follow-up-question-schema"
+import type { AppLocale } from "@/shared/i18n/locale-config"
 
 export const FOLLOW_UP_QUESTION_MODEL = "gpt-4.1-mini"
 export const FOLLOW_UP_QUESTION_TIMEOUT_MS = 15_000
@@ -35,7 +36,12 @@ function getFollowUpQuestionTimeoutMs(): number {
   return FOLLOW_UP_QUESTION_TIMEOUT_MS
 }
 
+function formatOutputLanguage(language: AppLocale): string {
+  return language === "de" ? "German" : "English"
+}
+
 function buildFollowUpQuestionPrompt(input: {
+  language: AppLocale
   questionText: string
   topic: string
   explanation: string
@@ -53,6 +59,7 @@ function buildFollowUpQuestionPrompt(input: {
     "- Keep the tone clear, practical, and workplace appropriate.",
     "- explanationBeforeQuestion should briefly restate the key concept the employee missed.",
     "- explanationAfterAnswer should explain why the correct option is correct.",
+    `- Write all output in ${formatOutputLanguage(input.language)}.`,
     "",
     `Original question: ${input.questionText}`,
     `Topic: ${input.topic}`,
@@ -85,13 +92,15 @@ export function isFollowUpQuestionTimeoutError(error: unknown): boolean {
 export async function generateFollowUpQuestion(
   questionText: string,
   topic: string,
-  explanation: string
+  explanation: string,
+  language: AppLocale
 ): Promise<FollowUpQuestionOutput> {
   const normalizedTopic = topic.trim() || "General"
   const result = await generateObject({
     model: openai(getFollowUpQuestionModel()),
     schema: FollowUpQuestionLlmSchema,
     prompt: buildFollowUpQuestionPrompt({
+      language,
       questionText: questionText.trim(),
       topic: normalizedTopic,
       explanation: explanation.trim(),

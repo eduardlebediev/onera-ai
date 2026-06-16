@@ -1,4 +1,7 @@
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import type { AppLocale } from "@/shared/i18n/locale-config"
+import type { createTranslator } from "@/shared/i18n/translate"
+import type { TranslationKey } from "@/shared/i18n/translate"
 import type {
   AssignableEmployee,
   TestAssignmentStatus,
@@ -7,13 +10,22 @@ import type {
 
 export type EmployeeFilter = "all" | "not_assigned" | "in_progress" | "completed" | "at_risk"
 
-export const EMPLOYEE_FILTER_OPTIONS: Array<{ label: string; value: EmployeeFilter }> = [
-  { label: "All", value: "all" },
-  { label: "Not assigned", value: "not_assigned" },
-  { label: "In progress", value: "in_progress" },
-  { label: "Completed", value: "completed" },
-  { label: "At risk", value: "at_risk" },
-]
+const EMPLOYEE_FILTER_LABEL_KEYS: Record<EmployeeFilter, TranslationKey> = {
+  all: "common.all",
+  not_assigned: "dataTable.filters.notAssigned",
+  in_progress: "dataTable.filters.inProgress",
+  completed: "dataTable.completed",
+  at_risk: "dataTable.filters.atRisk",
+}
+
+export function getEmployeeFilterOptions(
+  t: ReturnType<typeof createTranslator>["t"]
+): Array<{ label: string; value: EmployeeFilter }> {
+  return (Object.keys(EMPLOYEE_FILTER_LABEL_KEYS) as EmployeeFilter[]).map((value) => ({
+    value,
+    label: t(EMPLOYEE_FILTER_LABEL_KEYS[value]),
+  }))
+}
 
 export interface EmployeeWithAssignmentStatus extends AssignableEmployee {
   assignmentStatus: TestAssignmentStatus | "not_assigned"
@@ -101,26 +113,31 @@ export function buildAssignmentSummary(
   }
 }
 
-export function formatAssignmentDeadline(deadline: string): string {
-  if (!deadline) return "Not set"
-  return formatTestDate(deadline)
+export function formatAssignmentDeadline(
+  locale: AppLocale,
+  deadline: string,
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
+  if (!deadline) return t("common.notSet")
+  return formatTestDate(locale, deadline)
 }
 
 export function canConfirmAssignment(selectedCount: number, deadline: string): boolean {
   return selectedCount > 0 && deadline.length > 0
 }
 
-export function formatAssignmentStatus(status: TestAssignmentStatus | "not_assigned"): string {
-  switch (status) {
-    case "not_assigned":
-      return "Not assigned"
-    case "not_started":
-      return "Not started"
-    case "in_progress":
-      return "In progress"
-    case "completed":
-      return "Completed"
-    case "failed":
-      return "Failed"
+const ASSIGNMENT_STATUS_LABEL_KEYS: Record<TestAssignmentStatus | "not_assigned", TranslationKey> =
+  {
+    not_assigned: "status.assignment.notAssigned",
+    not_started: "status.assignment.notStarted",
+    in_progress: "status.assignment.inProgress",
+    completed: "status.assignment.completed",
+    failed: "status.assignment.failed",
   }
+
+export function formatAssignmentStatus(
+  status: TestAssignmentStatus | "not_assigned",
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
+  return t(ASSIGNMENT_STATUS_LABEL_KEYS[status])
 }

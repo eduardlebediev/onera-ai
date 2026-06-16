@@ -3,29 +3,34 @@ import { MessageSquareQuote } from "lucide-react"
 
 import type { RecentFeedbackItem } from "@/features/employee/tests/lib/employee-dashboard-model"
 import { getPassFailBadgeClass } from "@/features/employee/tests/lib/employee-test-model"
+import type { createTranslator } from "@/shared/i18n/translate"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
 
+type Translate = ReturnType<typeof createTranslator>["t"]
+
 interface EmployeeDashboardRecentFeedbackProps {
   recentFeedback: RecentFeedbackItem | null
+  t: Translate
 }
 
 export function EmployeeDashboardRecentFeedback({
   recentFeedback,
+  t,
 }: EmployeeDashboardRecentFeedbackProps) {
   return (
     <Card className="h-full">
       <CardContent className="space-y-4 p-6">
         <div className="flex items-center gap-2">
           <MessageSquareQuote className="size-4 text-muted-foreground" />
-          <h2 className="typography-h3 font-semibold">Recent Feedback</h2>
+          <h2 className="typography-h3 font-semibold">{t("employee.dashboard.recentFeedback")}</h2>
         </div>
 
         {!recentFeedback ? (
           <p className="typography-small text-muted-foreground">
-            Complete a test to see your latest score and feedback here.
+            {t("employee.dashboard.noRecentFeedback")}
           </p>
         ) : (
           <div className="space-y-4 rounded-lg border border-border/60 bg-background/50 p-4">
@@ -41,17 +46,19 @@ export function EmployeeDashboardRecentFeedback({
                   </Badge>
                 </div>
                 <p className="typography-small text-muted-foreground">
-                  Score: {recentFeedback.score}%
+                  {t("employee.dashboard.scoreLabel")}: {recentFeedback.score}%
                 </p>
               </div>
 
               <Button asChild variant="outline" className="shrink-0">
-                <Link href={recentFeedback.resultHref}>View Result</Link>
+                <Link href={recentFeedback.resultHref}>{t("employee.dashboard.viewResult")}</Link>
               </Button>
             </div>
 
             <p className="typography-small text-muted-foreground">
-              <span className="font-medium text-foreground">Weak topics: </span>
+              <span className="font-medium text-foreground">
+                {t("employee.dashboard.weakTopicsLabel")}{" "}
+              </span>
               {recentFeedback.weakTopicSummary}
             </p>
           </div>

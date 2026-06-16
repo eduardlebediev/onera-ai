@@ -8,15 +8,22 @@ Production Readiness Cleanup
 
 ## In Progress
 
-- Feature Spec 59 deferred: merge analytics insights into admin dashboard and remove `/admin/analytics` nav.
-
 ## Next Up
 
+- Feature Spec 59 deferred: merge analytics insights into admin dashboard and remove `/admin/analytics` nav.
 - Production Readiness Cleanup — detailed PRD gap analysis and Feature Specs 38–49 in `context/current-plan.md`.
 
 ## Open Questions
 
 ## Completed
+
+- Feature Spec 61 Follow-up: Move Language Switcher to User Dropdown Menu
+
+- Feature Spec 61 Follow-up: Restore Geist font token wiring
+
+- Feature Spec 61 Review/Fix: Localization Code Review Follow-up
+
+- Feature Spec 61: English and German Interface Localization
 
 - Feature Spec 60: Remove All Mock Data
 

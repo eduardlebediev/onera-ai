@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { ClipboardList, Filter } from "lucide-react"
 import Link from "next/link"
@@ -11,18 +11,19 @@ import {
   formatEstimatedTime,
 } from "@/features/employee/tests/lib/employee-test-format"
 import {
-  EMPLOYEE_TEST_FILTER_OPTIONS,
   filterEmployeeTests,
   formatEmployeeTestStatus,
   formatPassFailStatus,
   getEmployeeTestAction,
   getEmployeeTestDisplayStatus,
+  getEmployeeTestFilterOptions,
   getEmployeeTestStatusBadgeClass,
   isEmployeeTestTakeBlocked,
   type EmployeeTestFilter,
 } from "@/features/employee/tests/lib/employee-test-model"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent } from "@/shared/ui/card"
@@ -42,29 +43,34 @@ type EmployeeTestTableRow = EmployeeAssignedTest & {
   searchText: string
 }
 
-function getScoreOrProgressLabel(test: EmployeeAssignedTest): string {
-  if (test.score !== null) {
-    return `${test.score}%`
-  }
-
-  if (test.status === "in_progress") {
-    return `${test.progressPercent}% complete`
-  }
-
-  return "--"
-}
-
 export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
+  const { t, locale } = useTranslation()
   const [filter, setFilter] = useState<EmployeeTestFilter>("all")
+  const filterOptions = useMemo(() => getEmployeeTestFilterOptions(t), [t])
+
+  const getScoreOrProgressLabel = useCallback(
+    (test: EmployeeAssignedTest): string => {
+      if (test.score !== null) {
+        return `${test.score}%`
+      }
+
+      if (test.status === "in_progress") {
+        return t("employee.myTests.percentComplete", { percent: test.progressPercent })
+      }
+
+      return t("common.dash")
+    },
+    [t]
+  )
 
   const visibleTests = useMemo(() => filterEmployeeTests(tests, filter), [tests, filter])
   const tableRows = useMemo<EmployeeTestTableRow[]>(
     () =>
       visibleTests.map((test) => {
         const displayStatus = getEmployeeTestDisplayStatus(test)
-        const displayStatusLabel = formatEmployeeTestStatus(displayStatus)
-        const deadlineLabel = formatEmployeeTestDeadline(test.deadline)
-        const estimatedTimeLabel = formatEstimatedTime(test.estimatedMinutes)
+        const displayStatusLabel = formatEmployeeTestStatus(displayStatus, t)
+        const deadlineLabel = formatEmployeeTestDeadline(locale, test.deadline, t)
+        const estimatedTimeLabel = formatEstimatedTime(locale, test.estimatedMinutes)
         const scoreOrProgressLabel = getScoreOrProgressLabel(test)
 
         return {
@@ -82,7 +88,7 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
           ].join(" "),
         }
       }),
-    [visibleTests]
+    [visibleTests, t, locale, getScoreOrProgressLabel]
   )
   const retakeNeededTests = useMemo(
     () => tests.filter((test) => test.status === "failed" && test.canRetake),
@@ -94,7 +100,9 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
       {
         id: "title",
         accessorKey: "title",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Test" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.test")} />
+        ),
         enableSorting: true,
         meta: { width: 300 },
         cell: ({ row }) => (
@@ -105,7 +113,7 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
               </p>
               {row.original.required ? (
                 <Badge variant="outline" className="text-[11px]">
-                  Required
+                  {t("common.required")}
                 </Badge>
               ) : null}
             </div>
@@ -118,15 +126,19 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
       {
         id: "displayStatusLabel",
         accessorKey: "displayStatusLabel",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.status")} />
+        ),
         enableSorting: true,
         meta: { width: 170 },
-        cell: ({ row }) => <EmployeeTestStatusCell test={row.original} />,
+        cell: ({ row }) => <EmployeeTestStatusCell test={row.original} t={t} />,
       },
       {
         id: "sourceDocument",
         accessorKey: "sourceDocument",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Source" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.source")} />
+        ),
         enableSorting: true,
         meta: { width: 220 },
         cell: ({ row }) => (
@@ -138,7 +150,9 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
       {
         id: "difficulty",
         accessorKey: "difficulty",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Difficulty" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.difficulty")} />
+        ),
         enableSorting: true,
         meta: { width: 140 },
         cell: ({ row }) => <span className="capitalize">{row.original.difficulty}</span>,
@@ -146,54 +160,60 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
       {
         id: "questionCount",
         accessorKey: "questionCount",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Questions" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("common.questions")} />
+        ),
         enableSorting: true,
         meta: { width: 130 },
       },
       {
         id: "deadlineLabel",
         accessorKey: "deadlineLabel",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Deadline" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("employee.dashboard.deadline")} />
+        ),
         enableSorting: true,
         meta: { width: 160 },
       },
       {
         id: "estimatedTimeLabel",
         accessorKey: "estimatedTimeLabel",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Est. time" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.estTime")} />
+        ),
         enableSorting: true,
         meta: { width: 130 },
       },
       {
         id: "scoreOrProgressLabel",
         accessorKey: "scoreOrProgressLabel",
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Score / Progress" />,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t("dataTable.scoreProgress")} />
+        ),
         enableSorting: true,
         meta: { width: 170 },
-        cell: ({ row }) => <EmployeeTestScoreCell test={row.original} />,
+        cell: ({ row }) => <EmployeeTestScoreCell test={row.original} t={t} />,
       },
       {
         id: "actions",
-        header: "Action",
+        header: t("common.action"),
         enableSorting: false,
         meta: { width: 150, headerClassName: "text-right", cellClassName: "text-right" },
-        cell: ({ row }) => <EmployeeTestActionCell test={row.original} />,
+        cell: ({ row }) => <EmployeeTestActionCell test={row.original} t={t} />,
       },
     ],
-    []
+    [t]
   )
 
   return (
     <div className="page-shell">
       <div>
-        <h2 className="typography-h2">My Tests</h2>
-        <p className="mt-1 typography-p text-muted-foreground">
-          Complete assigned knowledge tests and review your results and feedback.
-        </p>
+        <h2 className="typography-h2">{t("employee.myTests.title")}</h2>
+        <p className="mt-1 typography-p text-muted-foreground">{t("employee.myTests.subtitle")}</p>
       </div>
 
       <div className="mt-8">
-        <EmployeeTestsKpiSection tests={tests} />
+        <EmployeeTestsKpiSection tests={tests} t={t} />
       </div>
 
       <div className="mt-2 flex flex-col gap-2">
@@ -203,14 +223,14 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="typography-h3 font-semibold text-red-900 dark:text-red-300">
-                    Failed / Retake Needed
+                    {t("employee.myTests.retakeNeeded")}
                   </h2>
                   <p className="typography-small text-red-800 dark:text-red-400">
-                    Retake failed tests before the max-attempt limit is reached.
+                    {t("employee.myTests.retakeNeededHint")}
                   </p>
                 </div>
                 <Badge variant="outline" className="w-fit border-red-200 bg-white text-red-700">
-                  {retakeNeededTests.length} retakeable
+                  {t("employee.myTests.retakeable", { count: retakeNeededTests.length })}
                 </Badge>
               </div>
 
@@ -223,12 +243,17 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
                     <div>
                       <p className="text-sm font-medium text-foreground">{test.title}</p>
                       <p className="typography-small text-muted-foreground">
-                        Attempt {test.attemptCount ?? 1} of {test.maxAttempts ?? 3} - Latest score{" "}
-                        {test.score ?? 0}%
+                        {t("common.attemptOf", {
+                          current: test.attemptCount ?? 1,
+                          max: test.maxAttempts ?? 3,
+                        })}{" "}
+                        - {t("common.latestScore", { score: test.score ?? 0 })}
                       </p>
                     </div>
                     <Button asChild size="sm" className="w-full sm:w-auto">
-                      <Link href={`/employee/tests/${test.id}/take`}>Retake Test</Link>
+                      <Link href={`/employee/tests/${test.id}/take`}>
+                        {t("employee.myTests.retakeTest")}
+                      </Link>
                     </Button>
                   </div>
                 ))}
@@ -239,14 +264,14 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
 
         <DataTableShell
           icon={ClipboardList}
-          title="Assigned Tests"
-          countLabel={`${visibleTests.length} shown`}
+          title={t("dataTable.assignedTests")}
+          countLabel={t("common.shown", { count: visibleTests.length })}
         >
           {tests.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <p className="typography-h3 font-semibold">No assigned tests yet</p>
+              <p className="typography-h3 font-semibold">{t("employee.myTests.emptyTitle")}</p>
               <p className="max-w-md typography-p text-muted-foreground">
-                When an admin assigns a test to you, it will appear here with a Start Test action.
+                {t("employee.myTests.emptySubtitle")}
               </p>
             </div>
           ) : (
@@ -254,8 +279,8 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
               columns={columns}
               data={tableRows}
               searchKey="searchText"
-              searchPlaceholder="Search tests..."
-              emptyMessage="No tests match the current filter."
+              searchPlaceholder={t("dataTable.searchTestsEmployee")}
+              emptyMessage={t("dataTable.emptyTestsEmployee")}
               toolbar={
                 <div className="relative shrink-0">
                   <select
@@ -263,7 +288,7 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
                     onChange={(event) => setFilter(event.target.value as EmployeeTestFilter)}
                     className="h-8 w-full appearance-none rounded-lg border border-border/50 bg-background pl-9 pr-8 text-sm font-medium text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    {EMPLOYEE_TEST_FILTER_OPTIONS.map((option) => (
+                    {filterOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -280,7 +305,13 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
   )
 }
 
-function EmployeeTestStatusCell({ test }: { test: EmployeeAssignedTest }) {
+function EmployeeTestStatusCell({
+  test,
+  t,
+}: {
+  test: EmployeeAssignedTest
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
   const displayStatus = getEmployeeTestDisplayStatus(test)
   const isBlocked = isEmployeeTestTakeBlocked(test)
 
@@ -290,19 +321,25 @@ function EmployeeTestStatusCell({ test }: { test: EmployeeAssignedTest }) {
         variant="outline"
         className={cn("status-badge", getEmployeeTestStatusBadgeClass(displayStatus))}
       >
-        {formatEmployeeTestStatus(displayStatus)}
+        {formatEmployeeTestStatus(displayStatus, t)}
       </Badge>
       {isBlocked ? (
         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-          Unavailable
+          {t("status.employeeTest.unavailable")}
         </Badge>
       ) : null}
     </div>
   )
 }
 
-function EmployeeTestScoreCell({ test }: { test: EmployeeAssignedTest }) {
-  const passFailLabel = formatPassFailStatus(test.score, test.passed)
+function EmployeeTestScoreCell({
+  test,
+  t,
+}: {
+  test: EmployeeAssignedTest
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
+  const passFailLabel = formatPassFailStatus(test.score, test.passed, t)
 
   if (test.score !== null) {
     return (
@@ -325,14 +362,20 @@ function EmployeeTestScoreCell({ test }: { test: EmployeeAssignedTest }) {
   }
 
   if (test.status === "in_progress") {
-    return <span>{test.progressPercent}% complete</span>
+    return <span>{t("employee.myTests.percentComplete", { percent: test.progressPercent })}</span>
   }
 
-  return <span className="text-muted-foreground">--</span>
+  return <span className="text-muted-foreground">{t("common.dash")}</span>
 }
 
-function EmployeeTestActionCell({ test }: { test: EmployeeAssignedTest }) {
-  const action = getEmployeeTestAction(test)
+function EmployeeTestActionCell({
+  test,
+  t,
+}: {
+  test: EmployeeAssignedTest
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
+  const action = getEmployeeTestAction(test, t)
 
   if (action.disabled || !action.href) {
     return (

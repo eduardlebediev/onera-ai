@@ -1,6 +1,10 @@
+"use client"
+
 import { BookOpen, FileText } from "lucide-react"
 
 import type { EmployeeSafeQuestion } from "@/features/employee/tests/lib/supabase-employee-tests"
+import { useTranslation } from "@/shared/i18n/use-translation"
+import type { TranslationKey } from "@/shared/i18n/translate"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent } from "@/shared/ui/card"
 import { cn } from "@/lib/utils"
@@ -15,17 +19,11 @@ interface SupabaseTestQuestionCardProps {
   onOpenTextChange?: (text: string) => void
 }
 
-function formatSupabaseQuestionType(questionType: EmployeeSafeQuestion["questionType"]): string {
-  switch (questionType) {
-    case "single_choice":
-      return "Single choice"
-    case "multiple_choice":
-      return "Multiple choice"
-    case "true_false":
-      return "True / false"
-    case "open_question":
-      return "Open question"
-  }
+const QUESTION_TYPE_LABEL_KEYS: Record<EmployeeSafeQuestion["questionType"], TranslationKey> = {
+  single_choice: "common.questionType.singleChoice",
+  multiple_choice: "common.questionType.multipleChoice",
+  true_false: "common.questionType.trueFalse",
+  open_question: "common.questionType.openQuestion",
 }
 
 export function TestQuestionCard({
@@ -37,6 +35,7 @@ export function TestQuestionCard({
   onSelectOptionIds,
   onOpenTextChange,
 }: SupabaseTestQuestionCardProps) {
+  const { t } = useTranslation()
   const isMultiple = question.questionType === "multiple_choice"
   const isOpenQuestion = question.questionType === "open_question"
   const groupRole = isMultiple ? "group" : "radiogroup"
@@ -59,10 +58,10 @@ export function TestQuestionCard({
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-[11px] font-medium">
-              Question {questionNumber} of {totalQuestions}
+              {t("common.question")} {questionNumber} / {totalQuestions}
             </Badge>
             <Badge variant="outline" className="text-[11px] font-medium">
-              {formatSupabaseQuestionType(question.questionType)}
+              {t(QUESTION_TYPE_LABEL_KEYS[question.questionType])}
             </Badge>
             <Badge variant="outline" className="text-[11px] font-medium">
               <BookOpen className="mr-1 size-3" />
@@ -75,7 +74,11 @@ export function TestQuestionCard({
           {question.sourceChunkReference ? (
             <p className="flex items-start gap-1.5 typography-small text-muted-foreground">
               <FileText className="mt-0.5 size-3.5 shrink-0" />
-              <span>Source: {question.sourceChunkReference}</span>
+              <span>
+                {t("employee.takeTest.progress.sourceReference", {
+                  reference: question.sourceChunkReference,
+                })}
+              </span>
             </p>
           ) : null}
         </div>
@@ -85,15 +88,15 @@ export function TestQuestionCard({
             value={openText}
             onChange={(event) => onOpenTextChange?.(event.target.value)}
             rows={5}
-            aria-label={`Open answer for question ${questionNumber}`}
+            aria-label={`${t("common.question")} ${questionNumber}`}
             className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-y min-h-32"
-            placeholder="Type your answer here..."
+            placeholder={t("employee.takeTest.typeAnswerPlaceholder")}
           />
         ) : (
           <div
             className="space-y-2"
             role={groupRole}
-            aria-label={`Answer options for question ${questionNumber}`}
+            aria-label={`${t("common.question")} ${questionNumber}`}
           >
             {question.options.map((option) => {
               const isSelected = selectedOptionIds.includes(option.id)

@@ -2,19 +2,17 @@ import Link from "next/link"
 
 import type { DocumentVersion } from "@/features/documents/types/document"
 import { DocumentVersionBadge } from "@/features/documents/components/document-version-badge"
+import { formatDate } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Button } from "@/shared/ui/button"
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
-
 export function DocumentVersionHistory({ versions }: { versions: DocumentVersion[] }) {
+  const { locale, t } = useTranslation()
+
   if (versions.length === 0) {
-    return <p className="text-sm text-muted-foreground">No version history available.</p>
+    return (
+      <p className="text-sm text-muted-foreground">{t("documents.detail.versionHistory.empty")}</p>
+    )
   }
 
   return (
@@ -37,18 +35,25 @@ export function DocumentVersionHistory({ versions }: { versions: DocumentVersion
                   isLatest={version.isLatest === true}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Uploaded {formatDate(version.uploadedAt)} · {version.status}
-                  {version.isCurrent ? " · Current page" : ""}
+                  {t("documents.detail.versionHistory.uploaded", {
+                    date: formatDate(locale, version.uploadedAt),
+                  })}{" "}
+                  · {version.status}
+                  {version.isCurrent
+                    ? ` · ${t("documents.detail.versionHistory.currentPage")}`
+                    : ""}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link href={`/admin/documents/${version.id}`}>Open version</Link>
+                  <Link href={`/admin/documents/${version.id}`}>
+                    {t("documents.detail.versionHistory.openVersion")}
+                  </Link>
                 </Button>
                 {version.newerVersionId ? (
                   <Button asChild variant="ghost" size="sm">
                     <Link href={`/admin/documents/${version.newerVersionId}`}>
-                      Open newer version
+                      {t("documents.detail.versionHistory.openNewerVersion")}
                     </Link>
                   </Button>
                 ) : null}
@@ -56,13 +61,17 @@ export function DocumentVersionHistory({ versions }: { versions: DocumentVersion
             </div>
             {version.changeMessage ? (
               <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm">
-                <p className="font-medium text-foreground">Change message</p>
+                <p className="font-medium text-foreground">
+                  {t("documents.detail.versionNotes.changeMessage")}
+                </p>
                 <p className="mt-1 text-muted-foreground">{version.changeMessage}</p>
               </div>
             ) : null}
             {version.aiChangeSummary ? (
               <div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-sm">
-                <p className="font-medium text-foreground">AI change summary</p>
+                <p className="font-medium text-foreground">
+                  {t("documents.detail.versionNotes.aiChangeSummary")}
+                </p>
                 <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                   {version.aiChangeSummary}
                 </p>

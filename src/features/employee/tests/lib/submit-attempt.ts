@@ -8,6 +8,7 @@ import {
   isTestAssignable,
 } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { getLocale } from "@/shared/i18n/get-locale"
 import type { Json } from "@/lib/supabase/types"
 import { parseCorrectAnswer, parseOptions } from "@/shared/db/parse-json-fields"
 
@@ -303,6 +304,7 @@ export async function submitEmployeeTestAttempt(input: {
   }
 
   await persistAttemptFeedbackBestEffort(attempt.id, {
+    language: await getLocale(),
     testTitle: testMeta.title,
     testDescription: testMeta.description,
     score,

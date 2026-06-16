@@ -1,3 +1,6 @@
+import type { createTranslator } from "@/shared/i18n/translate"
+import type { TranslationKey } from "@/shared/i18n/translate"
+
 export type TestSourceValidity =
   | "valid"
   | "outdated"
@@ -6,42 +9,49 @@ export type TestSourceValidity =
   | "needs_review"
 
 export interface TestSourceValidityStyle {
-  label: string
+  labelKey: TranslationKey
   dotClass: string
   badgeClass: string
 }
 
 export const TEST_SOURCE_VALIDITY_STYLE: Record<TestSourceValidity, TestSourceValidityStyle> = {
   valid: {
-    label: "Valid source",
+    labelKey: "status.sourceValidity.valid",
     dotClass: "bg-green-500",
     badgeClass:
       "border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-400",
   },
   outdated: {
-    label: "Outdated source",
+    labelKey: "status.sourceValidity.outdated",
     dotClass: "bg-orange-500",
     badgeClass:
       "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-900/20 dark:text-orange-400",
   },
   source_archived: {
-    label: "Source archived",
+    labelKey: "status.sourceValidity.sourceArchived",
     dotClass: "bg-amber-500",
     badgeClass:
       "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-400",
   },
   source_deleted: {
-    label: "Source deleted",
+    labelKey: "status.sourceValidity.sourceDeleted",
     dotClass: "bg-red-500",
     badgeClass:
       "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400",
   },
   needs_review: {
-    label: "Needs review",
+    labelKey: "status.sourceValidity.needsReview",
     dotClass: "bg-purple-500",
     badgeClass:
       "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/50 dark:bg-purple-900/20 dark:text-purple-400",
   },
+}
+
+export function getTestSourceValidityLabel(
+  validity: TestSourceValidity,
+  t: ReturnType<typeof createTranslator>["t"]
+): string {
+  return t(TEST_SOURCE_VALIDITY_STYLE[validity].labelKey)
 }
 
 export function normalizeTestSourceValidity(value: string | null | undefined): TestSourceValidity {

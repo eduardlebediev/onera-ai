@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { AlertTriangle } from "lucide-react"
 
@@ -18,18 +20,23 @@ import {
   isSourceBlockingValidity,
   normalizeTestSourceValidity,
   TEST_SOURCE_VALIDITY_STYLE,
+  getTestSourceValidityLabel,
 } from "@/features/tests/lib/test-source-validity-style"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import type { SupabaseAssignmentSummary } from "@/features/tests/lib/supabase-assignments"
 import type { SavedTestDetail } from "@/features/tests/lib/supabase-test-detail"
 import type { SupabaseEmployeeProgress } from "@/features/tests/lib/supabase-test-progress"
 import type { TestLifecycleImpact } from "@/features/tests/lib/test-lifecycle-api-client"
-import type { TestResultsSummary } from "@/features/tests/types/test"
+import type { TestResultsSummary, TestStatus } from "@/features/tests/types/test"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { getTestStatusLabel, TEST_STATUS_STYLE } from "@/features/tests/lib/test-status-style"
+import { formatDateTime } from "@/shared/i18n/format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Breadcrumbs } from "@/shared/components/breadcrumbs"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
+import { cn } from "@/lib/utils"
 
 interface SavedTestDetailPageProps {
   test: SavedTestDetail
@@ -39,22 +46,25 @@ interface SavedTestDetailPageProps {
   lifecycleImpact: TestLifecycleImpact
 }
 
-function formatLanguage(language: string): string {
-  return language === "de" ? "German" : "English"
+function formatLanguage(language: string, t: ReturnType<typeof useTranslation>["t"]): string {
+  return language === "de" ? t("common.language.de") : t("common.language.en")
 }
 
-function formatAttemptStatus(status: SupabaseEmployeeProgress["attemptStatus"]): string {
-  if (!status) return "—"
+function formatAttemptStatus(
+  status: SupabaseEmployeeProgress["attemptStatus"],
+  t: ReturnType<typeof useTranslation>["t"]
+): string {
+  if (!status) return t("common.dash")
 
   switch (status) {
     case "in_progress":
-      return "In progress"
+      return t("status.assignment.inProgress")
     case "completed":
-      return "Completed"
+      return t("status.assignment.completed")
     case "abandoned":
-      return "Abandoned"
+      return t("status.assignment.abandoned")
     default:
-      return "—"
+      return t("common.dash")
   }
 }
 
@@ -82,6 +92,8 @@ export function SavedTestDetailPage({
   results,
   lifecycleImpact,
 }: SavedTestDetailPageProps) {
+  const { locale, t } = useTranslation()
+  const testStatus = test.status as TestStatus
   const resultsSummary = results ?? emptyResults()
   const sourceValidity = normalizeTestSourceValidity(test.sourceValidity)
   const sourceValidityStyle = TEST_SOURCE_VALIDITY_STYLE[sourceValidity]
@@ -113,23 +125,26 @@ export function SavedTestDetailPage({
                 <p className="typography-p text-muted-foreground">{test.description}</p>
               ) : null}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="capitalize">
-                  {test.status}
+                <Badge
+                  variant="outline"
+                  className={cn("status-badge", TEST_STATUS_STYLE[testStatus].listBadgeClass)}
+                >
+                  {getTestStatusLabel(testStatus, t)}
                 </Badge>
                 {!test.isActive ? (
                   <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                    Inactive
+                    {t("status.test.inactive")}
                   </Badge>
                 ) : null}
                 {isSourceBlockingValidity(sourceValidity) ? (
                   <Badge variant="outline" className={sourceValidityStyle.badgeClass}>
-                    {sourceValidityStyle.label}
+                    {getTestSourceValidityLabel(sourceValidity, t)}
                   </Badge>
                 ) : null}
                 <Badge variant="outline" className="capitalize">
-                  {test.difficulty}
+                  {t(`common.difficulty.${test.difficulty as "easy" | "medium" | "hard"}`)}
                 </Badge>
-                <Badge variant="outline">{formatLanguage(test.language)}</Badge>
+                <Badge variant="outline">{formatLanguage(test.language, t)}</Badge>
               </div>
             </div>
 
@@ -137,25 +152,29 @@ export function SavedTestDetailPage({
               {canAssign ? (
                 <>
                   <Button asChild>
-                    <Link href={`/admin/tests/${test.id}/assign`}>Assign to Employees</Link>
+                    <Link href={`/admin/tests/${test.id}/assign`}>
+                      {t("tests.detail.assignToEmployees")}
+                    </Link>
                   </Button>
                   <Button asChild variant="outline">
-                    <Link href="#results">View results</Link>
+                    <Link href="#results">{t("tests.detail.viewResults")}</Link>
                   </Button>
                 </>
               ) : test.status === "published" ? (
-                <Button disabled title={test.sourceInvalidReason ?? "This test is inactive."}>
-                  Assign to Employees
+                <Button disabled title={test.sourceInvalidReason ?? t("tests.detail.inactiveTest")}>
+                  {t("tests.detail.assignToEmployees")}
                 </Button>
               ) : null}
               <Button asChild variant="outline">
-                <Link href="/admin/tests">Back to Tests</Link>
+                <Link href="/admin/tests">{t("tests.detail.backToTests")}</Link>
               </Button>
               <SavedTestLifecycleActionsMenu />
             </div>
           </div>
 
-          <Breadcrumbs items={[{ label: "Tests", href: "/admin/tests" }, { label: test.title }]} />
+          <Breadcrumbs
+            items={[{ label: t("nav.tests"), href: "/admin/tests" }, { label: test.title }]}
+          />
 
           <SavedTestLifecycleActionsPanel />
 
@@ -165,24 +184,19 @@ export function SavedTestDetailPage({
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   <div>
-                    <p className="font-medium">
-                      This test was generated from an older document version.
-                    </p>
-                    <p className="mt-1">
-                      A newer version of the source document exists. The test remains valid and
-                      unchanged.
-                    </p>
+                    <p className="font-medium">{t("tests.detail.outdatedSourceBanner.title")}</p>
+                    <p className="mt-1">{t("tests.detail.outdatedSourceBanner.body")}</p>
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Button asChild variant="outline">
                     <Link href={`/admin/documents/${test.sourceDocumentId}`}>
-                      Open source version
+                      {t("tests.detail.outdatedSourceBanner.openSourceVersion")}
                     </Link>
                   </Button>
                   <Button asChild variant="outline">
                     <Link href={`/admin/documents/${test.latestSourceDocumentId}`}>
-                      Open latest document version
+                      {t("tests.detail.outdatedSourceBanner.openLatestVersion")}
                     </Link>
                   </Button>
                   <GenerateLatestVersionDraftButton
@@ -202,12 +216,11 @@ export function SavedTestDetailPage({
                   <div>
                     <p className="font-medium">
                       {sourceValidity === "source_archived"
-                        ? "Source document was archived"
-                        : "Source document was deleted"}
+                        ? t("tests.detail.sourceArchivedTitle")
+                        : t("tests.detail.sourceDeletedTitle")}
                     </p>
                     <p className="mt-1">
-                      {test.sourceInvalidReason ??
-                        "This test is inactive until an admin reviews or repairs it."}
+                      {test.sourceInvalidReason ?? t("tests.detail.sourceInvalidDefault")}
                     </p>
                   </div>
                 </div>
@@ -217,29 +230,31 @@ export function SavedTestDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Saved Test Summary</CardTitle>
+              <CardTitle className="text-base">{t("tests.detail.savedTestSummary")}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm md:grid-cols-2">
               <p>
-                <span className="font-medium">Passing score:</span> {test.passingScore}%
+                <span className="font-medium">{t("tests.detail.passingScoreLabel")}</span>{" "}
+                {test.passingScore}%
               </p>
               <p>
-                <span className="font-medium">Question count:</span> {test.questionCount}
+                <span className="font-medium">{t("tests.detail.questionCountLabel")}</span>{" "}
+                {test.questionCount}
               </p>
               <p>
-                <span className="font-medium">Target role:</span>{" "}
-                {test.targetRole ?? "Not specified"}
+                <span className="font-medium">{t("tests.detail.targetRoleLabel")}</span>{" "}
+                {test.targetRole ?? t("tests.detail.notSpecified")}
               </p>
               <p>
-                <span className="font-medium">Source documents:</span>{" "}
+                <span className="font-medium">{t("tests.detail.sourceDocumentsLabel")}</span>{" "}
                 {test.sourceDocuments.length > 0
                   ? test.sourceDocuments.map((document) => document.title).join(", ")
-                  : (test.sourceDocumentTitle ?? "Unknown document")}
+                  : (test.sourceDocumentTitle ?? t("common.unknownDocument"))}
               </p>
               {test.publishedAt ? (
                 <p className="md:col-span-2">
-                  <span className="font-medium">Published at:</span>{" "}
-                  {new Date(test.publishedAt).toLocaleString()}
+                  <span className="font-medium">{t("tests.detail.publishedAtLabel")}</span>{" "}
+                  {formatDateTime(locale, test.publishedAt)}
                 </p>
               ) : null}
             </CardContent>
@@ -255,7 +270,7 @@ export function SavedTestDetailPage({
                 <Card key={question.id}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">
-                      Question {index + 1}
+                      {t("tests.detail.questionNumber", { number: index + 1 })}
                       {question.topic ? (
                         <span className="ml-2 text-sm font-normal text-muted-foreground">
                           · {question.topic}
@@ -264,12 +279,12 @@ export function SavedTestDetailPage({
                     </CardTitle>
                     {question.sourceLabel ? (
                       <p className="mt-1 typography-small text-muted-foreground">
-                        Source: {question.sourceLabel}
+                        {t("tests.detail.sourcePrefix")} {question.sourceLabel}
                       </p>
                     ) : null}
                     {!question.isActive ? (
                       <p className="mt-1 typography-small text-amber-700">
-                        {question.sourceInvalidReason ?? "Question source is invalid."}
+                        {question.sourceInvalidReason ?? t("tests.detail.questionSourceInvalid")}
                       </p>
                     ) : null}
                   </CardHeader>
@@ -291,7 +306,8 @@ export function SavedTestDetailPage({
                     </ul>
                     {question.explanation ? (
                       <p>
-                        <span className="font-medium">Explanation:</span> {question.explanation}
+                        <span className="font-medium">{t("tests.detail.explanationLabel")}</span>{" "}
+                        {question.explanation}
                       </p>
                     ) : null}
                   </CardContent>
@@ -319,7 +335,9 @@ export function SavedTestDetailPage({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Assigned Employees</CardTitle>
+                <CardTitle className="text-base">
+                  {t("tests.detail.assignedEmployeesTitle")}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {assignedEmployees.length > 0 ? (
@@ -334,36 +352,50 @@ export function SavedTestDetailPage({
                           <p className="typography-small text-muted-foreground">{employee.email}</p>
                         </div>
                         <Badge variant="outline">
-                          {formatAssignmentStatus(employee.assignmentStatus)}
+                          {formatAssignmentStatus(employee.assignmentStatus, t)}
                         </Badge>
                       </div>
                       <div className="mt-2 grid gap-1 typography-small text-muted-foreground">
                         <p>
-                          <span className="font-medium text-foreground">Score:</span>{" "}
-                          {employee.score !== null ? `${employee.score}%` : "—"}
+                          <span className="font-medium text-foreground">
+                            {t("tests.detail.scoreLabel")}
+                          </span>{" "}
+                          {employee.score !== null
+                            ? t("common.percent", { value: employee.score })
+                            : t("common.dash")}
                         </p>
                         <p>
-                          <span className="font-medium text-foreground">Result:</span>{" "}
+                          <span className="font-medium text-foreground">
+                            {t("tests.detail.resultLabel")}
+                          </span>{" "}
                           {employee.resultLabel}
                         </p>
                         <p>
-                          <span className="font-medium text-foreground">Attempt:</span>{" "}
-                          {formatAttemptStatus(employee.attemptStatus)}
+                          <span className="font-medium text-foreground">
+                            {t("tests.detail.attemptLabel")}
+                          </span>{" "}
+                          {formatAttemptStatus(employee.attemptStatus, t)}
                         </p>
                         <p>
-                          <span className="font-medium text-foreground">Completed:</span>{" "}
-                          {employee.completedAt ? formatTestDate(employee.completedAt) : "—"}
+                          <span className="font-medium text-foreground">
+                            {t("tests.detail.completedLabel")}
+                          </span>{" "}
+                          {employee.completedAt
+                            ? formatTestDate(locale, employee.completedAt)
+                            : t("common.dash")}
                         </p>
                         <p>
-                          <span className="font-medium text-foreground">Deadline:</span>{" "}
-                          {formatAssignmentDeadline(employee.deadline ?? "")}
+                          <span className="font-medium text-foreground">
+                            {t("tests.detail.deadlineLabel")}
+                          </span>{" "}
+                          {formatAssignmentDeadline(locale, employee.deadline ?? "", t)}
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <p className="typography-small text-muted-foreground">
-                    No employees assigned yet.
+                    {t("tests.detail.noEmployeesAssigned")}
                   </p>
                 )}
               </CardContent>

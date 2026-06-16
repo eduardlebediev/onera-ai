@@ -3,9 +3,12 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronDown, Menu } from "lucide-react"
+import { useMemo } from "react"
 
 import type { AppRole } from "@/features/auth/lib/current-user"
 import { cn } from "@/lib/utils"
+import { LanguageSwitcher } from "@/shared/i18n/language-switcher"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,20 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu"
 import { Logo } from "@/shared/ui/logo"
-
-const ADMIN_LINKS = [
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/documents", label: "Documents" },
-  { href: "/admin/tests", label: "Tests" },
-  { href: "/admin/employees", label: "Employees" },
-  { href: "/admin/analytics", label: "Analytics" },
-] as const
-
-const EMPLOYEE_LINKS = [
-  { href: "/employee/dashboard", label: "Dashboard" },
-  { href: "/employee/tests", label: "My Tests" },
-  { href: "/employee/progress", label: "Progress" },
-] as const
 
 type TopNavbarProps = {
   role: AppRole
@@ -36,8 +25,26 @@ type TopNavbarProps = {
 
 export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
   const pathname = usePathname()
+  const { t } = useTranslation()
 
-  const links = role === "admin" ? ADMIN_LINKS : EMPLOYEE_LINKS
+  const links = useMemo(
+    () =>
+      role === "admin"
+        ? [
+            { href: "/admin/dashboard", label: t("nav.dashboard") },
+            { href: "/admin/documents", label: t("nav.documents") },
+            { href: "/admin/tests", label: t("nav.tests") },
+            { href: "/admin/employees", label: t("nav.employees") },
+            { href: "/admin/analytics", label: t("nav.analytics") },
+          ]
+        : [
+            { href: "/employee/dashboard", label: t("nav.dashboard") },
+            { href: "/employee/tests", label: t("nav.myTests") },
+            { href: "/employee/progress", label: t("nav.progress") },
+          ],
+    [role, t]
+  )
+
   const dashboardHref = role === "admin" ? "/admin/dashboard" : "/employee/dashboard"
   const initials =
     userName
@@ -82,7 +89,7 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-background/55 outline-none transition-colors hover:bg-background/5 hover:text-background md:hidden"
-            aria-label="Open navigation menu"
+            aria-label={t("nav.openMenu")}
           >
             <Menu className="h-4.5 w-4.5" />
           </DropdownMenuTrigger>
@@ -111,10 +118,16 @@ export function TopNavbar({ role, userName, userTitle }: TopNavbarProps) {
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-background/40" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
+            <div className="flex items-center justify-between px-2 py-1.5 text-sm">
+              <span className="text-muted-foreground text-xs font-medium">
+                {t("dataTable.language")}
+              </span>
+              <LanguageSwitcher variant="minimal" className="gap-2" />
+            </div>
             <DropdownMenuItem asChild>
               <form action="/auth/logout" method="post" className="w-full">
                 <button type="submit" className="w-full cursor-pointer text-left">
-                  Sign out
+                  {t("nav.signOut")}
                 </button>
               </form>
             </DropdownMenuItem>

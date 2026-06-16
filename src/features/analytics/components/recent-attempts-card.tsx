@@ -1,5 +1,8 @@
+"use client"
+
 import type { AdminDashboardRecentAttempt } from "@/features/analytics/lib/supabase-admin-dashboard"
 import { formatTestDate } from "@/features/tests/lib/test-format"
+import { useTranslation } from "@/shared/i18n/use-translation"
 import { Badge } from "@/shared/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card"
 
@@ -8,6 +11,8 @@ interface RecentAttemptsCardProps {
 }
 
 export function RecentAttemptsCard({ attempts }: RecentAttemptsCardProps) {
+  const { t, locale } = useTranslation()
+
   if (attempts.length === 0) {
     return null
   }
@@ -15,7 +20,7 @@ export function RecentAttemptsCard({ attempts }: RecentAttemptsCardProps) {
   return (
     <Card className="col-span-12">
       <CardHeader className="px-6 pb-3 pt-4">
-        <CardTitle className="text-base">Recent Attempts</CardTitle>
+        <CardTitle className="text-base">{t("admin.dashboard.recentAttempts")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 px-6 pb-4">
         {attempts.map((attempt) => (
@@ -26,10 +31,14 @@ export function RecentAttemptsCard({ attempts }: RecentAttemptsCardProps) {
             <div>
               <p className="text-sm font-medium text-foreground">{attempt.employeeName}</p>
               <p className="text-xs text-muted-foreground">{attempt.testTitle}</p>
-              <p className="text-xs text-muted-foreground">{formatTestDate(attempt.completedAt)}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatTestDate(locale, attempt.completedAt)}
+              </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">{attempt.score}%</span>
+              <span className="text-sm font-semibold text-foreground">
+                {t("common.percent", { value: attempt.score })}
+              </span>
               <Badge
                 variant="outline"
                 className={
@@ -38,7 +47,7 @@ export function RecentAttemptsCard({ attempts }: RecentAttemptsCardProps) {
                     : "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400"
                 }
               >
-                {attempt.passed ? "Passed" : "Failed"}
+                {attempt.passed ? t("status.employeeTest.passed") : t("status.assignment.failed")}
               </Badge>
             </div>
           </div>

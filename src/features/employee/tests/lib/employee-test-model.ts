@@ -59,6 +59,22 @@ export function isEmployeeTestFinished(test: EmployeeAssignedTest): boolean {
   return test.status === "completed" || test.status === "failed"
 }
 
+export function shouldLoadEmployeeTestResult(test: EmployeeAssignedTest): boolean {
+  return isEmployeeTestFinished(test) && Boolean(test.latestAttemptId)
+}
+
+export function getEmployeeTestResultHref(test: EmployeeAssignedTest): string | null {
+  if (!test.latestAttemptId) {
+    return null
+  }
+
+  return `/employee/tests/${test.id}/result?attemptId=${test.latestAttemptId}`
+}
+
+export function getEmployeeTestFullPageHref(test: EmployeeAssignedTest): string {
+  return getEmployeeTestResultHref(test) ?? `/employee/tests/${test.id}`
+}
+
 export function isEmployeeTestOverdue(test: EmployeeAssignedTest): boolean {
   if (isEmployeeTestFinished(test)) return false
   const daysUntilDeadline = getDaysUntilDeadline(test.deadline)

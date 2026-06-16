@@ -1,5 +1,5 @@
 import type { TestAssignmentStatus } from "@/features/tests/types/assignment"
-import type { TestDifficulty } from "@/features/tests/types/test"
+import type { TestDifficulty, TestLanguage } from "@/features/tests/types/test"
 
 export interface EmployeeAssignmentRecord {
   testId: string
@@ -21,6 +21,7 @@ export interface EmployeeAssignedTest {
   status: TestAssignmentStatus
   sourceDocument: string
   difficulty: TestDifficulty
+  language: TestLanguage
   questionCount: number
   passingScore: number
   deadline: string | null

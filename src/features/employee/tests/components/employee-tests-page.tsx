@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { ClipboardList, Filter } from "lucide-react"
 import Link from "next/link"
 
+import { EmployeeTestDrawer } from "@/features/employee/tests/components/employee-test-drawer"
 import { EmployeeTestsKpiSection } from "@/features/employee/tests/components/employee-tests-kpi-section"
 import {
   formatEmployeeTestDeadline,
@@ -46,6 +47,8 @@ type EmployeeTestTableRow = EmployeeAssignedTest & {
 export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
   const { t, locale } = useTranslation()
   const [filter, setFilter] = useState<EmployeeTestFilter>("all")
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const filterOptions = useMemo(() => getEmployeeTestFilterOptions(t), [t])
 
   const getScoreOrProgressLabel = useCallback(
@@ -94,6 +97,20 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
     () => tests.filter((test) => test.status === "failed" && test.canRetake),
     [tests]
   )
+  const selectedTest = useMemo(
+    () => tests.find((test) => test.id === selectedTestId) ?? null,
+    [tests, selectedTestId]
+  )
+  const handleOpenDrawer = useCallback((test: EmployeeAssignedTest) => {
+    setSelectedTestId(test.id)
+    setIsDrawerOpen(true)
+  }, [])
+  const handleDrawerOpenChange = useCallback((open: boolean) => {
+    setIsDrawerOpen(open)
+    if (!open) {
+      setSelectedTestId(null)
+    }
+  }, [])
 
   const columns = useMemo<ColumnDef<EmployeeTestTableRow>[]>(
     () => [
@@ -297,10 +314,19 @@ export function EmployeeTestsPage({ tests }: EmployeeTestsPageProps) {
                   <Filter className="pointer-events-none absolute top-2 left-3 size-4 text-muted-foreground" />
                 </div>
               }
+              getRowProps={(row) => ({
+                onClick: () => handleOpenDrawer(row.original),
+                className: "group cursor-pointer hover:bg-muted/30 transition-colors",
+              })}
             />
           )}
         </DataTableShell>
       </div>
+      <EmployeeTestDrawer
+        test={selectedTest}
+        open={isDrawerOpen}
+        onOpenChange={handleDrawerOpenChange}
+      />
     </div>
   )
 }
@@ -379,21 +405,25 @@ function EmployeeTestActionCell({
 
   if (action.disabled || !action.href) {
     return (
-      <Button
-        variant={action.variant}
-        size="sm"
-        className="shrink-0"
-        disabled
-        title={action.disabledReason}
-      >
-        {action.label}
-      </Button>
+      <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+        <Button
+          variant={action.variant}
+          size="sm"
+          className="shrink-0"
+          disabled
+          title={action.disabledReason}
+        >
+          {action.label}
+        </Button>
+      </div>
     )
   }
 
   return (
-    <Button asChild variant={action.variant} size="sm" className="shrink-0">
-      <Link href={action.href}>{action.label}</Link>
-    </Button>
+    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+      <Button asChild variant={action.variant} size="sm" className="shrink-0">
+        <Link href={action.href}>{action.label}</Link>
+      </Button>
+    </div>
   )
 }

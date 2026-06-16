@@ -2,7 +2,7 @@ import "server-only"
 
 import type { SupabaseEmployeeTakeableTest } from "@/features/employee/tests/lib/test-taking-state"
 import type { TestAssignmentStatus } from "@/features/tests/types/assignment"
-import type { TestDifficulty } from "@/features/tests/types/test"
+import type { TestDifficulty, TestLanguage } from "@/features/tests/types/test"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Json } from "@/lib/supabase/types"
@@ -40,6 +40,7 @@ type TestRow = {
   title: string
   description: string | null
   difficulty: string
+  language: string
   question_count: number | null
   passing_score: number
   max_attempts: number | null
@@ -59,10 +60,10 @@ type QuestionRow = {
 }
 
 const TEST_SELECT =
-  "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity"
+  "id, organization_id, source_document_id, title, description, difficulty, language, question_count, passing_score, max_attempts, status, is_active, source_validity"
 
 const LEGACY_TEST_SELECT =
-  "id, organization_id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity"
+  "id, organization_id, source_document_id, title, description, difficulty, language, question_count, passing_score, status, is_active, source_validity"
 
 function normalizeTestRow(row: unknown | null): TestRow | null {
   if (!row) return null
@@ -94,6 +95,10 @@ function mapDifficulty(difficulty: string): TestDifficulty {
   }
 
   return "medium"
+}
+
+function mapLanguage(language: string): TestLanguage {
+  return language === "de" ? "German" : "English"
 }
 
 function mapQuestionType(questionType: string): EmployeeSafeQuestion["questionType"] {
@@ -298,6 +303,7 @@ export async function getSupabaseEmployeeTakeableTest(
     status,
     sourceDocument,
     difficulty: mapDifficulty(test.difficulty),
+    language: mapLanguage(test.language),
     questionCount,
     passingScore: test.passing_score,
     deadline: assignment.deadline,

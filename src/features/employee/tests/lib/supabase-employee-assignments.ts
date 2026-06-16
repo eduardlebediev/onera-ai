@@ -3,7 +3,7 @@ import "server-only"
 import type { EmployeeAssignedTest } from "@/features/employee/tests/types/employee-test"
 import { isTestAssignable } from "@/features/tests/lib/test-source-validity-style"
 import type { TestAssignmentStatus, AssignableEmployee } from "@/features/tests/types/assignment"
-import type { TestDifficulty } from "@/features/tests/types/test"
+import type { TestDifficulty, TestLanguage } from "@/features/tests/types/test"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 import { getEmployeeCompletedAttemptStats } from "./supabase-employee-progress"
@@ -26,6 +26,7 @@ type TestRow = {
   title: string
   description: string | null
   difficulty: string
+  language: string
   question_count: number | null
   passing_score: number
   max_attempts: number | null
@@ -58,10 +59,10 @@ export type SupabaseEmployeeAssignmentsResult = {
 }
 
 const TEST_SELECT =
-  "id, source_document_id, title, description, difficulty, question_count, passing_score, max_attempts, status, is_active, source_validity, source_invalid_reason"
+  "id, source_document_id, title, description, difficulty, language, question_count, passing_score, max_attempts, status, is_active, source_validity, source_invalid_reason"
 
 const LEGACY_TEST_SELECT =
-  "id, source_document_id, title, description, difficulty, question_count, passing_score, status, is_active, source_validity, source_invalid_reason"
+  "id, source_document_id, title, description, difficulty, language, question_count, passing_score, status, is_active, source_validity, source_invalid_reason"
 
 function normalizeTestRows(rows: unknown[] | null): TestRow[] {
   return (rows ?? []).map((row) => {
@@ -93,6 +94,10 @@ function mapDifficulty(difficulty: string): TestDifficulty {
   }
 
   return "medium"
+}
+
+function mapLanguage(language: string): TestLanguage {
+  return language === "de" ? "German" : "English"
 }
 
 function getEstimatedMinutes(questionCount: number): number {
@@ -315,6 +320,7 @@ export async function getSupabaseEmployeeAssignments(
           status,
           sourceDocument: sourceDocument?.title ?? "Unknown document",
           difficulty: mapDifficulty(test.difficulty),
+          language: mapLanguage(test.language),
           questionCount,
           passingScore: test.passing_score,
           deadline: assignment.deadline,

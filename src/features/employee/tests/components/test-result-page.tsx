@@ -14,6 +14,7 @@ import { useTranslation } from "@/shared/i18n/use-translation"
 
 interface TestResultPageProps {
   result: EmployeeTestResult
+  showBreadcrumbs?: boolean
 }
 
 function buildInitialFollowUpStatus(
@@ -39,7 +40,7 @@ function buildInitialFollowUpStatus(
   return statusByTopic
 }
 
-export function TestResultPage({ result }: TestResultPageProps) {
+export function TestResultPage({ result, showBreadcrumbs = true }: TestResultPageProps) {
   const { t } = useTranslation()
   const [followUpStatusByTopic, setFollowUpStatusByTopic] = useState<
     Record<string, FollowUpTopicStatus>
@@ -61,16 +62,24 @@ export function TestResultPage({ result }: TestResultPageProps) {
   )
 
   return (
-    <div className="page-shell">
-      <Breadcrumbs
-        items={[
-          { label: t("breadcrumbs.myTests"), href: "/employee/tests" },
-          { label: result.title, href: `/employee/tests/${result.id}/take` },
-          { label: t("breadcrumbs.result") },
-        ]}
-      />
+    <div className={showBreadcrumbs ? "page-shell" : "page-shell-narrow"}>
+      {showBreadcrumbs ? (
+        <Breadcrumbs
+          items={[
+            { label: t("breadcrumbs.myTests"), href: "/employee/tests" },
+            { label: result.title, href: `/employee/tests/${result.id}/take` },
+            { label: t("breadcrumbs.result") },
+          ]}
+        />
+      ) : null}
 
-      <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className={
+          showBreadcrumbs
+            ? "mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_320px]"
+            : "grid gap-2 lg:grid-cols-[minmax(0,1fr)_320px]"
+        }
+      >
         <div className="flex flex-col gap-2">
           <TestResultSummary result={result} />
 
